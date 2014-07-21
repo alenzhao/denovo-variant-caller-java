@@ -1,13 +1,13 @@
 denovo-variant-caller
 =====================
 
-Calls Denovo variants using information from a mother, father and child trio.
+Calls de novo variants using information from a mother, father and child trio.
 Uses a bayesian inference method to make the calls. 
 
 Getting started
 ---------------
 
-This Java program allows you to discover denovo variants using Bayesian denovo
+This Java program allows you to discover denovo variants using Bayesian de novo
 variant calling.
 
 * To use, first build the client using `Apache Maven`_::
@@ -21,7 +21,7 @@ variant calling.
 * Move the ``client_secrets.json`` file into the client-java directory.
   (Authentication will take place the first time you make an API call.)
 
-There are two stages in Denovo Calling:
+There are two stages in de novo Calling:
 
 Stage1
     Filter Candidate Variant Sites using VCF file called variants
