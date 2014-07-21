@@ -27,19 +27,28 @@ import java.util.Map;
  * denovo variant
  */
 public class BayesInfer {
-  private static final double SEQ_ERR_RATE = 1e-8;
-  private static final double DENOVO_MUT_RATE = 1e-2; // 1% error rate
   private static final String[] GENOTYPES =
       {"AA", "AC", "AT", "AG", "CC", "CT", "CG", "TT", "TG", "GG"};
+  private static double sequenceErrorRate;
+  private static double denovoMutationRate;   
   private static BayesNet bn;
-
+  private static boolean isInitialized = false;
+  
   private BayesInfer() {}
 
   // static initialization for bayes net object
-  private static void Init() {
-    if (bn != null) {
+  private static void Init(CommandLine cmdLine) {
+    
+    // Check if the static class has already been initialized
+    if (isInitialized) {
       return;
     }
+    
+    // Set the error rates from the commandline
+    sequenceErrorRate = cmdLine.sequenceErrorRate;
+    denovoMutationRate = cmdLine.denovoMutationRate;
+    
+    // Create a new Bayes net and fill in the params
     bn = new BayesNet();
     bn.addNode(new Node("DAD", null, createConditionalProbabilityTable("DAD")));
     bn.addNode(new Node("MOM", null, createConditionalProbabilityTable("MOM")));
@@ -48,6 +57,8 @@ public class BayesInfer {
     childParents.add(bn.nodeMap.get("MOM"));
     bn.addNode(new Node("CHILD", childParents, createConditionalProbabilityTable("CHILD")));
 
+    // Set the initialization flag
+    isInitialized = true;
   }
 
   /*
@@ -95,10 +106,10 @@ public class BayesInfer {
             for (String genoTypeChild : GENOTYPES) {
               String cptKey = genoTypeDad + "|" + genoTypeMom + "|" + genoTypeChild;
               if (conditionalProbabilityTable.get(cptKey) == 0.0) {
-                conditionalProbabilityTable.put(cptKey, DENOVO_MUT_RATE);
+                conditionalProbabilityTable.put(cptKey, denovoMutationRate);
               } else {
                 conditionalProbabilityTable.put(cptKey, 1.0 / validInheritanceCases
-                    - DENOVO_MUT_RATE * (GENOTYPES.length - validInheritanceCases)
+                    - denovoMutationRate * (GENOTYPES.length - validInheritanceCases)
                     / (validInheritanceCases));
               }
             }
@@ -123,14 +134,15 @@ public class BayesInfer {
   }
 
   /*
-   * Performs inference given a set of mom, dad and child reads to determine the most likely
-   * genotype for the trio
+   * Performs inference given a set of mom, dad and child reads to determine the
+   *  most likely genotype for the trio
    */
-  public static boolean infer(Map<String, ReadSummary> readSummaryMap) {
+  public static boolean infer(Map<String, ReadSummary> readSummaryMap,
+      CommandLine cmdLine) {
 
     // Initialize the bayes net if not already done
-    if (bn == null) {
-      Init();
+    if (!isInitialized) {
+      Init(cmdLine);
     }
     // Calculate Likelihoods of the different reads
     Map<String, Map<String, Double>> individualLogLikelihood =
@@ -256,15 +268,15 @@ public class BayesInfer {
     double logLikeliHood = 0.0;
     if (isHomozygous) {
       if (genoType.contains(base)) {
-        logLikeliHood = Math.log(1 - SEQ_ERR_RATE);
+        logLikeliHood = Math.log(1 - sequenceErrorRate);
       } else {
-        logLikeliHood = Math.log(SEQ_ERR_RATE) - Math.log(3);
+        logLikeliHood = Math.log(sequenceErrorRate) - Math.log(3);
       }
     } else {
       if (genoType.contains(base)) {
-        logLikeliHood = Math.log(1 - 2 * SEQ_ERR_RATE / 3) - Math.log(2);
+        logLikeliHood = Math.log(1 - 2 * sequenceErrorRate / 3) - Math.log(2);
       } else {
-        logLikeliHood = Math.log(SEQ_ERR_RATE) - Math.log(3);
+        logLikeliHood = Math.log(sequenceErrorRate) - Math.log(3);
       }
     }
     return logLikeliHood;

@@ -53,10 +53,29 @@ public class ExperimentRunner {
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
   static public Genomics genomics;
   public String candidatesFile;
+  private CommandLine cmdLine;
+  
 
-
-  public ExperimentRunner(Genomics _genomics) {
+  public ExperimentRunner(Genomics _genomics, CommandLine _cmdLine) {
     genomics = _genomics;
+    cmdLine = _cmdLine;
+
+    // Check command line for candidates file
+    checkAndAddCandidatesFile();
+
+  }
+
+  /**
+   * Check to see that candidatesFile is defined for experiments
+   */
+  private void checkAndAddCandidatesFile() {
+    if (cmdLine.stageId == "stage1" || cmdLine.stageId == "stage2") {
+      if (cmdLine.candidatesFile == null) {
+        cmdLine.getUsage();
+        throw new RuntimeException("Candidates File required");
+      }
+    }
+    candidatesFile = cmdLine.candidatesFile;
   }
 
   /*
@@ -242,7 +261,8 @@ public class ExperimentRunner {
         /*
          * Call the bayes inference algorithm to generate likelihood
          */
-        boolean isDenovo = BayesInfer.infer(readSummaryMap);
+        boolean isDenovo = BayesInfer.infer(readSummaryMap,cmdLine);
+        
         if (isDenovo) {
           System.out.println("######### Denovo detected ########");
         }
@@ -255,14 +275,5 @@ public class ExperimentRunner {
     } catch (IOException e) {
       e.printStackTrace();
     }
-
   }
-
-  public void addCandidatesFile(String candidatesFile) {
-    this.candidatesFile = candidatesFile;
-
-  }
-
-
-
 }

@@ -141,16 +141,8 @@ public class GenomicsExperiment {
       }
 
       Genomics genomics = buildService(credential);
-      expRunner = new ExperimentRunner(genomics);
+      expRunner = new ExperimentRunner(genomics,cmdLine);
 
-      // Check to see that candidatesFile is defined for experiments
-      if (cmdLine.stageId == "stage1" || cmdLine.stageId == "stage2") {
-        if (cmdLine.candidatesFile == null) {
-          cmdLine.getUsage();
-          throw new RuntimeException("Candidates File required");
-        }
-      }
-      expRunner.addCandidatesFile(cmdLine.candidatesFile);
 
       // Entry point for all Experiments
       executeExperiment(cmdLine.stageId);

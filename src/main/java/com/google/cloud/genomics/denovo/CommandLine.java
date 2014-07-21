@@ -44,7 +44,15 @@ class CommandLine {
       usage = "Specify the file onto which to write the candidates")
   public String candidatesFile = null;
 
+  @Option(name = "--seq_err_rate", metaVar = "<seq_err_rate>",
+      usage = "Specify the sequence error rate (default 1e-2)")
+  public double sequenceErrorRate = 1e-2;
 
+  @Option(name = "--denovo_mut_rate", metaVar = "<denovo_mut_rate>",
+      usage = "Specify the denovo mutation rate (default 1e-8)")
+  public double denovoMutationRate = 1e-8;
+
+  
   public CommandLine() {
     parser = new CmdLineParser(this);
   }
