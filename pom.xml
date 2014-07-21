@@ -61,7 +61,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-genomics</artifactId>
-      <version>v1beta-rev10-1.18.0-rc</version>
+      <version>v1beta-rev17-1.18.0-rc</version>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
