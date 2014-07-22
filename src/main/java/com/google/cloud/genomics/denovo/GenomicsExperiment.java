@@ -155,7 +155,7 @@ public class GenomicsExperiment {
   }
 
   private static void executeExperiment(String stage_id) throws IllegalAccessException,
-      IllegalArgumentException, InvocationTargetException {
+      IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
     Method[] methods = ExperimentRunner.class.getDeclaredMethods();
 
     Method methodMatch = null;
@@ -166,7 +166,7 @@ public class GenomicsExperiment {
       }
     }
     if (methodMatch == null) {
-      throw new RuntimeException("No matching method found for Experiment : " + stage_id);
+      throw new NoSuchMethodException("No matching method found for Experiment : " + stage_id);
     } else {
       methodMatch.invoke(expRunner);
     }

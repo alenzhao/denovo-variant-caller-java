@@ -182,7 +182,7 @@ public class DenovoUtil {
     }
     // Check that the readsetIdMap is sane
     if (readsetIdMap.size() != 3) {
-      throw new RuntimeException("Borked readsetIdMap" + readsetIdMap.toString());
+      throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap.toString());
     }
     return readsetIdMap;
   }

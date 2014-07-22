@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,7 +74,7 @@ public class ExperimentRunner {
     if (cmdLine.stageId == "stage1" || cmdLine.stageId == "stage2") {
       if (cmdLine.candidatesFile == null) {
         cmdLine.getUsage();
-        throw new RuntimeException("Candidates File required");
+        throw new IllegalArgumentException("Candidates File required");
       }
     }
     candidatesFile = cmdLine.candidatesFile;
@@ -134,7 +135,7 @@ public class ExperimentRunner {
       // One time Sanity check ; could be replaced with testing
       if (!new HashSet<TrioIndividual>(dictRelationCallsetId.keySet()).equals(
           new HashSet<TrioIndividual>(Arrays.asList(TrioIndividual.values())))) {
-        throw new RuntimeException("Callsets not found");
+        throw new IllegalStateException("Callsets not found");
       }
 
       /* Get a list of all the Variants per contig */
@@ -231,7 +232,7 @@ public class ExperimentRunner {
       for (String line; (line = callCandidateReader.readLine()) != null;) {
         String[] splitLine = line.split(",");
         if (splitLine.length != 2) {
-          throw new RuntimeException("Could not parse line : " + line);
+          throw new ParseException("Could not parse line : " + line, 0);
         }
         String chromosome = splitLine[0];
         Long candidatePosition = Long.valueOf(splitLine[1]);
@@ -271,8 +272,8 @@ public class ExperimentRunner {
         // TODO
       }
 
-    } catch (IOException e) {
+    } catch (IOException| ParseException e) {
       e.printStackTrace();
-    }
+    } 
   }
 }
