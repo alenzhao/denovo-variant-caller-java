@@ -46,41 +46,11 @@ public class DenovoUtil {
   public static final double EPS = 1e-12;
 
   public enum TrioIndividual {
-    DAD("DAD"), MOM("MOM"), CHILD("CHILD");
-
-    private String name;
-
-    private TrioIndividual(String _name) {
-      name = _name;
-    }
-
-    public String getName() {
-      return name;
-    }
-
+    DAD, MOM, CHILD;
   }
+  
   public enum Genotypes {
-    AA("AA"),
-    AC("AC"),
-    AT("AT"),
-    AG("AG"),
-    CC("CC"),
-    CT("CT"),
-    CG("CG"),
-    TT("TT"),
-    TG("TG"),
-    GG("GG");
-
-    private final String alleles;
-
-    private Genotypes(String _alleles) {
-      alleles = _alleles;
-    }
-
-    public final String getAlleles() {
-      return alleles;
-    }
-
+    AA, AC, AT, AG, CC, CT, CG, TT, TG, GG;
   }
 
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
@@ -187,6 +157,7 @@ public class DenovoUtil {
     return readsetIdMap;
   }
 
+  // TODO : Investigate effect of splitting on "|"
   public static List<Integer> getGenotype(Call call) {
     List<Integer> genoType = new ArrayList<Integer>();
 

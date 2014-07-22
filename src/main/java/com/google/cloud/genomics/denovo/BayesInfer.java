@@ -99,9 +99,9 @@ public class BayesInfer {
           // Initial pass
           for (Genotypes genoTypeChild : Genotypes.values()) {
             double prob;
-            String dadAlleles = genoTypeDad.getAlleles();
-            String momAlleles = genoTypeMom.getAlleles();
-            String childAlleles = genoTypeChild.getAlleles();
+            String dadAlleles = genoTypeDad.name();
+            String momAlleles = genoTypeMom.name();
+            String childAlleles = genoTypeChild.name();
             String c1 = childAlleles.substring(0, 1);
             String c2 = childAlleles.substring(1, 2);
             boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
@@ -174,7 +174,7 @@ public class BayesInfer {
         new Function<Entry<TrioIndividual, ReadSummary>, String>() {
           @Override
           public String apply(Entry<TrioIndividual, ReadSummary> e) {
-            return e.getKey().getName() + ":" + e.getValue().getCount().toString();
+            return e.getKey().name() + ":" + e.getValue().getCount().toString();
           }
         }));
 
@@ -216,7 +216,7 @@ public class BayesInfer {
     for (Genotypes genoType : Genotypes.values()) {
       Map<String, Integer> count = readSummary.getCount();
       boolean isHomozygous =
-          genoType.getAlleles().substring(0, 1).equals(genoType.getAlleles().substring(1, 2));
+          genoType.name().substring(0, 1).equals(genoType.name().substring(1, 2));
 
       double readlogLikelihood = 0.0;
       for (String base : count.keySet()) {
@@ -238,9 +238,9 @@ public class BayesInfer {
     Genotypes genoTypeMom = maxTrioGenoType.get(1);
     Genotypes genoTypeChild = maxTrioGenoType.get(2);
 
-    String childAlleles = genoTypeChild.getAlleles();
-    String momAlleles = genoTypeMom.getAlleles();
-    String dadAlleles = genoTypeDad.getAlleles();
+    String childAlleles = genoTypeChild.name();
+    String momAlleles = genoTypeMom.name();
+    String dadAlleles = genoTypeDad.name();
 
     String c1 = childAlleles.substring(0, 1);
     String c2 = childAlleles.substring(1, 2);
@@ -300,13 +300,13 @@ public class BayesInfer {
    */
   private static double getBaseLikelihood(Genotypes genoType, boolean isHomozygous, String base) {
     if (isHomozygous) {
-      if (genoType.getAlleles().contains(base)) {
+      if (genoType.name().contains(base)) {
         return Math.log(1 - sequenceErrorRate);
       } else {
         return Math.log(sequenceErrorRate) - Math.log(3);
       }
     } else {
-      if (genoType.getAlleles().contains(base)) {
+      if (genoType.name().contains(base)) {
         return Math.log(1 - 2 * sequenceErrorRate / 3) - Math.log(2);
       } else {
         return Math.log(sequenceErrorRate) - Math.log(3);
