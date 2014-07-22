@@ -45,7 +45,7 @@ public class DenovoUtil {
 
   public static final double EPS = 1e-12;
 
-  public static enum TrioIndividual {
+  public enum TrioIndividual {
     DAD("DAD"), MOM("MOM"), CHILD("CHILD");
 
     private String name;
@@ -59,7 +59,7 @@ public class DenovoUtil {
     }
 
   }
-  public static enum Genotypes {
+  public enum Genotypes {
     AA("AA"),
     AC("AC"),
     AT("AT"),
