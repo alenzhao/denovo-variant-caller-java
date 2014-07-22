@@ -19,12 +19,18 @@ import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,10 +59,29 @@ public class ExperimentRunner {
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
   static public Genomics genomics;
   public String candidatesFile;
+  private CommandLine cmdLine;
+  
 
-
-  public ExperimentRunner(Genomics _genomics) {
+  public ExperimentRunner(Genomics _genomics, CommandLine _cmdLine) {
     genomics = _genomics;
+    cmdLine = _cmdLine;
+
+    // Check command line for candidates file
+    checkAndAddCandidatesFile();
+
+  }
+
+  /**
+   * Check to see that candidatesFile is defined for experiments
+   */
+  private void checkAndAddCandidatesFile() {
+    if (cmdLine.stageId == "stage1" || cmdLine.stageId == "stage2") {
+      if (cmdLine.candidatesFile == null) {
+        cmdLine.getUsage();
+        throw new IllegalArgumentException("Candidates File required");
+      }
+    }
+    candidatesFile = cmdLine.candidatesFile;
   }
 
   /*
@@ -67,9 +92,12 @@ public class ExperimentRunner {
 
     // Define Experiment Specific Constant Values
     final String TRIO_DATASET_ID = "2315870033780478914";
-    final String DAD_CALLSET_NAME = "NA12877";
-    final String MOM_CALLSET_NAME = "NA12878";
-    final String CHILD_CALLSET_NAME = "NA12879";
+    
+    Map<TrioIndividual,String> individualCallsetNameMap = new HashMap<>();
+    individualCallsetNameMap.put(DAD,"NA12877");
+    individualCallsetNameMap.put(MOM,"NA12878");
+    individualCallsetNameMap.put(CHILD,"NA12879");
+    individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
@@ -88,7 +116,7 @@ public class ExperimentRunner {
       List<ContigBound> contigBounds;
       List<Callset> callsets;
       List<VariantContigStream> variantContigStreams = new ArrayList<VariantContigStream>();
-      Map<String, String> dictRelationCallsetId = new HashMap<>();
+      Map<TrioIndividual, String> dictRelationCallsetId = new HashMap<>();
 
       /* Get a list of all the datasets */
       allDatasetsInProject = DenovoUtil.getAllDatasets();
@@ -98,26 +126,20 @@ public class ExperimentRunner {
 
       // Create a family person type to callset id map
       for (Callset callset : callsets) {
-        switch (callset.getName()) {
-          case DAD_CALLSET_NAME:
-            dictRelationCallsetId.put("DAD", callset.getId());
+        String callsetName = callset.getName(); 
+        for(TrioIndividual individual : TrioIndividual.values() ) {
+          if(callsetName.equals(individualCallsetNameMap.get(individual))) {
+            dictRelationCallsetId.put(individual,callset.getId());
             break;
-          case MOM_CALLSET_NAME:
-            dictRelationCallsetId.put("MOM", callset.getId());
-            break;
-          case CHILD_CALLSET_NAME:
-            dictRelationCallsetId.put("CHILD", callset.getId());
-            break;
-          default:
-            throw new RuntimeException("Unknown trio name");
+          }
         }
       }
 
       // Check that the mapping has the correct keys
       // One time Sanity check ; could be replaced with testing
-      if (!new HashSet<String>(dictRelationCallsetId.keySet()).equals(
-          new HashSet<String>(Arrays.asList("DAD", "MOM", "CHILD")))) {
-        throw new RuntimeException("Callsets not found");
+      if (!new HashSet<TrioIndividual>(dictRelationCallsetId.keySet()).equals(
+          new HashSet<TrioIndividual>(Arrays.asList(TrioIndividual.values())))) {
+        throw new IllegalStateException("Callsets not found");
       }
 
       /* Get a list of all the Variants per contig */
@@ -186,16 +208,16 @@ public class ExperimentRunner {
     System.out.println("---- Starting Stage2 Bayesian Caller -----");
 
     // Constant Values Needed for stage 2 experiments
-    Map<String, String> datasetIdMap = new HashMap<String, String>();
-    datasetIdMap.put("DAD", "4140720988704892492");
-    datasetIdMap.put("MOM", "2778297328698497799");
-    datasetIdMap.put("CHILD", "6141326619449450766");
+    Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
+    datasetIdMap.put(DAD, "4140720988704892492");
+    datasetIdMap.put(MOM, "2778297328698497799");
+    datasetIdMap.put(CHILD, "6141326619449450766");
     datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
 
-    Map<String, String> callsetIdMap = new HashMap<String, String>();
-    callsetIdMap.put("DAD", "NA12877");
-    callsetIdMap.put("MOM", "NA12878");
-    callsetIdMap.put("CHILD", "NA12879");
+    Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
+    callsetIdMap.put(DAD, "NA12877");
+    callsetIdMap.put(MOM, "NA12878");
+    callsetIdMap.put(CHILD, "NA12879");
     callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
 
 
@@ -204,7 +226,7 @@ public class ExperimentRunner {
     final File exp1CallsFile = new File(outdir, candidatesFile);
 
     /* Find the readset Ids associated with the datasets */
-    Map<String, String> readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
+    Map<TrioIndividual, String> readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
 
     System.out.println();
     System.out.println("Readset Ids Found");
@@ -214,7 +236,7 @@ public class ExperimentRunner {
       for (String line; (line = callCandidateReader.readLine()) != null;) {
         String[] splitLine = line.split(",");
         if (splitLine.length != 2) {
-          throw new RuntimeException("Could not parse line : " + line);
+          throw new ParseException("Could not parse line : " + line, 0);
         }
         String chromosome = splitLine[0];
         Long candidatePosition = Long.valueOf(splitLine[1]);
@@ -223,9 +245,10 @@ public class ExperimentRunner {
 
 
         /* Get reads for the current position */
-        Map<String, List<Read>> readMap = new HashMap<String, List<Read>>();
-        for (String trioIndividual : readsetIdMap.keySet()) {
-          List<Read> reads = DenovoUtil.getReads(readsetIdMap.get(trioIndividual), chromosome,
+        Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
+        for (TrioIndividual trioIndividual : TrioIndividual.values()) {
+          List<Read> reads = DenovoUtil
+              .getReads(readsetIdMap.get(trioIndividual), chromosome,
               candidatePosition, candidatePosition);
           readMap.put(trioIndividual, reads);
         }
@@ -233,8 +256,8 @@ public class ExperimentRunner {
         /*
          * Extract the relevant bases for the currrent position
          */
-        Map<String, ReadSummary> readSummaryMap = new HashMap<String, ReadSummary>();
-        for (String trioIndividual : readsetIdMap.keySet()) {
+        Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+        for (TrioIndividual trioIndividual : TrioIndividual.values()) {
           readSummaryMap.put(trioIndividual,
               new ReadSummary(readMap.get(trioIndividual), candidatePosition));
         }
@@ -242,7 +265,8 @@ public class ExperimentRunner {
         /*
          * Call the bayes inference algorithm to generate likelihood
          */
-        boolean isDenovo = BayesInfer.infer(readSummaryMap);
+        boolean isDenovo = BayesInfer.infer(readSummaryMap,cmdLine);
+        
         if (isDenovo) {
           System.out.println("######### Denovo detected ########");
         }
@@ -252,17 +276,8 @@ public class ExperimentRunner {
         // TODO
       }
 
-    } catch (IOException e) {
+    } catch (IOException| ParseException e) {
       e.printStackTrace();
-    }
-
+    } 
   }
-
-  public void addCandidatesFile(String candidatesFile) {
-    this.candidatesFile = candidatesFile;
-
-  }
-
-
-
 }

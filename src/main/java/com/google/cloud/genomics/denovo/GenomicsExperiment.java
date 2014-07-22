@@ -141,16 +141,8 @@ public class GenomicsExperiment {
       }
 
       Genomics genomics = buildService(credential);
-      expRunner = new ExperimentRunner(genomics);
+      expRunner = new ExperimentRunner(genomics,cmdLine);
 
-      // Check to see that candidatesFile is defined for experiments
-      if (cmdLine.stageId == "stage1" || cmdLine.stageId == "stage2") {
-        if (cmdLine.candidatesFile == null) {
-          cmdLine.getUsage();
-          throw new RuntimeException("Candidates File required");
-        }
-      }
-      expRunner.addCandidatesFile(cmdLine.candidatesFile);
 
       // Entry point for all Experiments
       executeExperiment(cmdLine.stageId);
@@ -163,7 +155,7 @@ public class GenomicsExperiment {
   }
 
   private static void executeExperiment(String stage_id) throws IllegalAccessException,
-      IllegalArgumentException, InvocationTargetException {
+      IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
     Method[] methods = ExperimentRunner.class.getDeclaredMethods();
 
     Method methodMatch = null;
@@ -174,7 +166,7 @@ public class GenomicsExperiment {
       }
     }
     if (methodMatch == null) {
-      throw new RuntimeException("No matching method found for Experiment : " + stage_id);
+      throw new NoSuchMethodException("No matching method found for Experiment : " + stage_id);
     } else {
       methodMatch.invoke(expRunner);
     }

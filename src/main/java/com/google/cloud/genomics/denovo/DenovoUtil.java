@@ -42,6 +42,17 @@ import com.google.api.services.genomics.model.SearchVariantsRequest;
  * Utility functions shared by other classes in Denovo project
  */
 public class DenovoUtil {
+
+  public static final double EPS = 1e-12;
+
+  public enum TrioIndividual {
+    DAD, MOM, CHILD;
+  }
+  
+  public enum Genotypes {
+    AA, AC, AT, AG, CC, CT, CG, TT, TG, GG;
+  }
+
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
       ContigBound contig,
       long startPos,
@@ -118,11 +129,12 @@ public class DenovoUtil {
    * @return Map<String, String>
    * @throws IOException
    */
-  public static Map<String, String> createReadsetIdMap(Map<String, String> datasetIdMap,
-      Map<String, String> callsetIdMap) throws IOException {
-    Map<String, String> readsetIdMap = new HashMap<String, String>();
+  public static Map<TrioIndividual, String> createReadsetIdMap(
+      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap)
+      throws IOException {
+    Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
-    for (String trioIndividual : datasetIdMap.keySet()) {
+    for (TrioIndividual trioIndividual : datasetIdMap.keySet()) {
       List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual));
 
       for (Readset readset : readsets) {
@@ -131,7 +143,7 @@ public class DenovoUtil {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
-        for (String individual : callsetIdMap.keySet()) {
+        for (TrioIndividual individual : callsetIdMap.keySet()) {
           if (callsetIdMap.get(individual).equals(sampleName)) {
             readsetIdMap.put(individual, readsetId);
           }
@@ -140,11 +152,12 @@ public class DenovoUtil {
     }
     // Check that the readsetIdMap is sane
     if (readsetIdMap.size() != 3) {
-      throw new RuntimeException("Borked readsetIdMap" + readsetIdMap.toString());
+      throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap.toString());
     }
     return readsetIdMap;
   }
 
+  // TODO : Investigate effect of splitting on "|"
   public static List<Integer> getGenotype(Call call) {
     List<Integer> genoType = new ArrayList<Integer>();
 
