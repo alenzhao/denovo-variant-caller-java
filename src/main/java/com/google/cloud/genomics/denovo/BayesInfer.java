@@ -13,9 +13,13 @@
  */
 package com.google.cloud.genomics.denovo;
 
+
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividuals;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
 import com.google.cloud.genomics.denovo.ReadSummary;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +27,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 
 /*
@@ -159,13 +165,23 @@ public class BayesInfer {
     // Check that the MAP genotype has indeed the highest likelihood
     boolean checkTrioGenoTypeIsDenovo = BayesInfer.checkTrioGenoTypeIsDenovo(maxTrioGenoType);
 
-    System.out.print(",");
-    for (TrioIndividuals individual : readSummaryMap.keySet()) {
-      System.out.print(individual + ":" 
-            + readSummaryMap.get(individual).getCount().toString() + ";");
-    }
-    System.out.print(",maxGenoType=" + maxTrioGenoType);
-    System.out.print(",isDenovo=" + checkTrioGenoTypeIsDenovo);
+    // Convert to Tree Map in order to order the keys 
+    TreeMap<TrioIndividuals,ReadSummary> treeReadSummaryMap = new TreeMap<>();
+    treeReadSummaryMap.putAll(readSummaryMap);
+    
+    String readCounts = Joiner.on(";").join(Iterables.transform(treeReadSummaryMap.entrySet(),
+        new Function<Entry<TrioIndividuals, ReadSummary>, String>() {
+          @Override
+          public String apply(Entry<TrioIndividuals, ReadSummary> e) {
+            return e.getKey().getName() + ":" + e.getValue().getCount().toString();
+          }
+        }));
+    
+    
+    System.out.format("readCounts=%s,maxGenoType=%s,isDenovo=%b",
+        readCounts,
+        maxTrioGenoType.toString(),
+        checkTrioGenoTypeIsDenovo);
     System.out.println();
 
     return checkTrioGenoTypeIsDenovo;
@@ -310,36 +326,39 @@ public class BayesInfer {
       }
     }
   }
+  /*
+   * Bayes net data structure
+   */
+  static class BayesNet {
+    public Map<TrioIndividuals, Node> nodeMap;
+
+    public BayesNet() {
+      nodeMap = new HashMap<TrioIndividuals, Node>();
+    }
+
+    public void addNode(Node node) {
+      nodeMap.put(node.id, node);
+    }
+  }
+  
+  /*
+   * Individual Node in the Bayes Net
+   */
+  static class Node {
+    public TrioIndividuals id;
+    public List<Node> parents;
+    public Map<List<Genotypes>, Double> conditionalProbabilityTable;
+
+    public Node(TrioIndividuals individual, List<Node> parents, Map<List<Genotypes>, Double> map) {
+      this.id = individual;
+      this.parents = parents;
+      this.conditionalProbabilityTable = map;
+    }
+  }
+
+
 }
 
 
-/*
- * Bayes net data structure
- */
-class BayesNet {
-  public Map<TrioIndividuals, Node> nodeMap;
-
-  public BayesNet() {
-    nodeMap = new HashMap<TrioIndividuals, Node>();
-  }
-
-  public void addNode(Node node) {
-    nodeMap.put(node.id, node);
-  }
-}
 
 
-/*
- * Individual Node in the Bayes Net
- */
-class Node {
-  public TrioIndividuals id;
-  public List<Node> parents;
-  public Map<List<Genotypes>, Double> conditionalProbabilityTable;
-
-  public Node(TrioIndividuals individual, List<Node> parents, Map<List<Genotypes>, Double> map) {
-    this.id = individual;
-    this.parents = parents;
-    this.conditionalProbabilityTable = map;
-  }
-}

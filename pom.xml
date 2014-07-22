@@ -68,7 +68,11 @@
       <artifactId>args4j</artifactId>
       <version>${args4j.version}</version>
     </dependency>
-    
+   <dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>17.0</version>
+    </dependency> 
   </dependencies>
   
    <build>

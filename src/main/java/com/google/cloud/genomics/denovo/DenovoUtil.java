@@ -46,8 +46,8 @@ public class DenovoUtil {
   public static final double EPS = 1e-12;
 
   public static enum TrioIndividuals {
-    MOM("MOM"),
     DAD("DAD"),
+    MOM("MOM"),
     CHILD("CHILD");
    
     private String name;
