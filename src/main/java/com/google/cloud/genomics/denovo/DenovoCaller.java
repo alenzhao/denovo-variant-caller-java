@@ -21,6 +21,10 @@ import java.util.Map;
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+
 
 public class DenovoCaller {
 
@@ -75,11 +79,11 @@ public class DenovoCaller {
    * predicate = not( predicate1 or predicate2)
    */
   private boolean checkTrioLogic(Map<TrioIndividual, List<Integer>> trioGenoTypes) {
-    Iterator<Integer> childIterator = trioGenoTypes.get(TrioIndividual.CHILD).iterator();
+    Iterator<Integer> childIterator = trioGenoTypes.get(CHILD).iterator();
     Integer childAllele1 = childIterator.next();
     Integer childAllele2 = childIterator.next();
-    List<Integer> momGenoType = trioGenoTypes.get(TrioIndividual.MOM);
-    List<Integer> dadGenoType = trioGenoTypes.get(TrioIndividual.DAD);
+    List<Integer> momGenoType = trioGenoTypes.get(MOM);
+    List<Integer> dadGenoType = trioGenoTypes.get(DAD);
 
     boolean predicate1 = momGenoType.contains(childAllele1) & dadGenoType.contains(childAllele2);
     boolean predicate2 = momGenoType.contains(childAllele2) & dadGenoType.contains(childAllele1);

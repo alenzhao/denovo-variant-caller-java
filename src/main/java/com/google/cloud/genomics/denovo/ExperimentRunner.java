@@ -21,6 +21,10 @@ import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -90,9 +94,9 @@ public class ExperimentRunner {
     final String TRIO_DATASET_ID = "2315870033780478914";
     
     Map<TrioIndividual,String> individualCallsetNameMap = new HashMap<>();
-    individualCallsetNameMap.put(TrioIndividual.DAD,"NA12877");
-    individualCallsetNameMap.put(TrioIndividual.MOM,"NA12878");
-    individualCallsetNameMap.put(TrioIndividual.CHILD,"NA12879");
+    individualCallsetNameMap.put(DAD,"NA12877");
+    individualCallsetNameMap.put(MOM,"NA12878");
+    individualCallsetNameMap.put(CHILD,"NA12879");
     individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
@@ -205,15 +209,15 @@ public class ExperimentRunner {
 
     // Constant Values Needed for stage 2 experiments
     Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
-    datasetIdMap.put(TrioIndividual.DAD, "4140720988704892492");
-    datasetIdMap.put(TrioIndividual.MOM, "2778297328698497799");
-    datasetIdMap.put(TrioIndividual.CHILD, "6141326619449450766");
+    datasetIdMap.put(DAD, "4140720988704892492");
+    datasetIdMap.put(MOM, "2778297328698497799");
+    datasetIdMap.put(CHILD, "6141326619449450766");
     datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
 
     Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
-    callsetIdMap.put(TrioIndividual.DAD, "NA12877");
-    callsetIdMap.put(TrioIndividual.MOM, "NA12878");
-    callsetIdMap.put(TrioIndividual.CHILD, "NA12879");
+    callsetIdMap.put(DAD, "NA12877");
+    callsetIdMap.put(MOM, "NA12878");
+    callsetIdMap.put(CHILD, "NA12879");
     callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
 
 
