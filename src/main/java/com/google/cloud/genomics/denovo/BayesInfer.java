@@ -14,7 +14,7 @@
 package com.google.cloud.genomics.denovo;
 
 
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividuals;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
 import com.google.cloud.genomics.denovo.ReadSummary;
 import com.google.common.base.Function;
@@ -58,15 +58,15 @@ public class BayesInfer {
 
     // Create a new Bayes net and fill in the params
     bn = new BayesNet();
-    bn.addNode(new Node(TrioIndividuals.DAD, null,
-        createConditionalProbabilityTable(TrioIndividuals.DAD)));
-    bn.addNode(new Node(TrioIndividuals.MOM, null,
-        createConditionalProbabilityTable(TrioIndividuals.MOM)));
+    bn.addNode(new Node(TrioIndividual.DAD, null,
+        createConditionalProbabilityTable(TrioIndividual.DAD)));
+    bn.addNode(new Node(TrioIndividual.MOM, null,
+        createConditionalProbabilityTable(TrioIndividual.MOM)));
     List<Node> childParents = new ArrayList<Node>();
-    childParents.add(bn.nodeMap.get(TrioIndividuals.DAD));
-    childParents.add(bn.nodeMap.get(TrioIndividuals.MOM));
-    bn.addNode(new Node(TrioIndividuals.CHILD, childParents,
-        createConditionalProbabilityTable(TrioIndividuals.CHILD)));
+    childParents.add(bn.nodeMap.get(TrioIndividual.DAD));
+    childParents.add(bn.nodeMap.get(TrioIndividual.MOM));
+    bn.addNode(new Node(TrioIndividual.CHILD, childParents,
+        createConditionalProbabilityTable(TrioIndividual.CHILD)));
 
     // Set the initialization flag
     isInitialized = true;
@@ -81,10 +81,10 @@ public class BayesInfer {
    * @return conditionalProbabilityTable
    */
   private static Map<List<Genotypes>, Double> createConditionalProbabilityTable(
-      TrioIndividuals individual) {
+      TrioIndividual individual) {
 
     Map<List<Genotypes>, Double> conditionalProbabilityTable = new HashMap<>();
-    if (individual == TrioIndividuals.DAD || individual == TrioIndividuals.MOM) {
+    if (individual == TrioIndividual.DAD || individual == TrioIndividual.MOM) {
       for (Genotypes genoType : Genotypes.values()) {
         conditionalProbabilityTable.put(Collections.singletonList(genoType),
             1.0 / Genotypes.values().length);
@@ -149,7 +149,7 @@ public class BayesInfer {
    * Performs inference given a set of mom, dad and child reads to determine the most likely
    * genotype for the trio
    */
-  public static boolean infer(Map<TrioIndividuals, ReadSummary> readSummaryMap,
+  public static boolean infer(Map<TrioIndividual, ReadSummary> readSummaryMap,
       CommandLine cmdLine) {
 
     // Initialize the bayes net if not already done
@@ -157,7 +157,7 @@ public class BayesInfer {
       Init(cmdLine);
     }
     // Calculate Likelihoods of the different reads
-    Map<TrioIndividuals, Map<Genotypes, Double>> individualLogLikelihood =
+    Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood =
         getIndividualLogLikelihood(readSummaryMap);
 
     // Get the trio genotype with the max likelihood
@@ -167,13 +167,13 @@ public class BayesInfer {
     boolean checkTrioGenoTypeIsDenovo = BayesInfer.checkTrioGenoTypeIsDenovo(maxTrioGenoType);
 
     // Convert to Tree Map in order to order the keys
-    TreeMap<TrioIndividuals, ReadSummary> treeReadSummaryMap = new TreeMap<>();
+    TreeMap<TrioIndividual, ReadSummary> treeReadSummaryMap = new TreeMap<>();
     treeReadSummaryMap.putAll(readSummaryMap);
 
     String readCounts = Joiner.on(";").join(Iterables.transform(treeReadSummaryMap.entrySet(),
-        new Function<Entry<TrioIndividuals, ReadSummary>, String>() {
+        new Function<Entry<TrioIndividual, ReadSummary>, String>() {
           @Override
-          public String apply(Entry<TrioIndividuals, ReadSummary> e) {
+          public String apply(Entry<TrioIndividual, ReadSummary> e) {
             return e.getKey().getName() + ":" + e.getValue().getCount().toString();
           }
         }));
@@ -193,10 +193,10 @@ public class BayesInfer {
    * @param readSummaryMap
    * @return individualLogLikelihood
    */
-  private static Map<TrioIndividuals, Map<Genotypes, Double>> getIndividualLogLikelihood(
-      Map<TrioIndividuals, ReadSummary> readSummaryMap) {
-    Map<TrioIndividuals, Map<Genotypes, Double>> individualLogLikelihood = new HashMap<>();
-    for (TrioIndividuals trioIndividual : TrioIndividuals.values()) {
+  private static Map<TrioIndividual, Map<Genotypes, Double>> getIndividualLogLikelihood(
+      Map<TrioIndividual, ReadSummary> readSummaryMap) {
+    Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood = new HashMap<>();
+    for (TrioIndividual trioIndividual : TrioIndividual.values()) {
 
       ReadSummary readSummary = readSummaryMap.get(trioIndividual);
       Map<Genotypes, Double> genoTypeLogLikelihood = getGenoTypeLogLikelihood(readSummary);
@@ -257,7 +257,7 @@ public class BayesInfer {
    * @return maxgenoType
    */
   private static List<Genotypes> getMaxGenoType(
-      Map<TrioIndividuals, Map<Genotypes, Double>> individualLogLikelihood) {
+      Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood) {
     double maxLogLikelihood = Double.NEGATIVE_INFINITY;
     List<Genotypes> maxGenoType = null;
 
@@ -268,16 +268,16 @@ public class BayesInfer {
           double logLikelihood = 0.0;
 
           /* Get likelihood from the reads */
-          logLikelihood += individualLogLikelihood.get(TrioIndividuals.DAD).get(genoTypeDad);
-          logLikelihood += individualLogLikelihood.get(TrioIndividuals.MOM).get(genoTypeMom);
-          logLikelihood += individualLogLikelihood.get(TrioIndividuals.CHILD).get(genoTypeChild);
+          logLikelihood += individualLogLikelihood.get(TrioIndividual.DAD).get(genoTypeDad);
+          logLikelihood += individualLogLikelihood.get(TrioIndividual.MOM).get(genoTypeMom);
+          logLikelihood += individualLogLikelihood.get(TrioIndividual.CHILD).get(genoTypeChild);
 
           /* Get likelihoods from the trio relationship */
-          logLikelihood += bn.nodeMap.get(TrioIndividuals.DAD).conditionalProbabilityTable.get(
+          logLikelihood += bn.nodeMap.get(TrioIndividual.DAD).conditionalProbabilityTable.get(
               Collections.singletonList(genoTypeDad));
-          logLikelihood += bn.nodeMap.get(TrioIndividuals.MOM).conditionalProbabilityTable.get(
+          logLikelihood += bn.nodeMap.get(TrioIndividual.MOM).conditionalProbabilityTable.get(
               Collections.singletonList(genoTypeMom));
-          logLikelihood += bn.nodeMap.get(TrioIndividuals.CHILD).conditionalProbabilityTable.get(
+          logLikelihood += bn.nodeMap.get(TrioIndividual.CHILD).conditionalProbabilityTable.get(
               Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
 
           if (logLikelihood > maxLogLikelihood) {
@@ -318,10 +318,10 @@ public class BayesInfer {
    * Bayes net data structure
    */
   static class BayesNet {
-    public Map<TrioIndividuals, Node> nodeMap;
+    public Map<TrioIndividual, Node> nodeMap;
 
     public BayesNet() {
-      nodeMap = new HashMap<TrioIndividuals, Node>();
+      nodeMap = new HashMap<TrioIndividual, Node>();
     }
 
     public void addNode(Node node) {
@@ -333,11 +333,11 @@ public class BayesInfer {
    * Individual Node in the Bayes Net
    */
   static class Node {
-    public TrioIndividuals id;
+    public TrioIndividual id;
     public List<Node> parents;
     public Map<List<Genotypes>, Double> conditionalProbabilityTable;
 
-    public Node(TrioIndividuals individual, List<Node> parents, Map<List<Genotypes>, Double> map) {
+    public Node(TrioIndividual individual, List<Node> parents, Map<List<Genotypes>, Double> map) {
       this.id = individual;
       this.parents = parents;
       this.conditionalProbabilityTable = map;

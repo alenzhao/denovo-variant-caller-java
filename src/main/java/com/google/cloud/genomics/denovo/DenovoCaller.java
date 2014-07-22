@@ -20,23 +20,23 @@ import java.util.Map;
 
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividuals;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 public class DenovoCaller {
 
-  private Map<TrioIndividuals, Long> lastPosition;
-  private Map<TrioIndividuals, Call> lastCall;
-  private Map<TrioIndividuals, String> dictRelationCallsetId;
+  private Map<TrioIndividual, Long> lastPosition;
+  private Map<TrioIndividual, Call> lastCall;
+  private Map<TrioIndividual, String> dictRelationCallsetId;
 
 
-  public DenovoCaller(Map<TrioIndividuals, String> dictRelationCallsetId) {
+  public DenovoCaller(Map<TrioIndividual, String> dictRelationCallsetId) {
 
     this.dictRelationCallsetId = dictRelationCallsetId;
 
     lastPosition = new HashMap<>();
     lastCall = new HashMap<>();
     // Initialize the data Dicts
-    for (TrioIndividuals trioType : TrioIndividuals.values()) {
+    for (TrioIndividual trioType : TrioIndividual.values()) {
       lastPosition.put(trioType, Long.valueOf(0L));
       lastCall.put(trioType, null);
     }
@@ -45,9 +45,9 @@ public class DenovoCaller {
   /*
    * Returns a trio of calls or 'none' if no suitable trio can be found
    */
-  private Map<TrioIndividuals, Call> getTrioCalls(Long currPosition) {
-    Map<TrioIndividuals, Call> overlappingCalls = new HashMap<>();
-    for (TrioIndividuals trioType : TrioIndividuals.values()) {
+  private Map<TrioIndividual, Call> getTrioCalls(Long currPosition) {
+    Map<TrioIndividual, Call> overlappingCalls = new HashMap<>();
+    for (TrioIndividual trioType : TrioIndividual.values()) {
 
       // Call is not present for this position
       if (lastPosition.get(trioType) < currPosition) {
@@ -74,12 +74,12 @@ public class DenovoCaller {
    * predicate1 = c1 \in {m1,m2} and c2 \in {d1,d2} predicate2 = c2 \in {m1,m2} and c1 \in {d1,d2}
    * predicate = not( predicate1 or predicate2)
    */
-  private boolean checkTrioLogic(Map<TrioIndividuals, List<Integer>> trioGenoTypes) {
-    Iterator<Integer> childIterator = trioGenoTypes.get(TrioIndividuals.CHILD).iterator();
+  private boolean checkTrioLogic(Map<TrioIndividual, List<Integer>> trioGenoTypes) {
+    Iterator<Integer> childIterator = trioGenoTypes.get(TrioIndividual.CHILD).iterator();
     Integer childAllele1 = childIterator.next();
     Integer childAllele2 = childIterator.next();
-    List<Integer> momGenoType = trioGenoTypes.get(TrioIndividuals.MOM);
-    List<Integer> dadGenoType = trioGenoTypes.get(TrioIndividuals.DAD);
+    List<Integer> momGenoType = trioGenoTypes.get(TrioIndividual.MOM);
+    List<Integer> dadGenoType = trioGenoTypes.get(TrioIndividual.DAD);
 
     boolean predicate1 = momGenoType.contains(childAllele1) & dadGenoType.contains(childAllele2);
     boolean predicate2 = momGenoType.contains(childAllele2) & dadGenoType.contains(childAllele1);
@@ -122,7 +122,7 @@ public class DenovoCaller {
 
 
       // Update the lastcall and the last position
-      for (TrioIndividuals trioType : TrioIndividuals.values()) {
+      for (TrioIndividual trioType : TrioIndividual.values()) {
         if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
           lastCall.put(trioType, call);
           if (call.getInfo().containsKey("END")) {
@@ -135,21 +135,21 @@ public class DenovoCaller {
     }
 
     // Get the overlapping calls for this variant position
-    Map<TrioIndividuals, Call> trioCalls = getTrioCalls(variant.getPosition());
+    Map<TrioIndividual, Call> trioCalls = getTrioCalls(variant.getPosition());
 
     if (trioCalls == null) {
       return null;
     }
 
-    Map<TrioIndividuals, List<Integer>> trioGenotypes = new HashMap<>();
-    for (TrioIndividuals trioType : TrioIndividuals.values()) {
+    Map<TrioIndividual, List<Integer>> trioGenotypes = new HashMap<>();
+    for (TrioIndividual trioType : TrioIndividual.values()) {
       List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType));
       trioGenotypes.put(trioType, genoTypeList);
     }
 
     if (checkTrioLogic(trioGenotypes)) {
       StringBuilder detailsBuilder = new StringBuilder();
-      for (TrioIndividuals trioType : TrioIndividuals.values()) {
+      for (TrioIndividual trioType : TrioIndividual.values()) {
         detailsBuilder.append(
             trioType + ":" + trioCalls.get(trioType).getInfo().get("GT").get(0) + ",");
       }

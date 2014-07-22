@@ -45,12 +45,12 @@ public class DenovoUtil {
 
   public static final double EPS = 1e-12;
 
-  public static enum TrioIndividuals {
+  public static enum TrioIndividual {
     DAD("DAD"), MOM("MOM"), CHILD("CHILD");
 
     private String name;
 
-    private TrioIndividuals(String _name) {
+    private TrioIndividual(String _name) {
       name = _name;
     }
 
@@ -159,12 +159,12 @@ public class DenovoUtil {
    * @return Map<String, String>
    * @throws IOException
    */
-  public static Map<TrioIndividuals, String> createReadsetIdMap(
-      Map<TrioIndividuals, String> datasetIdMap, Map<TrioIndividuals, String> callsetIdMap)
+  public static Map<TrioIndividual, String> createReadsetIdMap(
+      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap)
       throws IOException {
-    Map<TrioIndividuals, String> readsetIdMap = new HashMap<>();
+    Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
-    for (TrioIndividuals trioIndividual : datasetIdMap.keySet()) {
+    for (TrioIndividual trioIndividual : datasetIdMap.keySet()) {
       List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual));
 
       for (Readset readset : readsets) {
@@ -173,7 +173,7 @@ public class DenovoUtil {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
-        for (TrioIndividuals individual : callsetIdMap.keySet()) {
+        for (TrioIndividual individual : callsetIdMap.keySet()) {
           if (callsetIdMap.get(individual).equals(sampleName)) {
             readsetIdMap.put(individual, readsetId);
           }
