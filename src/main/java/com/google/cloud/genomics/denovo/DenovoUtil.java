@@ -42,14 +42,12 @@ import com.google.api.services.genomics.model.SearchVariantsRequest;
  * Utility functions shared by other classes in Denovo project
  */
 public class DenovoUtil {
-  
+
   public static final double EPS = 1e-12;
 
   public static enum TrioIndividuals {
-    DAD("DAD"),
-    MOM("MOM"),
-    CHILD("CHILD");
-   
+    DAD("DAD"), MOM("MOM"), CHILD("CHILD");
+
     private String name;
 
     private TrioIndividuals(String _name) {
@@ -60,7 +58,7 @@ public class DenovoUtil {
       return name;
     }
 
-  } 
+  }
   public static enum Genotypes {
     AA("AA"),
     AC("AC"),
@@ -74,15 +72,15 @@ public class DenovoUtil {
     GG("GG");
 
     private final String alleles;
-    
+
     private Genotypes(String _alleles) {
       alleles = _alleles;
     }
-    
-    public final String getAlleles() { 
+
+    public final String getAlleles() {
       return alleles;
     }
-    
+
   }
 
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
@@ -161,8 +159,9 @@ public class DenovoUtil {
    * @return Map<String, String>
    * @throws IOException
    */
-  public static Map<TrioIndividuals, String> createReadsetIdMap(Map<TrioIndividuals, String> datasetIdMap,
-      Map<TrioIndividuals, String> callsetIdMap) throws IOException {
+  public static Map<TrioIndividuals, String> createReadsetIdMap(
+      Map<TrioIndividuals, String> datasetIdMap, Map<TrioIndividuals, String> callsetIdMap)
+      throws IOException {
     Map<TrioIndividuals, String> readsetIdMap = new HashMap<>();
 
     for (TrioIndividuals trioIndividual : datasetIdMap.keySet()) {
