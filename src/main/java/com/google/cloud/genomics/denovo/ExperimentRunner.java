@@ -19,6 +19,7 @@ import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividuals;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -86,9 +87,12 @@ public class ExperimentRunner {
 
     // Define Experiment Specific Constant Values
     final String TRIO_DATASET_ID = "2315870033780478914";
-    final String DAD_CALLSET_NAME = "NA12877";
-    final String MOM_CALLSET_NAME = "NA12878";
-    final String CHILD_CALLSET_NAME = "NA12879";
+    
+    Map<TrioIndividuals,String> individualCallsetNameMap = new HashMap<>();
+    individualCallsetNameMap.put(TrioIndividuals.DAD,"NA12877");
+    individualCallsetNameMap.put(TrioIndividuals.MOM,"NA12878");
+    individualCallsetNameMap.put(TrioIndividuals.CHILD,"NA12879");
+    individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
@@ -107,7 +111,7 @@ public class ExperimentRunner {
       List<ContigBound> contigBounds;
       List<Callset> callsets;
       List<VariantContigStream> variantContigStreams = new ArrayList<VariantContigStream>();
-      Map<String, String> dictRelationCallsetId = new HashMap<>();
+      Map<TrioIndividuals, String> dictRelationCallsetId = new HashMap<>();
 
       /* Get a list of all the datasets */
       allDatasetsInProject = DenovoUtil.getAllDatasets();
@@ -117,25 +121,19 @@ public class ExperimentRunner {
 
       // Create a family person type to callset id map
       for (Callset callset : callsets) {
-        switch (callset.getName()) {
-          case DAD_CALLSET_NAME:
-            dictRelationCallsetId.put("DAD", callset.getId());
+        String callsetName = callset.getName(); 
+        for(TrioIndividuals individual : TrioIndividuals.values() ) {
+          if(callsetName.equals(individualCallsetNameMap.get(individual))) {
+            dictRelationCallsetId.put(individual,callset.getId());
             break;
-          case MOM_CALLSET_NAME:
-            dictRelationCallsetId.put("MOM", callset.getId());
-            break;
-          case CHILD_CALLSET_NAME:
-            dictRelationCallsetId.put("CHILD", callset.getId());
-            break;
-          default:
-            throw new RuntimeException("Unknown trio name");
+          }
         }
       }
 
       // Check that the mapping has the correct keys
       // One time Sanity check ; could be replaced with testing
-      if (!new HashSet<String>(dictRelationCallsetId.keySet()).equals(
-          new HashSet<String>(Arrays.asList("DAD", "MOM", "CHILD")))) {
+      if (!new HashSet<TrioIndividuals>(dictRelationCallsetId.keySet()).equals(
+          new HashSet<TrioIndividuals>(Arrays.asList(TrioIndividuals.values())))) {
         throw new RuntimeException("Callsets not found");
       }
 
@@ -205,16 +203,16 @@ public class ExperimentRunner {
     System.out.println("---- Starting Stage2 Bayesian Caller -----");
 
     // Constant Values Needed for stage 2 experiments
-    Map<String, String> datasetIdMap = new HashMap<String, String>();
-    datasetIdMap.put("DAD", "4140720988704892492");
-    datasetIdMap.put("MOM", "2778297328698497799");
-    datasetIdMap.put("CHILD", "6141326619449450766");
+    Map<TrioIndividuals, String> datasetIdMap = new HashMap<>();
+    datasetIdMap.put(TrioIndividuals.DAD, "4140720988704892492");
+    datasetIdMap.put(TrioIndividuals.MOM, "2778297328698497799");
+    datasetIdMap.put(TrioIndividuals.CHILD, "6141326619449450766");
     datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
 
-    Map<String, String> callsetIdMap = new HashMap<String, String>();
-    callsetIdMap.put("DAD", "NA12877");
-    callsetIdMap.put("MOM", "NA12878");
-    callsetIdMap.put("CHILD", "NA12879");
+    Map<TrioIndividuals, String> callsetIdMap = new HashMap<>();
+    callsetIdMap.put(TrioIndividuals.DAD, "NA12877");
+    callsetIdMap.put(TrioIndividuals.MOM, "NA12878");
+    callsetIdMap.put(TrioIndividuals.CHILD, "NA12879");
     callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
 
 
@@ -223,7 +221,7 @@ public class ExperimentRunner {
     final File exp1CallsFile = new File(outdir, candidatesFile);
 
     /* Find the readset Ids associated with the datasets */
-    Map<String, String> readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
+    Map<TrioIndividuals, String> readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
 
     System.out.println();
     System.out.println("Readset Ids Found");
@@ -242,9 +240,10 @@ public class ExperimentRunner {
 
 
         /* Get reads for the current position */
-        Map<String, List<Read>> readMap = new HashMap<String, List<Read>>();
-        for (String trioIndividual : readsetIdMap.keySet()) {
-          List<Read> reads = DenovoUtil.getReads(readsetIdMap.get(trioIndividual), chromosome,
+        Map<TrioIndividuals, List<Read>> readMap = new HashMap<>();
+        for (TrioIndividuals trioIndividual : TrioIndividuals.values()) {
+          List<Read> reads = DenovoUtil
+              .getReads(readsetIdMap.get(trioIndividual), chromosome,
               candidatePosition, candidatePosition);
           readMap.put(trioIndividual, reads);
         }
@@ -252,8 +251,8 @@ public class ExperimentRunner {
         /*
          * Extract the relevant bases for the currrent position
          */
-        Map<String, ReadSummary> readSummaryMap = new HashMap<String, ReadSummary>();
-        for (String trioIndividual : readsetIdMap.keySet()) {
+        Map<TrioIndividuals, ReadSummary> readSummaryMap = new HashMap<>();
+        for (TrioIndividuals trioIndividual : TrioIndividuals.values()) {
           readSummaryMap.put(trioIndividual,
               new ReadSummary(readMap.get(trioIndividual), candidatePosition));
         }

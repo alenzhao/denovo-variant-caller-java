@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 
 /**
- * Command line options handler for GenomicsSample
+ * Command line options handler for GenomicsExperiment
  */
 class CommandLine {
 

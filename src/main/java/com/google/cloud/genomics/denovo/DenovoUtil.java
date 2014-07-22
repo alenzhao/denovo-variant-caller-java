@@ -42,6 +42,49 @@ import com.google.api.services.genomics.model.SearchVariantsRequest;
  * Utility functions shared by other classes in Denovo project
  */
 public class DenovoUtil {
+  
+  public static final double EPS = 1e-12;
+
+  public static enum TrioIndividuals {
+    MOM("MOM"),
+    DAD("DAD"),
+    CHILD("CHILD");
+   
+    private String name;
+
+    private TrioIndividuals(String _name) {
+      name = _name;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+  } 
+  public static enum Genotypes {
+    AA("AA"),
+    AC("AC"),
+    AT("AT"),
+    AG("AG"),
+    CC("CC"),
+    CT("CT"),
+    CG("CG"),
+    TT("TT"),
+    TG("TG"),
+    GG("GG");
+
+    private final String alleles;
+    
+    private Genotypes(String _alleles) {
+      alleles = _alleles;
+    }
+    
+    public final String getAlleles() { 
+      return alleles;
+    }
+    
+  }
+
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
       ContigBound contig,
       long startPos,
@@ -118,11 +161,11 @@ public class DenovoUtil {
    * @return Map<String, String>
    * @throws IOException
    */
-  public static Map<String, String> createReadsetIdMap(Map<String, String> datasetIdMap,
-      Map<String, String> callsetIdMap) throws IOException {
-    Map<String, String> readsetIdMap = new HashMap<String, String>();
+  public static Map<TrioIndividuals, String> createReadsetIdMap(Map<TrioIndividuals, String> datasetIdMap,
+      Map<TrioIndividuals, String> callsetIdMap) throws IOException {
+    Map<TrioIndividuals, String> readsetIdMap = new HashMap<>();
 
-    for (String trioIndividual : datasetIdMap.keySet()) {
+    for (TrioIndividuals trioIndividual : datasetIdMap.keySet()) {
       List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual));
 
       for (Readset readset : readsets) {
@@ -131,7 +174,7 @@ public class DenovoUtil {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
-        for (String individual : callsetIdMap.keySet()) {
+        for (TrioIndividuals individual : callsetIdMap.keySet()) {
           if (callsetIdMap.get(individual).equals(sampleName)) {
             readsetIdMap.put(individual, readsetId);
           }
