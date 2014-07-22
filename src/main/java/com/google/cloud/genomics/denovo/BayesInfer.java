@@ -78,67 +78,62 @@ public class BayesInfer {
       TrioIndividuals individual) {
 
     Map<List<Genotypes>, Double> conditionalProbabilityTable = new HashMap<>();
-    switch (individual) {
-      case DAD: // falls through
-      case MOM:
-        for (Genotypes genoType : Genotypes.values()) {
-          conditionalProbabilityTable.put(Collections.singletonList(genoType),
-              1.0 / Genotypes.values().length);
-        }
-        break;
-      case CHILD:
-        // Loops over parent Genotypes
-        for (Genotypes genoTypeDad : Genotypes.values()) {
-          for (Genotypes genoTypeMom : Genotypes.values()) {
+    if (individual == TrioIndividuals.DAD || individual == TrioIndividuals.MOM) {
+      for (Genotypes genoType : Genotypes.values()) {
+        conditionalProbabilityTable.put(Collections.singletonList(genoType),
+            1.0 / Genotypes.values().length);
+      }
+    } else { // individual == TrioIndividuals.CHILD
 
-            int validInheritanceCases = 0;
-            // Initial pass
-            for (Genotypes genoTypeChild : Genotypes.values()) {
-              double prob;
-              String dadAlleles = genoTypeDad.getAlleles();
-              String momAlleles = genoTypeMom.getAlleles();
-              String childAlleles = genoTypeChild.getAlleles();
-              String c1 = childAlleles.substring(0, 1);
-              String c2 = childAlleles.substring(1, 2);
-              boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
-              boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
-              boolean predicate3 = (predicate1 | predicate2);
-              if (predicate3) {
-                prob = 1.0;
-                validInheritanceCases++;
-              } else {
-                prob = 0.0;
-              }
-              List<Genotypes> cptKey = Arrays.asList(genoTypeDad,genoTypeMom,genoTypeChild); 
-              conditionalProbabilityTable.put(cptKey, prob);
+      // Loops over parent Genotypes
+      for (Genotypes genoTypeDad : Genotypes.values()) {
+        for (Genotypes genoTypeMom : Genotypes.values()) {
+
+          int validInheritanceCases = 0;
+          // Initial pass
+          for (Genotypes genoTypeChild : Genotypes.values()) {
+            double prob;
+            String dadAlleles = genoTypeDad.getAlleles();
+            String momAlleles = genoTypeMom.getAlleles();
+            String childAlleles = genoTypeChild.getAlleles();
+            String c1 = childAlleles.substring(0, 1);
+            String c2 = childAlleles.substring(1, 2);
+            boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
+            boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
+            boolean predicate3 = predicate1 | predicate2;
+            if (predicate3) {
+              prob = 1.0;
+              validInheritanceCases++;
+            } else {
+              prob = 0.0;
             }
-            // Secondary Pass to normalize prob values
-            for (Genotypes genoTypeChild : Genotypes.values()) {
-              List<Genotypes> cptKey = Arrays.asList(genoTypeDad,genoTypeMom,genoTypeChild);
-              if (conditionalProbabilityTable.get(cptKey) == 0.0) {
-                conditionalProbabilityTable.put(cptKey, denovoMutationRate);
-              } else {
-                conditionalProbabilityTable.put(cptKey, 1.0 / validInheritanceCases
-                    - denovoMutationRate * (Genotypes.values().length - validInheritanceCases)
-                    / (validInheritanceCases));
-              }
-            }
-            // Sanity check - probabilities should add up to 1.0 (almost)
-            double totProb = 0.0;
-            for (Genotypes genoTypeChild : Genotypes.values()) {
-              List<Genotypes> cptKey = Arrays.asList(genoTypeDad,genoTypeMom,genoTypeChild);
-              totProb += conditionalProbabilityTable.get(cptKey);
-            }
-            if (Math.abs(totProb - 1.0) > DenovoUtil.EPS) {
-              throw new RuntimeException(
-                  "cpt probabilities not adding up : " + String.valueOf(totProb));
-            }
+            List<Genotypes> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
+            conditionalProbabilityTable.put(cptKey, prob);
+          }
+          // Secondary Pass to normalize prob values
+          for (Genotypes genoTypeChild : Genotypes.values()) {
+            List<Genotypes> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
+
+            boolean isNotInheritenceCase = -DenovoUtil.EPS <= conditionalProbabilityTable.get(cptKey)
+                && conditionalProbabilityTable.get(cptKey) <= DenovoUtil.EPS;  
+            conditionalProbabilityTable.put(cptKey,isNotInheritenceCase ? 
+                    denovoMutationRate : 
+                    1.0 / validInheritanceCases - denovoMutationRate *
+                    (Genotypes.values().length - validInheritanceCases) / (validInheritanceCases));
+          }
+
+          // Sanity check - probabilities should add up to 1.0 (almost)
+          double totProb = 0.0;
+          for (Genotypes genoTypeChild : Genotypes.values()) {
+            List<Genotypes> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
+            totProb += conditionalProbabilityTable.get(cptKey);
+          }
+          if (Math.abs(totProb - 1.0) > DenovoUtil.EPS) {
+            throw new IllegalStateException(
+                "cpt probabilities not adding up : " + String.valueOf(totProb));
           }
         }
-        break;
-      default:
-        throw new RuntimeException("Unknown CPT id : " + individual.toString());
-
+      }
     }
     return conditionalProbabilityTable;
   }
