@@ -180,15 +180,17 @@ public class DenovoCaller {
 	 */
 	private boolean passesQualityFilter(Call call, String qualityKey) {
 
-		Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+		String qualityValue = call.getInfo().get(qualityKey).get(0);
+		
+		// Missing Quality Value
+		if(qualityValue.equals(".")){
+		  return false;
+		}
 
-		try {
-			Float parseFloat = Float.parseFloat(call.getInfo().get(qualityKey).get(0));
-			if (parseFloat < threshold) {
-				return false;
-			}
-		} catch(NumberFormatException e) {
-			return false;
+	    Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+		Float parseFloat = Float.parseFloat(qualityValue);
+		if (parseFloat < threshold) {
+		  return false;
 		}
 		return true;
 	}
