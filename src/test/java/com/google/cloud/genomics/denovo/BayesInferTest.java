@@ -10,36 +10,38 @@ import com.google.api.services.genomics.Genomics;
 
 public class BayesInferTest {
 
-	private static Genomics genomics;
-	private static ExperimentRunner expRunner;
-	
-	@BeforeClass
-	public static void setUp() throws Exception {
-		String argsString = "stage1 --candidates_file candidate.calls.tmp "+
-				"--client_secrets_filename /home/subhodeep/Downloads/client_secrets.json "+
-				"--require_all_scopes";
-		String[] args = argsString.split(" ");
-		
-        GenomicsExperiment.cmdLine = new CommandLine();
-		GenomicsExperiment.cmdLine.setArgs(args);    	
-		genomics = GenomicsExperiment.buildGenomics(GenomicsExperiment.cmdLine).get();
+  private static Genomics genomics;
+  private static ExperimentRunner expRunner;
 
-		expRunner = new ExperimentRunner(genomics,GenomicsExperiment.cmdLine);
-	}
+  @BeforeClass
+  public static void setUp() throws Exception {
 
-	@AfterClass
-	public static void tearDown() throws Exception {
-	}
+    String homeDir = System.getProperty("user.home");
+    
+    String argsString = "stage1 --candidates_file candidate.calls.tmp "
+        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json "
+        + "--require_all_scopes";
+    String[] args = argsString.split(" ");
 
-	@Test 
-	public void testGenomicsIsNotNull() {
-		assertTrue(genomics != null);
-	}
+    GenomicsExperiment.cmdLine = new CommandLine();
+    GenomicsExperiment.cmdLine.setArgs(args);
+    genomics = GenomicsExperiment.buildGenomics(GenomicsExperiment.cmdLine).get();
 
-	@Test 
-	public void testExpRunnerIsNotNull() {
-		assertTrue(expRunner != null);
-	}
+    expRunner = new ExperimentRunner(genomics, GenomicsExperiment.cmdLine);
+  }
 
-	
+  @AfterClass
+  public static void tearDown() throws Exception {}
+
+  @Test
+  public void testGenomicsIsNotNull() {
+    assertTrue(genomics != null);
+  }
+
+  @Test
+  public void testExpRunnerIsNotNull() {
+    assertTrue(expRunner != null);
+  }
+
+
 }
