@@ -83,35 +83,27 @@ public class DenovoUtil {
 
   private static SearchReadsRequest createSearchReadsRequest(String readsetId,
       String chromosomeName, long startPos, long endPos) {
-    // Init searchRequest obj
-    SearchReadsRequest searchReadsRequest = new SearchReadsRequest();
-    searchReadsRequest.setReadsetIds(Collections.singletonList(readsetId))
+
+    return new SearchReadsRequest()
+        .setReadsetIds(Collections.singletonList(readsetId))
     	.setSequenceName(chromosomeName)
         .setSequenceStart(BigInteger.valueOf(startPos))
         .setSequenceEnd(BigInteger.valueOf(endPos));
-
-    return searchReadsRequest;
   }
 
   private static SearchReadsetsRequest createSearchReadsetsRequest(String datasetId) {
 
     // Init searchRequest obj
-    SearchReadsetsRequest searchReadsetsRequest = new SearchReadsetsRequest();
-    searchReadsetsRequest.setDatasetIds(Collections.singletonList(datasetId));
-
-    return searchReadsetsRequest;
+    return new SearchReadsetsRequest()
+        .setDatasetIds(Collections.singletonList(datasetId));
 
   }
 
   private static SearchCallsetsRequest createSearchCallsetsRequest(String datasetId) {
 
     // Init searchRequest obj
-    SearchCallsetsRequest searchCallsetsRequest = new SearchCallsetsRequest();
-
-    // pack the dataset Id into a list
-    searchCallsetsRequest.setDatasetIds(Collections.singletonList(datasetId));
-
-    return searchCallsetsRequest;
+    return new SearchCallsetsRequest()
+        .setDatasetIds(Collections.singletonList(datasetId));
   }
 
   /**
