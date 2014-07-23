@@ -13,15 +13,18 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
@@ -62,12 +65,11 @@ public class DenovoCaller {
 
       // Call is not diploid
       Call call = lastCall.get(trioType);
-      List<Integer> genotype = DenovoUtil.getGenotype(call);
-      if (genotype == null || genotype.size() != 2) {
+      Optional<List<Integer>> genotypeOption = DenovoUtil.getGenotype(call);
+      if (!genotypeOption.isPresent() || genotypeOption.get().size() != 2) {
         return Optional.absent();
       }
       overlappingCalls.put(trioType, call);
-
     }
     return Optional.of(overlappingCalls);
   }
@@ -80,12 +82,13 @@ public class DenovoCaller {
    * predicate1 = c1 \in {m1,m2} and c2 \in {d1,d2} predicate2 = c2 \in {m1,m2} and c1 \in {d1,d2}
    * predicate = not( predicate1 or predicate2)
    */
-  private boolean checkTrioLogic(Map<TrioIndividual, List<Integer>> trioGenoTypes) {
-    Iterator<Integer> childIterator = trioGenoTypes.get(CHILD).iterator();
-    Integer childAllele1 = childIterator.next();
-    Integer childAllele2 = childIterator.next();
-    List<Integer> momGenoType = trioGenoTypes.get(MOM);
-    List<Integer> dadGenoType = trioGenoTypes.get(DAD);
+  private boolean checkTrioLogic(Map<TrioIndividual, DiploidGenotype> trioGenoTypes) {
+    DiploidGenotype childGenotype = trioGenoTypes.get(CHILD);
+	Integer childAllele1 = childGenotype .getFirstAllele();
+    Integer childAllele2 = childGenotype.getSecondAllele();
+    
+    List<Integer> momGenoType = trioGenoTypes.get(MOM).getAllAlleles();
+    List<Integer> dadGenoType = trioGenoTypes.get(DAD).getAllAlleles();
 
     boolean predicate1 = momGenoType.contains(childAllele1) & dadGenoType.contains(childAllele2);
     boolean predicate2 = momGenoType.contains(childAllele2) & dadGenoType.contains(childAllele1);
@@ -147,26 +150,51 @@ public class DenovoCaller {
       return Optional.absent();
     } 
     
-    Map<TrioIndividual, Call> trioCalls = trioCallsOptional.get();	
+    final Map<TrioIndividual, Call> trioCalls = trioCallsOptional.get();	
     
-    Map<TrioIndividual, List<Integer>> trioGenotypes = new HashMap<>();
+    Map<TrioIndividual, DiploidGenotype> trioGenotypes = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
-      List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType));
-      trioGenotypes.put(trioType, genoTypeList);
+      List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType)).get();
+      trioGenotypes.put(trioType, new DiploidGenotype(genoTypeList));
     }
 
     if (checkTrioLogic(trioGenotypes)) {
-      StringBuilder detailsBuilder = new StringBuilder();
-      for (TrioIndividual trioType : TrioIndividual.values()) {
-        detailsBuilder.append(
-            trioType + ":" + trioCalls.get(trioType).getInfo().get("GT").get(0) + ",");
-      }
-      detailsBuilder.deleteCharAt(detailsBuilder.length() - 1);
-      String details = detailsBuilder.toString();
+      String details =  Joiner.on(",").join(Iterables.transform(
+    		  Arrays.asList(TrioIndividual.values()),
+    		  new Function<TrioIndividual,String>() {
+				@Override
+				public String apply(TrioIndividual trioType) {
+					return String.format("%s:%s",trioType.name(),
+							trioCalls.get(trioType).getInfo().get("GT").get(0));
+				}
+      	}));
 
       return Optional.of(new DenovoResult(details));
     } else {
       return Optional.absent();	
     }
   }
+  public static class DiploidGenotype {
+	  private List<Integer> genotype;
+	  public DiploidGenotype(List<Integer> genotype) {
+		  if (genotype.size() != 2) {
+			  throw new IllegalStateException("Expected Diploid Genotype ; got"
+					  +genotype.toString());
+		  }
+		  this.genotype = genotype;
+	  }
+	  /*
+	   * Get first or second allele (0/1)
+	   */
+	  public Integer getFirstAllele() {
+		  return genotype.get(0);
+	  }
+	  public Integer getSecondAllele() {
+		  return genotype.get(1);
+	  }
+	  public List<Integer> getAllAlleles() {
+		  return genotype;
+	  }
+  }
+  
 }

@@ -37,6 +37,7 @@ import com.google.api.services.genomics.model.SearchReadsResponse;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
+import com.google.common.base.Optional;
 
 /*
  * Utility functions shared by other classes in Denovo project
@@ -158,7 +159,7 @@ public class DenovoUtil {
   }
 
   // TODO : Investigate effect of splitting on "|"
-  public static List<Integer> getGenotype(Call call) {
+  public static Optional<List<Integer>> getGenotype(Call call) {
     List<Integer> genoType = new ArrayList<Integer>();
 
     String genoTypeString = call.getInfo().get("GT").get(0);
@@ -166,15 +167,15 @@ public class DenovoUtil {
     if (genoTypeString.contains("/")) {
       splitChar = "/";
     } else if (genoTypeString.contains("|")) {
-      splitChar = "|";
+      splitChar = "\\|";
     } else {
-      return null;
+      return Optional.absent();
     }
 
     for (String allele : genoTypeString.split(splitChar)) {
       genoType.add(Integer.valueOf(allele));
     }
-    return genoType;
+    return Optional.of(genoType);
 
   }
 
@@ -276,6 +277,4 @@ public class DenovoUtil {
       theDir.mkdir();
     }
   }
-
-
 }
