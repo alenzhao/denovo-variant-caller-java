@@ -115,11 +115,11 @@ public class GenomicsExperiment {
     cmdLine = new CommandLine();
 
     try {
-    	// Parse the command line
-        cmdLine.setArgs(args);    	
-    	Genomics genomics = buildGenomics(cmdLine).get();
+      // Parse the command line
+      cmdLine.setArgs(args);
+      Genomics genomics = buildGenomics(cmdLine).get();
 
-      expRunner = new ExperimentRunner(genomics,cmdLine);
+      expRunner = new ExperimentRunner(genomics, cmdLine);
 
       // Entry point for all Experiments
       executeExperiment(cmdLine.stageId);
@@ -128,40 +128,40 @@ public class GenomicsExperiment {
       cmdLine.printHelp(e.getMessage() + "\n", System.err);
       e.printStackTrace();
       return;
-    } 
+    }
   }
 
-public static Optional<Genomics> buildGenomics(CommandLine cmdLine) throws CmdLineException,
-		GeneralSecurityException, IOException, Exception {
+  public static Optional<Genomics> buildGenomics(CommandLine cmdLine) throws CmdLineException,
+      GeneralSecurityException, IOException, Exception {
 
-      // Authorization
-      List<String> scopes = Lists.newArrayList();
-      scopes.add(GENOMICS_SCOPE);
-      if (cmdLine.requireAllScopes) {
-        scopes.add(DEVSTORAGE_SCOPE);
-      }
+    // Authorization
+    List<String> scopes = Lists.newArrayList();
+    scopes.add(GENOMICS_SCOPE);
+    if (cmdLine.requireAllScopes) {
+      scopes.add(DEVSTORAGE_SCOPE);
+    }
 
-      httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-      dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR);
-      Credential credential = authorize(scopes);
-      if (credential == null) {
-        return Optional.absent();
-      }
+    httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+    dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR);
+    Credential credential = authorize(scopes);
+    if (credential == null) {
+      return Optional.absent();
+    }
 
-      try {
-        credential.refreshToken();
-      } catch (NullPointerException e) {
-        System.err.append(
-            "Couldn't refresh the OAuth token. Are you using a different client secrets file?\n"
-            + "If you want to use a different file, first clear your stored credentials: "
-            + "http://google-genomics.readthedocs.org/en/latest/api-client-java/resetting_auth.html \n\n");
-        return Optional.absent();
-      }
+    try {
+      credential.refreshToken();
+    } catch (NullPointerException e) {
+      System.err.append(
+          "Couldn't refresh the OAuth token. Are you using a different client secrets file?\n"
+          + "If you want to use a different file, first clear your stored credentials: "
+          + "http://google-genomics.readthedocs.org/en/latest/api-client-java/resetting_auth.html \n\n");
+      return Optional.absent();
+    }
 
-      Genomics genomics = buildService(credential);
+    Genomics genomics = buildService(credential);
 
-      return Optional.of(genomics);
-}
+    return Optional.of(genomics);
+  }
 
   private static void executeExperiment(String stage_id) throws IllegalAccessException,
       IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
