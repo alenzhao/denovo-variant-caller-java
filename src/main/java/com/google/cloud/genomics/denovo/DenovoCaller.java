@@ -91,11 +91,11 @@ public class DenovoCaller {
     List<Integer> momGenoType = trioGenoTypes.get(MOM).getAllAlleles();
     List<Integer> dadGenoType = trioGenoTypes.get(DAD).getAllAlleles();
 
-    boolean predicate1 = momGenoType.contains(childAllele1) & dadGenoType.contains(childAllele2);
-    boolean predicate2 = momGenoType.contains(childAllele2) & dadGenoType.contains(childAllele1);
-    boolean predicate = !(predicate1 | predicate2);
-
-    return predicate;
+    boolean childAllelesinMomAndDad = momGenoType.contains(childAllele1) && 
+        dadGenoType.contains(childAllele2);
+    boolean childAllelesinMomAndDadMirrored = momGenoType.contains(childAllele2) && 
+        dadGenoType.contains(childAllele1);
+    return !(childAllelesinMomAndDad || childAllelesinMomAndDadMirrored);
   }
 
   /*
@@ -139,21 +139,15 @@ public class DenovoCaller {
       trioGenotypes.put(trioType, new DiploidGenotype(genoTypeList));
     }
 
-    if (checkTrioLogic(trioGenotypes)) {
-      String details =  Joiner.on(",").join(Iterables.transform(
-    		  Arrays.asList(TrioIndividual.values()),
-    		  new Function<TrioIndividual,String>() {
-				@Override
-				public String apply(TrioIndividual trioType) {
-					return String.format("%s:%s",trioType.name(),
-							trioCalls.get(trioType).getInfo().get("GT").get(0));
-				}
-      	}));
-
-      return Optional.of(details);
-    } else {
-      return Optional.absent();	
-    }
+    return checkTrioLogic(trioGenotypes) ? Optional.of( Joiner.on(",").join(Iterables.transform(
+        Arrays.asList(TrioIndividual.values()),
+        new Function<TrioIndividual,String>() {
+          @Override
+          public String apply(TrioIndividual trioType) {
+            return String.format("%s:%s",trioType.name(),
+                trioCalls.get(trioType).getInfo().get("GT").get(0));
+          }
+        }))) :  Optional.<String>absent(); 
   }
 
 	/*
