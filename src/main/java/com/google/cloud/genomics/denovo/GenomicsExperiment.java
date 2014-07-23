@@ -27,6 +27,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Lists;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.genomics.Genomics;
+import com.google.common.base.Optional;
 
 import org.kohsuke.args4j.CmdLineException;
 
@@ -37,6 +38,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.GeneralSecurityException;
 import java.util.List;
 
 
@@ -57,8 +59,8 @@ public class GenomicsExperiment {
 
   private static FileDataStoreFactory dataStoreFactory;
   private static NetHttpTransport httpTransport;
-  private static CommandLine cmdLine;
-  private static ExperimentRunner expRunner;
+  static CommandLine cmdLine;
+  static ExperimentRunner expRunner;
 
   private static GoogleClientSecrets loadClientSecrets(String clientSecretsFilename) {
     File f = new File(clientSecretsFilename);
@@ -113,8 +115,24 @@ public class GenomicsExperiment {
     cmdLine = new CommandLine();
 
     try {
-      // Parse the command line
-      cmdLine.setArgs(args);
+    	// Parse the command line
+        cmdLine.setArgs(args);    	
+    	Genomics genomics = buildGenomics(cmdLine).get();
+
+      expRunner = new ExperimentRunner(genomics,cmdLine);
+
+      // Entry point for all Experiments
+      executeExperiment(cmdLine.stageId);
+
+    } catch (Exception e) {
+      cmdLine.printHelp(e.getMessage() + "\n", System.err);
+      e.printStackTrace();
+      return;
+    } 
+  }
+
+public static Optional<Genomics> buildGenomics(CommandLine cmdLine) throws CmdLineException,
+		GeneralSecurityException, IOException, Exception {
 
       // Authorization
       List<String> scopes = Lists.newArrayList();
@@ -127,7 +145,7 @@ public class GenomicsExperiment {
       dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR);
       Credential credential = authorize(scopes);
       if (credential == null) {
-        return;
+        return Optional.absent();
       }
 
       try {
@@ -137,22 +155,13 @@ public class GenomicsExperiment {
             "Couldn't refresh the OAuth token. Are you using a different client secrets file?\n"
             + "If you want to use a different file, first clear your stored credentials: "
             + "http://google-genomics.readthedocs.org/en/latest/api-client-java/resetting_auth.html \n\n");
-        return;
+        return Optional.absent();
       }
 
       Genomics genomics = buildService(credential);
-      expRunner = new ExperimentRunner(genomics, cmdLine);
 
-
-      // Entry point for all Experiments
-      executeExperiment(cmdLine.stageId);
-
-    } catch (IllegalArgumentException | CmdLineException e) {
-      cmdLine.printHelp(e.getMessage() + "\n", System.err);
-    } catch (Throwable t) {
-      t.printStackTrace();
-    }
-  }
+      return Optional.of(genomics);
+}
 
   private static void executeExperiment(String stage_id) throws IllegalAccessException,
       IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
