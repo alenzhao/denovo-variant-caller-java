@@ -106,19 +106,17 @@ public class DenovoCaller {
 
     // Get all the calls for that variant
     for (Call call : variant.getCalls()) {
+      if (passesAllQualityFilters(call)) {
 
-      if(!passesAllQualityFilters(call)) {
-    	  continue;
-      }
-      
-      // Update the lastcall and the last position
-      for (TrioIndividual trioType : TrioIndividual.values()) {
-        if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
-          lastCall.put(trioType, call);
-          if (call.getInfo().containsKey("END")) {
-            lastPosition.put(trioType, Long.valueOf(call.getInfo().get("END").get(0)));
-          } else {
-            lastPosition.put(trioType, variant.getPosition());
+        // Update the lastcall and the last position
+        for (TrioIndividual trioType : TrioIndividual.values()) {
+          if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
+            lastCall.put(trioType, call);
+            if (call.getInfo().containsKey("END")) {
+              lastPosition.put(trioType, Long.valueOf(call.getInfo().get("END").get(0)));
+            } else {
+              lastPosition.put(trioType, variant.getPosition());
+            }
           }
         }
       }
