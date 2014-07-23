@@ -21,6 +21,8 @@ import java.util.Map;
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Optional;
+
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
@@ -49,25 +51,25 @@ public class DenovoCaller {
   /*
    * Returns a trio of calls or 'none' if no suitable trio can be found
    */
-  private Map<TrioIndividual, Call> getTrioCalls(Long currPosition) {
+  private Optional<Map<TrioIndividual, Call>> getTrioCalls(Long currPosition) {
     Map<TrioIndividual, Call> overlappingCalls = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
 
       // Call is not present for this position
       if (lastPosition.get(trioType) < currPosition) {
-        return null;
+        return Optional.absent();
       }
 
       // Call is not diploid
       Call call = lastCall.get(trioType);
       List<Integer> genotype = DenovoUtil.getGenotype(call);
       if (genotype == null || genotype.size() != 2) {
-        return null;
+        return Optional.absent();
       }
       overlappingCalls.put(trioType, call);
 
     }
-    return overlappingCalls;
+    return Optional.of(overlappingCalls);
   }
 
   /*
@@ -96,7 +98,7 @@ public class DenovoCaller {
    * Iteration 1 of De novo calling Simply check if a child mutation is different from that of
    * either parents.
    */
-  public DenovoResult callDenovoVariantIteration1(Variant variant) {
+  public Optional<DenovoResult> callDenovoVariantIteration1(Variant variant) {
 
     // Get all the calls for that variant
     for (Call call : variant.getCalls()) {
@@ -139,12 +141,14 @@ public class DenovoCaller {
     }
 
     // Get the overlapping calls for this variant position
-    Map<TrioIndividual, Call> trioCalls = getTrioCalls(variant.getPosition());
-
-    if (trioCalls == null) {
-      return null;
-    }
-
+    Optional<Map<TrioIndividual, Call>> trioCallsOptional = getTrioCalls(variant.getPosition());
+	
+    if (!trioCallsOptional.isPresent()) {
+      return Optional.absent();
+    } 
+    
+    Map<TrioIndividual, Call> trioCalls = trioCallsOptional.get();	
+    
     Map<TrioIndividual, List<Integer>> trioGenotypes = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
       List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType));
@@ -160,8 +164,9 @@ public class DenovoCaller {
       detailsBuilder.deleteCharAt(detailsBuilder.length() - 1);
       String details = detailsBuilder.toString();
 
-      return new DenovoResult(details);
+      return Optional.of(new DenovoResult(details));
+    } else {
+      return Optional.absent();	
     }
-    return null;
   }
 }

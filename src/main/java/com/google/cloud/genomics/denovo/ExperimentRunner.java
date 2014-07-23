@@ -20,6 +20,7 @@ import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Optional;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
@@ -168,9 +169,8 @@ public class ExperimentRunner {
 
             variantCount++;
 
-            DenovoResult denovoCallResult = denovoCaller.callDenovoVariantIteration1(variant);
-            if (denovoCallResult != null) {
-
+            Optional<DenovoResult> denovoCallResultOptional = denovoCaller.callDenovoVariantIteration1(variant);
+            if (denovoCallResultOptional.isPresent()) {
               denovoCount++;
               // callWriter.println("denovo candidate at " + currentContig.getContig() +
               // ":position "
