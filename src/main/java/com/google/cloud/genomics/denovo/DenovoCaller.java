@@ -13,6 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -106,30 +107,10 @@ public class DenovoCaller {
     // Get all the calls for that variant
     for (Call call : variant.getCalls()) {
 
-      // Reject the call if it doesn't meet quality standards
-      if (!call.getInfo().containsKey("GQX") && !call.getInfo().containsKey("QD")
-          && !call.getInfo().containsKey("MQ")) {
-        continue;
+      if(!passesAllQualityFilters(call)) {
+    	  continue;
       }
-
-      try {
-        if (call.getInfo().containsKey("GQX")
-            && Float.parseFloat(call.getInfo().get("GQX").get(0)) < ExperimentRunner.GQX_THRESH) {
-          continue;
-        }
-        if (call.getInfo().containsKey("QD")
-            && Float.parseFloat(call.getInfo().get("QD").get(0)) < ExperimentRunner.GQX_THRESH) {
-          continue;
-        }
-        if (call.getInfo().containsKey("MQ")
-            && Float.parseFloat(call.getInfo().get("MQ").get(0)) < ExperimentRunner.GQX_THRESH) {
-          continue;
-        }
-      } catch (NumberFormatException e) {
-        continue;
-      }
-
-
+      
       // Update the lastcall and the last position
       for (TrioIndividual trioType : TrioIndividual.values()) {
         if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
@@ -174,6 +155,52 @@ public class DenovoCaller {
       return Optional.absent();	
     }
   }
+
+	/*
+	 * Does the call pass all the quality filters
+	 */
+	private boolean passesAllQualityFilters(Call call) {
+		List<String> qualityKeysPresent = new ArrayList<>();
+
+		for (String qualityKey : Arrays.asList("GQX", "QD", "MQ")) {
+			if (call.getInfo().containsKey(qualityKey)) {
+				qualityKeysPresent.add(qualityKey);
+			}
+		}
+
+		// no valid quality keys present
+		if (qualityKeysPresent.size() < 1) {
+			return false;
+		}
+
+		boolean passesFilters = true;
+		for (String qualityKey : qualityKeysPresent) {
+			if (!passesQualityFilter(call, qualityKey)) {
+				passesFilters = false;
+				break;
+			}
+		}
+		return passesFilters;
+	}
+
+	/*
+	 * Checks whether a call passes a particular quality filter
+	 */
+	private boolean passesQualityFilter(Call call, String qualityKey) {
+
+		Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+
+		try {
+			Float parseFloat = Float.parseFloat(call.getInfo().get(qualityKey).get(0));
+			if (parseFloat < threshold) {
+				return false;
+			}
+		} catch(NumberFormatException e) {
+			return false;
+		}
+		return true;
+	}
+  
   public static class DiploidGenotype {
 	  private List<Integer> genotype;
 	  public DiploidGenotype(List<Integer> genotype) {

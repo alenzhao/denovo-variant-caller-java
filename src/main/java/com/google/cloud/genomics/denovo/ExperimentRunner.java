@@ -58,6 +58,8 @@ public class ExperimentRunner {
   static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
+  static public Map<String,Float> qualityThresholdMap = new HashMap<>();
+  
   static public Genomics genomics;
   public String candidatesFile;
   private CommandLine cmdLine;
@@ -66,7 +68,11 @@ public class ExperimentRunner {
   public ExperimentRunner(Genomics _genomics, CommandLine _cmdLine) {
     genomics = _genomics;
     cmdLine = _cmdLine;
-
+    qualityThresholdMap.put("GQX",GQX_THRESH);
+    qualityThresholdMap.put("QD",QD_THRESH);
+    qualityThresholdMap.put("MQ",MQ_THRESH);
+    qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
+    
     // Check command line for candidates file
     checkAndAddCandidatesFile();
 
