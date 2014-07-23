@@ -85,16 +85,16 @@ public class DenovoCaller {
    */
   private boolean checkTrioLogic(Map<TrioIndividual, DiploidGenotype> trioGenoTypes) {
     DiploidGenotype childGenotype = trioGenoTypes.get(CHILD);
-	Integer childAllele1 = childGenotype .getFirstAllele();
+    Integer childAllele1 = childGenotype.getFirstAllele();
     Integer childAllele2 = childGenotype.getSecondAllele();
-    
+
     List<Integer> momGenoType = trioGenoTypes.get(MOM).getAllAlleles();
     List<Integer> dadGenoType = trioGenoTypes.get(DAD).getAllAlleles();
 
-    boolean childAllelesinMomAndDad = momGenoType.contains(childAllele1) && 
-        dadGenoType.contains(childAllele2);
-    boolean childAllelesinMomAndDadMirrored = momGenoType.contains(childAllele2) && 
-        dadGenoType.contains(childAllele1);
+    boolean childAllelesinMomAndDad =
+        momGenoType.contains(childAllele1) && dadGenoType.contains(childAllele2);
+    boolean childAllelesinMomAndDadMirrored =
+        momGenoType.contains(childAllele2) && dadGenoType.contains(childAllele1);
     return !(childAllelesinMomAndDad || childAllelesinMomAndDadMirrored);
   }
 
@@ -124,98 +124,101 @@ public class DenovoCaller {
 
     // Get the overlapping calls for this variant position
     Optional<Map<TrioIndividual, Call>> trioCallsOptional = getTrioCalls(variant.getPosition());
-	
+
     if (!trioCallsOptional.isPresent()) {
       return Optional.absent();
-    } 
-    
-    final Map<TrioIndividual, Call> trioCalls = trioCallsOptional.get();	
-    
+    }
+
+    final Map<TrioIndividual, Call> trioCalls = trioCallsOptional.get();
+
     Map<TrioIndividual, DiploidGenotype> trioGenotypes = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
       List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType)).get();
       trioGenotypes.put(trioType, new DiploidGenotype(genoTypeList));
     }
 
-    return checkTrioLogic(trioGenotypes) ? Optional.of( Joiner.on(",").join(Iterables.transform(
-        Arrays.asList(TrioIndividual.values()),
-        new Function<TrioIndividual,String>() {
+    return checkTrioLogic(trioGenotypes) ? Optional.of(Joiner.on(",").join(Iterables.transform(
+        Arrays.asList(TrioIndividual.values()), new Function<TrioIndividual, String>() {
           @Override
           public String apply(TrioIndividual trioType) {
-            return String.format("%s:%s",trioType.name(),
+            return String.format("%s:%s", trioType.name(),
                 trioCalls.get(trioType).getInfo().get("GT").get(0));
           }
-        }))) :  Optional.<String>absent(); 
+        })))
+        : Optional.<String>absent();
   }
 
-	/*
-	 * Does the call pass all the quality filters
-	 */
-	private boolean passesAllQualityFilters(Call call) {
-		List<String> qualityKeysPresent = new ArrayList<>();
+  /*
+   * Does the call pass all the quality filters
+   */
+  private boolean passesAllQualityFilters(Call call) {
+    List<String> qualityKeysPresent = new ArrayList<>();
 
-		for (String qualityKey : Arrays.asList("GQX", "QD", "MQ")) {
-			if (call.getInfo().containsKey(qualityKey)) {
-				qualityKeysPresent.add(qualityKey);
-			}
-		}
+    for (String qualityKey : Arrays.asList("GQX", "QD", "MQ")) {
+      if (call.getInfo().containsKey(qualityKey)) {
+        qualityKeysPresent.add(qualityKey);
+      }
+    }
 
-		// no valid quality keys present
-		if (qualityKeysPresent.size() < 1) {
-			return false;
-		}
+    // no valid quality keys present
+    if (qualityKeysPresent.size() < 1) {
+      return false;
+    }
 
-		boolean passesFilters = true;
-		for (String qualityKey : qualityKeysPresent) {
-			if (!passesQualityFilter(call, qualityKey)) {
-				passesFilters = false;
-				break;
-			}
-		}
-		return passesFilters;
-	}
+    boolean passesFilters = true;
+    for (String qualityKey : qualityKeysPresent) {
+      if (!passesQualityFilter(call, qualityKey)) {
+        passesFilters = false;
+        break;
+      }
+    }
+    return passesFilters;
+  }
 
-	/*
-	 * Checks whether a call passes a particular quality filter
-	 */
-	private boolean passesQualityFilter(Call call, String qualityKey) {
+  /*
+   * Checks whether a call passes a particular quality filter
+   */
+  private boolean passesQualityFilter(Call call, String qualityKey) {
 
-		String qualityValue = call.getInfo().get(qualityKey).get(0);
-		
-		// Missing Quality Value
-		if(qualityValue.equals(".")){
-		  return false;
-		}
+    String qualityValue = call.getInfo().get(qualityKey).get(0);
 
-	    Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
-		Float parseFloat = Float.parseFloat(qualityValue);
-		if (parseFloat < threshold) {
-		  return false;
-		}
-		return true;
-	}
-  
+    // Missing Quality Value
+    if (qualityValue.equals(".")) {
+      return false;
+    }
+
+    Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+    Float parseFloat = Float.parseFloat(qualityValue);
+    if (parseFloat < threshold) {
+      return false;
+    }
+    return true;
+  }
+
   public static class DiploidGenotype {
-	  private List<Integer> genotype;
-	  public DiploidGenotype(List<Integer> genotype) {
-		  if (genotype.size() != 2) {
-			  throw new IllegalStateException("Expected Diploid Genotype ; got"
-					  +genotype.toString());
-		  }
-		  this.genotype = genotype;
-	  }
-	  /*
-	   * Get first or second allele (0/1)
-	   */
-	  public Integer getFirstAllele() {
-		  return genotype.get(0);
-	  }
-	  public Integer getSecondAllele() {
-		  return genotype.get(1);
-	  }
-	  public List<Integer> getAllAlleles() {
-		  return genotype;
-	  }
+    private List<Integer> genotype;
+
+    public DiploidGenotype(List<Integer> genotype) {
+      if (genotype.size() != 2) {
+        throw new IllegalStateException("Expected Diploid Genotype ; got" + genotype.toString());
+      }
+      this.genotype = genotype;
+    }
+
+    /*
+     * Get first or second allele (0/1)
+     */
+    public Integer getFirstAllele() {
+      return genotype.get(0);
+    }
+
+    public Integer getSecondAllele() {
+      return genotype.get(1);
+    }
+
+    public List<Integer> getAllAlleles() {
+      return genotype;
+    }
   }
-  
+
 }

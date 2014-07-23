@@ -50,7 +50,7 @@ public class DenovoUtil {
   public enum TrioIndividual {
     DAD, MOM, CHILD;
   }
-  
+
   public enum Genotypes {
     AA, AC, AT, AG, CC, CT, CG, TT, TG, GG;
   }
@@ -84,26 +84,22 @@ public class DenovoUtil {
   private static SearchReadsRequest createSearchReadsRequest(String readsetId,
       String chromosomeName, long startPos, long endPos) {
 
-    return new SearchReadsRequest()
-        .setReadsetIds(Collections.singletonList(readsetId))
-    	.setSequenceName(chromosomeName)
-        .setSequenceStart(BigInteger.valueOf(startPos))
+    return new SearchReadsRequest().setReadsetIds(Collections.singletonList(readsetId))
+        .setSequenceName(chromosomeName).setSequenceStart(BigInteger.valueOf(startPos))
         .setSequenceEnd(BigInteger.valueOf(endPos));
   }
 
   private static SearchReadsetsRequest createSearchReadsetsRequest(String datasetId) {
 
     // Init searchRequest obj
-    return new SearchReadsetsRequest()
-        .setDatasetIds(Collections.singletonList(datasetId));
+    return new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
 
   }
 
   private static SearchCallsetsRequest createSearchCallsetsRequest(String datasetId) {
 
     // Init searchRequest obj
-    return new SearchCallsetsRequest()
-        .setDatasetIds(Collections.singletonList(datasetId));
+    return new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
   }
 
   /**
