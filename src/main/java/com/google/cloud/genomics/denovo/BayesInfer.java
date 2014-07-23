@@ -63,15 +63,12 @@ public class BayesInfer {
 
     // Create a new Bayes net and fill in the params
     bn = new BayesNet();
-    bn.addNode(new Node(DAD, null,
-        createConditionalProbabilityTable(DAD)));
-    bn.addNode(new Node(MOM, null,
-        createConditionalProbabilityTable(MOM)));
+    bn.addNode(new Node(DAD, null, createConditionalProbabilityTable(DAD)));
+    bn.addNode(new Node(MOM, null, createConditionalProbabilityTable(MOM)));
     List<Node> childParents = new ArrayList<Node>();
     childParents.add(bn.nodeMap.get(DAD));
     childParents.add(bn.nodeMap.get(MOM));
-    bn.addNode(new Node(CHILD, childParents,
-        createConditionalProbabilityTable(CHILD)));
+    bn.addNode(new Node(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
 
     // Set the initialization flag
     isInitialized = true;
@@ -118,9 +115,8 @@ public class BayesInfer {
             } else {
               prob = 0.0;
             }
-            
-            conditionalProbabilityTable.put(
-                Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild),
+
+            conditionalProbabilityTable.put(Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild),
                 prob);
           }
           // Secondary Pass to normalize prob values
@@ -181,9 +177,7 @@ public class BayesInfer {
         new Function<Entry<TrioIndividual, ReadSummary>, String>() {
           @Override
           public String apply(Entry<TrioIndividual, ReadSummary> e) {
-            return String.format("%s:%s",
-                e.getKey().name(),
-                e.getValue().getCount().toString());
+            return String.format("%s:%s", e.getKey().name(), e.getValue().getCount().toString());
           }
         }));
 

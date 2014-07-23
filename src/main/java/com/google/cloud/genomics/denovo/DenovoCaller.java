@@ -13,14 +13,20 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
@@ -49,25 +55,24 @@ public class DenovoCaller {
   /*
    * Returns a trio of calls or 'none' if no suitable trio can be found
    */
-  private Map<TrioIndividual, Call> getTrioCalls(Long currPosition) {
+  private Optional<Map<TrioIndividual, Call>> getTrioCalls(Long currPosition) {
     Map<TrioIndividual, Call> overlappingCalls = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
 
       // Call is not present for this position
       if (lastPosition.get(trioType) < currPosition) {
-        return null;
+        return Optional.absent();
       }
 
       // Call is not diploid
       Call call = lastCall.get(trioType);
-      List<Integer> genotype = DenovoUtil.getGenotype(call);
-      if (genotype == null || genotype.size() != 2) {
-        return null;
+      Optional<List<Integer>> genotypeOption = DenovoUtil.getGenotype(call);
+      if (!genotypeOption.isPresent() || genotypeOption.get().size() != 2) {
+        return Optional.absent();
       }
       overlappingCalls.put(trioType, call);
-
     }
-    return overlappingCalls;
+    return Optional.of(overlappingCalls);
   }
 
   /*
@@ -78,90 +83,142 @@ public class DenovoCaller {
    * predicate1 = c1 \in {m1,m2} and c2 \in {d1,d2} predicate2 = c2 \in {m1,m2} and c1 \in {d1,d2}
    * predicate = not( predicate1 or predicate2)
    */
-  private boolean checkTrioLogic(Map<TrioIndividual, List<Integer>> trioGenoTypes) {
-    Iterator<Integer> childIterator = trioGenoTypes.get(CHILD).iterator();
-    Integer childAllele1 = childIterator.next();
-    Integer childAllele2 = childIterator.next();
-    List<Integer> momGenoType = trioGenoTypes.get(MOM);
-    List<Integer> dadGenoType = trioGenoTypes.get(DAD);
+  private boolean checkTrioLogic(Map<TrioIndividual, DiploidGenotype> trioGenoTypes) {
+    DiploidGenotype childGenotype = trioGenoTypes.get(CHILD);
+    Integer childAllele1 = childGenotype.getFirstAllele();
+    Integer childAllele2 = childGenotype.getSecondAllele();
 
-    boolean predicate1 = momGenoType.contains(childAllele1) & dadGenoType.contains(childAllele2);
-    boolean predicate2 = momGenoType.contains(childAllele2) & dadGenoType.contains(childAllele1);
-    boolean predicate = !(predicate1 | predicate2);
+    List<Integer> momGenoType = trioGenoTypes.get(MOM).getAllAlleles();
+    List<Integer> dadGenoType = trioGenoTypes.get(DAD).getAllAlleles();
 
-    return predicate;
+    boolean childAllelesinMomAndDad =
+        momGenoType.contains(childAllele1) && dadGenoType.contains(childAllele2);
+    boolean childAllelesinMomAndDadMirrored =
+        momGenoType.contains(childAllele2) && dadGenoType.contains(childAllele1);
+    return !(childAllelesinMomAndDad || childAllelesinMomAndDadMirrored);
   }
 
   /*
    * Iteration 1 of De novo calling Simply check if a child mutation is different from that of
    * either parents.
    */
-  public DenovoResult callDenovoVariantIteration1(Variant variant) {
+  public Optional<String> callDenovoFromVarstore(Variant variant) {
 
     // Get all the calls for that variant
     for (Call call : variant.getCalls()) {
+      if (passesAllQualityFilters(call)) {
 
-      // Reject the call if it doesn't meet quality standards
-      if (!call.getInfo().containsKey("GQX") && !call.getInfo().containsKey("QD")
-          && !call.getInfo().containsKey("MQ")) {
-        continue;
-      }
-
-      try {
-        if (call.getInfo().containsKey("GQX")
-            && Float.parseFloat(call.getInfo().get("GQX").get(0)) < ExperimentRunner.GQX_THRESH) {
-          continue;
-        }
-        if (call.getInfo().containsKey("QD")
-            && Float.parseFloat(call.getInfo().get("QD").get(0)) < ExperimentRunner.GQX_THRESH) {
-          continue;
-        }
-        if (call.getInfo().containsKey("MQ")
-            && Float.parseFloat(call.getInfo().get("MQ").get(0)) < ExperimentRunner.GQX_THRESH) {
-          continue;
-        }
-      } catch (NumberFormatException e) {
-        continue;
-      }
-
-
-      // Update the lastcall and the last position
-      for (TrioIndividual trioType : TrioIndividual.values()) {
-        if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
-          lastCall.put(trioType, call);
-          if (call.getInfo().containsKey("END")) {
-            lastPosition.put(trioType, Long.valueOf(call.getInfo().get("END").get(0)));
-          } else {
-            lastPosition.put(trioType, variant.getPosition());
+        // Update the lastcall and the last position
+        for (TrioIndividual trioType : TrioIndividual.values()) {
+          if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
+            lastCall.put(trioType, call);
+            if (call.getInfo().containsKey("END")) {
+              lastPosition.put(trioType, Long.valueOf(call.getInfo().get("END").get(0)));
+            } else {
+              lastPosition.put(trioType, variant.getPosition());
+            }
           }
         }
       }
     }
 
     // Get the overlapping calls for this variant position
-    Map<TrioIndividual, Call> trioCalls = getTrioCalls(variant.getPosition());
+    Optional<Map<TrioIndividual, Call>> trioCallsOptional = getTrioCalls(variant.getPosition());
 
-    if (trioCalls == null) {
-      return null;
+    if (!trioCallsOptional.isPresent()) {
+      return Optional.absent();
     }
 
-    Map<TrioIndividual, List<Integer>> trioGenotypes = new HashMap<>();
+    final Map<TrioIndividual, Call> trioCalls = trioCallsOptional.get();
+
+    Map<TrioIndividual, DiploidGenotype> trioGenotypes = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
-      List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType));
-      trioGenotypes.put(trioType, genoTypeList);
+      List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType)).get();
+      trioGenotypes.put(trioType, new DiploidGenotype(genoTypeList));
     }
 
-    if (checkTrioLogic(trioGenotypes)) {
-      StringBuilder detailsBuilder = new StringBuilder();
-      for (TrioIndividual trioType : TrioIndividual.values()) {
-        detailsBuilder.append(
-            trioType + ":" + trioCalls.get(trioType).getInfo().get("GT").get(0) + ",");
-      }
-      detailsBuilder.deleteCharAt(detailsBuilder.length() - 1);
-      String details = detailsBuilder.toString();
-
-      return new DenovoResult(details);
-    }
-    return null;
+    return checkTrioLogic(trioGenotypes) ? Optional.of(Joiner.on(",").join(Iterables.transform(
+        Arrays.asList(TrioIndividual.values()), new Function<TrioIndividual, String>() {
+          @Override
+          public String apply(TrioIndividual trioType) {
+            return String.format("%s:%s", trioType.name(),
+                trioCalls.get(trioType).getInfo().get("GT").get(0));
+          }
+        })))
+        : Optional.<String>absent();
   }
+
+  /*
+   * Does the call pass all the quality filters
+   */
+  private boolean passesAllQualityFilters(Call call) {
+    List<String> qualityKeysPresent = new ArrayList<>();
+
+    for (String qualityKey : Arrays.asList("GQX", "QD", "MQ")) {
+      if (call.getInfo().containsKey(qualityKey)) {
+        qualityKeysPresent.add(qualityKey);
+      }
+    }
+
+    // no valid quality keys present
+    if (qualityKeysPresent.size() < 1) {
+      return false;
+    }
+
+    boolean passesFilters = true;
+    for (String qualityKey : qualityKeysPresent) {
+      if (!passesQualityFilter(call, qualityKey)) {
+        passesFilters = false;
+        break;
+      }
+    }
+    return passesFilters;
+  }
+
+  /*
+   * Checks whether a call passes a particular quality filter
+   */
+  private boolean passesQualityFilter(Call call, String qualityKey) {
+
+    String qualityValue = call.getInfo().get(qualityKey).get(0);
+
+    // Missing Quality Value
+    if (qualityValue.equals(".")) {
+      return false;
+    }
+
+    Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+    Float parseFloat = Float.parseFloat(qualityValue);
+    if (parseFloat < threshold) {
+      return false;
+    }
+    return true;
+  }
+
+  public static class DiploidGenotype {
+    private List<Integer> genotype;
+
+    public DiploidGenotype(List<Integer> genotype) {
+      if (genotype.size() != 2) {
+        throw new IllegalStateException("Expected Diploid Genotype ; got" + genotype.toString());
+      }
+      this.genotype = genotype;
+    }
+
+    /*
+     * Get first or second allele (0/1)
+     */
+    public Integer getFirstAllele() {
+      return genotype.get(0);
+    }
+
+    public Integer getSecondAllele() {
+      return genotype.get(1);
+    }
+
+    public List<Integer> getAllAlleles() {
+      return genotype;
+    }
+  }
+
 }

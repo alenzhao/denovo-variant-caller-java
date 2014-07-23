@@ -52,7 +52,7 @@ class CommandLine {
       usage = "Specify the denovo mutation rate (default 1e-8)")
   public double denovoMutationRate = 1e-8;
 
-  
+
   public CommandLine() {
     parser = new CmdLineParser(this);
   }

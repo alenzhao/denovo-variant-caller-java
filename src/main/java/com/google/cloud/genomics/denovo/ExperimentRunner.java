@@ -20,6 +20,7 @@ import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Optional;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
@@ -57,14 +58,20 @@ public class ExperimentRunner {
   static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
+  static public Map<String, Float> qualityThresholdMap = new HashMap<>();
+
   static public Genomics genomics;
   public String candidatesFile;
   private CommandLine cmdLine;
-  
+
 
   public ExperimentRunner(Genomics _genomics, CommandLine _cmdLine) {
     genomics = _genomics;
     cmdLine = _cmdLine;
+    qualityThresholdMap.put("GQX", GQX_THRESH);
+    qualityThresholdMap.put("QD", QD_THRESH);
+    qualityThresholdMap.put("MQ", MQ_THRESH);
+    qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
 
     // Check command line for candidates file
     checkAndAddCandidatesFile();
@@ -92,11 +99,11 @@ public class ExperimentRunner {
 
     // Define Experiment Specific Constant Values
     final String TRIO_DATASET_ID = "2315870033780478914";
-    
-    Map<TrioIndividual,String> individualCallsetNameMap = new HashMap<>();
-    individualCallsetNameMap.put(DAD,"NA12877");
-    individualCallsetNameMap.put(MOM,"NA12878");
-    individualCallsetNameMap.put(CHILD,"NA12879");
+
+    Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
+    individualCallsetNameMap.put(DAD, "NA12877");
+    individualCallsetNameMap.put(MOM, "NA12878");
+    individualCallsetNameMap.put(CHILD, "NA12879");
     individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
@@ -126,10 +133,10 @@ public class ExperimentRunner {
 
       // Create a family person type to callset id map
       for (Callset callset : callsets) {
-        String callsetName = callset.getName(); 
-        for(TrioIndividual individual : TrioIndividual.values() ) {
-          if(callsetName.equals(individualCallsetNameMap.get(individual))) {
-            dictRelationCallsetId.put(individual,callset.getId());
+        String callsetName = callset.getName();
+        for (TrioIndividual individual : TrioIndividual.values()) {
+          if (callsetName.equals(individualCallsetNameMap.get(individual))) {
+            dictRelationCallsetId.put(individual, callset.getId());
             break;
           }
         }
@@ -168,9 +175,9 @@ public class ExperimentRunner {
 
             variantCount++;
 
-            DenovoResult denovoCallResult = denovoCaller.callDenovoVariantIteration1(variant);
-            if (denovoCallResult != null) {
-
+            Optional<String> denovoCallResultOptional =
+                denovoCaller.callDenovoFromVarstore(variant);
+            if (denovoCallResultOptional.isPresent()) {
               denovoCount++;
               // callWriter.println("denovo candidate at " + currentContig.getContig() +
               // ":position "
@@ -226,7 +233,8 @@ public class ExperimentRunner {
     final File exp1CallsFile = new File(outdir, candidatesFile);
 
     /* Find the readset Ids associated with the datasets */
-    Map<TrioIndividual, String> readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
+    Map<TrioIndividual, String> readsetIdMap =
+        DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
 
     System.out.println();
     System.out.println("Readset Ids Found");
@@ -247,8 +255,7 @@ public class ExperimentRunner {
         /* Get reads for the current position */
         Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
         for (TrioIndividual trioIndividual : TrioIndividual.values()) {
-          List<Read> reads = DenovoUtil
-              .getReads(readsetIdMap.get(trioIndividual), chromosome,
+          List<Read> reads = DenovoUtil.getReads(readsetIdMap.get(trioIndividual), chromosome,
               candidatePosition, candidatePosition);
           readMap.put(trioIndividual, reads);
         }
@@ -265,8 +272,8 @@ public class ExperimentRunner {
         /*
          * Call the bayes inference algorithm to generate likelihood
          */
-        boolean isDenovo = BayesInfer.infer(readSummaryMap,cmdLine);
-        
+        boolean isDenovo = BayesInfer.infer(readSummaryMap, cmdLine);
+
         if (isDenovo) {
           System.out.println("######### Denovo detected ########");
         }
@@ -276,8 +283,8 @@ public class ExperimentRunner {
         // TODO
       }
 
-    } catch (IOException| ParseException e) {
+    } catch (IOException | ParseException e) {
       e.printStackTrace();
-    } 
+    }
   }
 }

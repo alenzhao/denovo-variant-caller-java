@@ -141,7 +141,7 @@ public class GenomicsExperiment {
       }
 
       Genomics genomics = buildService(credential);
-      expRunner = new ExperimentRunner(genomics,cmdLine);
+      expRunner = new ExperimentRunner(genomics, cmdLine);
 
 
       // Entry point for all Experiments

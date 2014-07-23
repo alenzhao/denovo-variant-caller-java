@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import com.google.api.services.genomics.model.SearchReadsResponse;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
+import com.google.common.base.Optional;
 
 /*
  * Utility functions shared by other classes in Denovo project
@@ -48,7 +50,7 @@ public class DenovoUtil {
   public enum TrioIndividual {
     DAD, MOM, CHILD;
   }
-  
+
   public enum Genotypes {
     AA, AC, AT, AG, CC, CT, CG, TT, TG, GG;
   }
@@ -81,47 +83,24 @@ public class DenovoUtil {
 
   private static SearchReadsRequest createSearchReadsRequest(String readsetId,
       String chromosomeName, long startPos, long endPos) {
-    // Init searchRequest obj
-    SearchReadsRequest searchReadsRequest = new SearchReadsRequest();
-    List<String> readsetIdList = new ArrayList<String>();
-    readsetIdList.add(readsetId);
 
-    searchReadsRequest.setReadsetIds(readsetIdList).setSequenceName(chromosomeName)
-        .setSequenceStart(BigInteger.valueOf(startPos)).setSequenceEnd(BigInteger.valueOf(endPos));
-
-    return searchReadsRequest;
+    return new SearchReadsRequest().setReadsetIds(Collections.singletonList(readsetId))
+        .setSequenceName(chromosomeName).setSequenceStart(BigInteger.valueOf(startPos))
+        .setSequenceEnd(BigInteger.valueOf(endPos));
   }
 
   private static SearchReadsetsRequest createSearchReadsetsRequest(String datasetId) {
 
     // Init searchRequest obj
-    SearchReadsetsRequest searchReadsetsRequest = new SearchReadsetsRequest();
-
-    // pack the dataset Id into a list
-    List<String> datasetIds = new ArrayList<String>();
-    datasetIds.add(datasetId);
-
-    searchReadsetsRequest.setDatasetIds(datasetIds);
-
-    return searchReadsetsRequest;
+    return new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
 
   }
 
   private static SearchCallsetsRequest createSearchCallsetsRequest(String datasetId) {
 
     // Init searchRequest obj
-    SearchCallsetsRequest searchCallsetsRequest = new SearchCallsetsRequest();
-
-    // pack the dataset Id into a list
-    List<String> datasetIds = new ArrayList<String>();
-    datasetIds.add(datasetId);
-
-    searchCallsetsRequest.setDatasetIds(datasetIds);
-
-    return searchCallsetsRequest;
-
+    return new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
   }
-
 
   /**
    * @param datasetIdMap
@@ -158,7 +137,7 @@ public class DenovoUtil {
   }
 
   // TODO : Investigate effect of splitting on "|"
-  public static List<Integer> getGenotype(Call call) {
+  public static Optional<List<Integer>> getGenotype(Call call) {
     List<Integer> genoType = new ArrayList<Integer>();
 
     String genoTypeString = call.getInfo().get("GT").get(0);
@@ -166,16 +145,15 @@ public class DenovoUtil {
     if (genoTypeString.contains("/")) {
       splitChar = "/";
     } else if (genoTypeString.contains("|")) {
-      splitChar = "|";
+      splitChar = "\\|";
     } else {
-      return null;
+      return Optional.absent();
     }
 
     for (String allele : genoTypeString.split(splitChar)) {
       genoType.add(Integer.valueOf(allele));
     }
-    return genoType;
-
+    return Optional.of(genoType);
   }
 
   public static List<Read> getReads(String readsetId, String chromosomeName, long startPos,
@@ -184,15 +162,12 @@ public class DenovoUtil {
     SearchReadsRequest searchReadsRequest =
         createSearchReadsRequest(readsetId, chromosomeName, startPos, endPos);
 
-
     SearchReadsResponse searchReadsExecuted =
         ExperimentRunner.genomics.reads().search(searchReadsRequest).execute();
 
     List<Read> reads = searchReadsExecuted.getReads();
     return reads;
   }
-
-
 
   private static List<Readset> getReadsets(String datasetId) throws IOException {
     SearchReadsetsRequest searchReadsetsRequest = createSearchReadsetsRequest(datasetId);
@@ -203,7 +178,6 @@ public class DenovoUtil {
 
     return readsets;
   }
-
 
   /**
    * @return List<Callset>
@@ -258,7 +232,6 @@ public class DenovoUtil {
     GetVariantsSummaryResponse execute = variantsSummaryRequest.execute();
     // System.out.println("Variants : "+execute.toPrettyString());
 
-
     List<ContigBound> contigBounds = execute.getContigBounds();
     BigInteger totBases = BigInteger.valueOf(0);
     for (ContigBound contigBound : contigBounds) {
@@ -268,7 +241,6 @@ public class DenovoUtil {
     return contigBounds;
   }
 
-
   public static void helperCreateDirectory(File theDir) {
     // if the directory does not exist, create it
     if (!theDir.exists()) {
@@ -276,6 +248,4 @@ public class DenovoUtil {
       theDir.mkdir();
     }
   }
-
-
 }
