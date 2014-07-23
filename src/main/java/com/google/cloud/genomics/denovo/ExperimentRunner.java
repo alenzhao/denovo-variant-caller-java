@@ -175,7 +175,7 @@ public class ExperimentRunner {
 
             variantCount++;
 
-            Optional<DenovoResult> denovoCallResultOptional = denovoCaller.callDenovoVariantIteration1(variant);
+            Optional<String> denovoCallResultOptional = denovoCaller.callDenovoVariantIteration1(variant);
             if (denovoCallResultOptional.isPresent()) {
               denovoCount++;
               // callWriter.println("denovo candidate at " + currentContig.getContig() +

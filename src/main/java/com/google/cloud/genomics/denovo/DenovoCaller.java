@@ -102,7 +102,7 @@ public class DenovoCaller {
    * Iteration 1 of De novo calling Simply check if a child mutation is different from that of
    * either parents.
    */
-  public Optional<DenovoResult> callDenovoVariantIteration1(Variant variant) {
+  public Optional<String> callDenovoVariantIteration1(Variant variant) {
 
     // Get all the calls for that variant
     for (Call call : variant.getCalls()) {
@@ -150,7 +150,7 @@ public class DenovoCaller {
 				}
       	}));
 
-      return Optional.of(new DenovoResult(details));
+      return Optional.of(details);
     } else {
       return Optional.absent();	
     }
