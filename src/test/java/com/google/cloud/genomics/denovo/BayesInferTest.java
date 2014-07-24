@@ -19,7 +19,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+
 import com.google.api.services.genomics.Genomics;
+import com.google.cloud.genomics.utils.GenomicsFactory;
 
 public class BayesInferTest {
 
@@ -30,17 +33,19 @@ public class BayesInferTest {
   public static void setUp() throws Exception {
 
     String homeDir = System.getProperty("user.home");
-    
+
     String argsString = "stage1 --candidates_file candidate.calls.tmp "
         + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json "
         + "--require_all_scopes";
     String[] args = argsString.split(" ");
 
-    GenomicsExperiment.cmdLine = new CommandLine();
-    GenomicsExperiment.cmdLine.setArgs(args);
-    genomics = GenomicsExperiment.buildGenomics(GenomicsExperiment.cmdLine).get();
+    CommandLine cmdLine = new CommandLine();
+    cmdLine.setArgs(args);
 
-    expRunner = new ExperimentRunner(genomics, GenomicsExperiment.cmdLine);
+    genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
+        .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
+
+    expRunner = new ExperimentRunner(genomics, cmdLine);
   }
 
   @AfterClass
