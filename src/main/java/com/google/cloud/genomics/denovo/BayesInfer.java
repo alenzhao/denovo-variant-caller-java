@@ -44,7 +44,7 @@ import java.util.TreeMap;
 public class BayesInfer {
   private static double sequenceErrorRate;
   private static double denovoMutationRate;
-  private static BayesNet bn;
+  private static BayesNet<TrioIndividual,Genotypes> bn;
   private static boolean isInitialized = false;
 
   private BayesInfer() {}
@@ -62,13 +62,13 @@ public class BayesInfer {
     denovoMutationRate = cmdLine.denovoMutationRate;
 
     // Create a new Bayes net and fill in the params
-    bn = new BayesNet();
-    bn.addNode(new Node(DAD, null, createConditionalProbabilityTable(DAD)));
-    bn.addNode(new Node(MOM, null, createConditionalProbabilityTable(MOM)));
-    List<Node> childParents = new ArrayList<Node>();
+    bn = new BayesNet<>();
+    bn.addNode(new Node<>(DAD, null, createConditionalProbabilityTable(DAD)));
+    bn.addNode(new Node<>(MOM, null, createConditionalProbabilityTable(MOM)));
+    List<Node<TrioIndividual,Genotypes>> childParents = new ArrayList<>();
     childParents.add(bn.nodeMap.get(DAD));
     childParents.add(bn.nodeMap.get(MOM));
-    bn.addNode(new Node(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
+    bn.addNode(new Node<>(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
 
     // Set the initialization flag
     isInitialized = true;
@@ -315,35 +315,7 @@ public class BayesInfer {
     }
   }
 
-  /*
-   * Bayes net data structure
-   */
-  static class BayesNet {
-    public Map<TrioIndividual, Node> nodeMap;
 
-    public BayesNet() {
-      nodeMap = new HashMap<TrioIndividual, Node>();
-    }
-
-    public void addNode(Node node) {
-      nodeMap.put(node.id, node);
-    }
-  }
-
-  /*
-   * Individual Node in the Bayes Net
-   */
-  static class Node {
-    public TrioIndividual id;
-    public List<Node> parents;
-    public Map<List<Genotypes>, Double> conditionalProbabilityTable;
-
-    public Node(TrioIndividual individual, List<Node> parents, Map<List<Genotypes>, Double> map) {
-      this.id = individual;
-      this.parents = parents;
-      this.conditionalProbabilityTable = map;
-    }
-  }
 
 
 }
