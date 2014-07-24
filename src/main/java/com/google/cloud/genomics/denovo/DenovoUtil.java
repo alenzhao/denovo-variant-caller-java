@@ -272,5 +272,5 @@ public class DenovoUtil {
     return predicate3;
   }
 
-  
+
 }
