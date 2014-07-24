@@ -85,7 +85,7 @@ public class BayesInfer {
     List<Genotypes> maxTrioGenoType = bn.getMaxGenoType(individualLogLikelihood);
 
     // Check that the MAP genotype has indeed the highest likelihood
-    boolean checkTrioGenoTypeIsDenovo = BayesInfer.checkTrioGenoTypeIsDenovo(maxTrioGenoType);
+    boolean checkTrioGenoTypeIsDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(maxTrioGenoType);
 
     // Convert to Tree Map in order to order the keys
     TreeMap<TrioIndividual, ReadSummary> treeReadSummaryMap = new TreeMap<>();
@@ -104,28 +104,4 @@ public class BayesInfer {
 
     return checkTrioGenoTypeIsDenovo;
   }
-
-  /**
-   * Check if the particular genotype is denovo i.e. present in kids but not in parents
-   *
-   * @param maxTrioGenoType
-   * @return isDenovo
-   */
-  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> maxTrioGenoType) {
-    Genotypes genoTypeDad = maxTrioGenoType.get(0);
-    Genotypes genoTypeMom = maxTrioGenoType.get(1);
-    Genotypes genoTypeChild = maxTrioGenoType.get(2);
-
-    String childAlleles = genoTypeChild.name();
-    String momAlleles = genoTypeMom.name();
-    String dadAlleles = genoTypeDad.name();
-
-    String c1 = childAlleles.substring(0, 1);
-    String c2 = childAlleles.substring(1, 2);
-    boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
-    boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
-    boolean predicate3 = !(predicate1 | predicate2);
-    return predicate3;
-  }
-
 }
