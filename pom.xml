@@ -2,13 +2,25 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <name>De novo variant caller</name>
+  <url>https://github.com/googlegenomics/denovo-variant-caller</url>
   <groupId>com.google.cloud.genomics</groupId>
-  <artifactId>denovo</artifactId>
+  <artifactId>denovo-variant-caller</artifactId>
   <packaging>jar</packaging>
-  <version>v1beta</version>
+  <version>0.1</version>
 
-  <name>denovo</name>
-  <url>http://maven.apache.org</url>
+  <organization>
+    <name>Google</name>
+    <url>http://www.google.com/</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <properties>
     <args4j.version>2.0.25</args4j.version>
@@ -62,6 +74,11 @@
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-genomics</artifactId>
       <version>v1beta-rev17-1.18.0-rc</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.genomics</groupId>
+      <artifactId>google-genomics-utils</artifactId>
+      <version>0.5</version>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
@@ -142,12 +159,5 @@
       </plugin>
     </plugins>
   </build>
-
-
-  <organization>
-    <name>Google</name>
-    <url>http://www.google.com</url>
-  </organization>
-
 
 </project>
