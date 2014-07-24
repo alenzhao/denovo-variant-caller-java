@@ -24,8 +24,8 @@ public class DenovoBayesNet extends BayesNet<TrioIndividual, Genotypes> {
 
   public DenovoBayesNet(double sequenceErrorRate, double denovoMutationRate) {
     nodeMap = new HashMap<>();
-    this.sequenceErrorRate = sequenceErrorRate;
-    this.denovoMutationRate = denovoMutationRate;
+    this.setSequenceErrorRate(sequenceErrorRate);
+    this.setDenovoMutationRate(denovoMutationRate);
   }
 
   @Override
@@ -84,8 +84,8 @@ public class DenovoBayesNet extends BayesNet<TrioIndividual, Genotypes> {
             boolean isNotInheritenceCase =
                 -DenovoUtil.EPS <= conditionalProbabilityTable.get(cptKey)
                 && conditionalProbabilityTable.get(cptKey) <= DenovoUtil.EPS;
-            conditionalProbabilityTable.put(cptKey, isNotInheritenceCase ? denovoMutationRate
-                : 1.0 / validInheritanceCases - denovoMutationRate
+            conditionalProbabilityTable.put(cptKey, isNotInheritenceCase ? getDenovoMutationRate()
+                : 1.0 / validInheritanceCases - getDenovoMutationRate()
                     * (Genotypes.values().length - validInheritanceCases)
                     / (validInheritanceCases));
           }
@@ -117,15 +117,15 @@ public class DenovoBayesNet extends BayesNet<TrioIndividual, Genotypes> {
   public double getBaseLikelihood(Genotypes genoType, boolean isHomozygous, String base) {
     if (isHomozygous) {
       if (genoType.name().contains(base)) {
-        return Math.log(1 - sequenceErrorRate);
+        return Math.log(1 - getSequenceErrorRate());
       } else {
-        return Math.log(sequenceErrorRate) - Math.log(3);
+        return Math.log(getSequenceErrorRate()) - Math.log(3);
       }
     } else {
       if (genoType.name().contains(base)) {
-        return Math.log(1 - 2 * sequenceErrorRate / 3) - Math.log(2);
+        return Math.log(1 - 2 * getSequenceErrorRate() / 3) - Math.log(2);
       } else {
-        return Math.log(sequenceErrorRate) - Math.log(3);
+        return Math.log(getSequenceErrorRate()) - Math.log(3);
       }
     }
   }
@@ -209,5 +209,33 @@ public class DenovoBayesNet extends BayesNet<TrioIndividual, Genotypes> {
       }
     }
     return maxGenoType;
+  }
+
+  /**
+   * @return the sequenceErrorRate
+   */
+  public double getSequenceErrorRate() {
+    return sequenceErrorRate;
+  }
+
+  /**
+   * @param sequenceErrorRate the sequenceErrorRate to set
+   */
+  public void setSequenceErrorRate(double sequenceErrorRate) {
+    this.sequenceErrorRate = sequenceErrorRate;
+  }
+
+  /**
+   * @return the denovoMutationRate
+   */
+  public double getDenovoMutationRate() {
+    return denovoMutationRate;
+  }
+
+  /**
+   * @param denovoMutationRate the denovoMutationRate to set
+   */
+  public void setDenovoMutationRate(double denovoMutationRate) {
+    this.denovoMutationRate = denovoMutationRate;
   }
 }
