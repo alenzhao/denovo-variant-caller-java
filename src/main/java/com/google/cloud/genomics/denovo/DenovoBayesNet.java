@@ -34,6 +34,26 @@ public class DenovoBayesNet extends BayesNet<TrioIndividual, Genotypes> {
   }
 
   /*
+   * Prints the conditional probability to terminal
+   */
+  /**
+   * @param conditionalProbabilityTable
+   */
+  public static void printConditionalProbabilityTable(
+      Map<List<Genotypes>, Double> conditionalProbabilityTable) {
+
+    for (Genotypes dadGenotype : Genotypes.values()) {
+      for (Genotypes momGenotype : Genotypes.values()) {
+        for (Genotypes childGenotype : Genotypes.values()) {
+          List<Genotypes> cptKey = Arrays.asList(dadGenotype, momGenotype, childGenotype);
+          Double probVal = conditionalProbabilityTable.get(cptKey);
+          System.out.printf("%s : %s%n", cptKey, probVal);
+        }
+      }
+    }
+  }
+
+  /*
    * Creates the conditional probability table to be used in the bayes net One each for mom, dad and
    * child
    */
