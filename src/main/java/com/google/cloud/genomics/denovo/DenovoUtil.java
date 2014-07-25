@@ -167,7 +167,7 @@ public class DenovoUtil {
     return reads;
   }
 
-  private static List<Readset> getReadsets(String datasetId) throws IOException {
+  public static List<Readset> getReadsets(String datasetId) throws IOException {
     SearchReadsetsRequest searchReadsetsRequest = createSearchReadsetsRequest(datasetId);
     Genomics.Readsets.Search search =
         ExperimentRunner.genomics.readsets().search(searchReadsetsRequest);
