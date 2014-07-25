@@ -94,13 +94,13 @@ public class DenovoBayesNetTest {
     dbn.addNode(momNode);
     dbn.addNode(childNode);
 
-    assertEquals(dbn.nodeMap.get(TrioIndividual.DAD), dadNode);
-    assertEquals(dbn.nodeMap.get(TrioIndividual.MOM), momNode);
-    assertEquals(dbn.nodeMap.get(TrioIndividual.CHILD), childNode);
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.DAD), dadNode);
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.MOM), momNode);
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD), childNode);
 
-    assertEquals(dbn.nodeMap.get(TrioIndividual.CHILD).parents, Arrays.asList(dadNode, momNode));
-    assertEquals(dbn.nodeMap.get(TrioIndividual.DAD).parents, null);
-    assertEquals(dbn.nodeMap.get(TrioIndividual.MOM).parents, null);
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD).getParents(), Arrays.asList(dadNode, momNode));
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.DAD).getParents(), null);
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.MOM).getParents(), null);
   }
 
   /**

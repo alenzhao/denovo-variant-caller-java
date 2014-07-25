@@ -62,9 +62,9 @@ public class NodeTest {
 
     Node<TrioIndividual, Genotypes> dadNode =
         new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
-    assertEquals(TrioIndividual.DAD, dadNode.id);
-    assertEquals(null, dadNode.parents);
-    assertEquals(conditionalProbabilityTable, dadNode.conditionalProbabilityTable);
+    assertEquals(TrioIndividual.DAD, dadNode.getId());
+    assertEquals(null, dadNode.getParents());
+    assertEquals(conditionalProbabilityTable, dadNode.getConditionalProbabilityTable());
   }
 
   @Test
@@ -76,8 +76,8 @@ public class NodeTest {
     Node<TrioIndividual, Genotypes> childNode = new Node<>(TrioIndividual.CHILD,
         Collections.singletonList(dadNode), conditionalProbabilityTable);
 
-    assertEquals(null, dadNode.parents);
-    assertEquals(1, childNode.parents.size());
-    assertEquals(dadNode, childNode.parents.get(0));
+    assertEquals(null, dadNode.getParents());
+    assertEquals(1, childNode.getParents().size());
+    assertEquals(dadNode, childNode.getParents().get(0));
   }
 }

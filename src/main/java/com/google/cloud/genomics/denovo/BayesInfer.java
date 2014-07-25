@@ -13,18 +13,15 @@
  */
 package com.google.cloud.genomics.denovo;
 
-
-
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
-import com.google.cloud.genomics.denovo.ReadSummary;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
-
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,50 +36,32 @@ import java.util.TreeMap;
  * denovo variant
  */
 public class BayesInfer {
-  private static DenovoBayesNet bn;
-  private static boolean isInitialized = false;
-
-  private BayesInfer() {}
-
-  // static initialization for bayes net object
-  public static void Init(CommandLine cmdLine) {
-
-    // Check if the static class has already been initialized
-    if (isInitialized) {
-      return;
-    }
+  private DenovoBayesNet dbn;
+    
+  public BayesInfer(Double sequenceErrorRate, Double denovoMutationRate) {
 
     // Create a new Bayes net and fill in the params
-    bn = new DenovoBayesNet(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
-    bn.addNode(new Node<>(DAD, null, bn.createConditionalProbabilityTable(DAD)));
-    bn.addNode(new Node<>(MOM, null, bn.createConditionalProbabilityTable(MOM)));
+    dbn = new DenovoBayesNet(sequenceErrorRate, denovoMutationRate);
+    dbn.addNode(new Node<>(DAD, null, dbn.createConditionalProbabilityTable(DAD)));
+    dbn.addNode(new Node<>(MOM, null, dbn.createConditionalProbabilityTable(MOM)));
     List<Node<TrioIndividual, Genotypes>> childParents = new ArrayList<>();
-    childParents.add(bn.nodeMap.get(DAD));
-    childParents.add(bn.nodeMap.get(MOM));
-    bn.addNode(new Node<>(CHILD, childParents, bn.createConditionalProbabilityTable(CHILD)));
-
-    // Set the initialization flag
-    isInitialized = true;
+    childParents.add(dbn.getNodeMap().get(DAD));
+    childParents.add(dbn.getNodeMap().get(MOM));
+    dbn.addNode(new Node<>(CHILD, childParents, dbn.createConditionalProbabilityTable(CHILD)));
   }
-
 
   /*
    * Performs inference given a set of mom, dad and child reads to determine the most likely
    * genotype for the trio
    */
-  public static boolean infer(Map<TrioIndividual, ReadSummary> readSummaryMap,
-      CommandLine cmdLine) {
+  public boolean infer(Map<TrioIndividual, ReadSummary> readSummaryMap) {
 
-    // Initialize the bayes net if not already done
-    if (!isInitialized) {
-      Init(cmdLine);
-    }
     // Calculate Likelihoods of the different reads
     Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood =
-        bn.getIndividualLogLikelihood(readSummaryMap);
+        dbn.getIndividualLogLikelihood(readSummaryMap);
 
     // Get the trio genotype with the max likelihood
-    List<Genotypes> maxTrioGenoType = bn.getMaxGenoType(individualLogLikelihood);
+    List<Genotypes> maxTrioGenoType = dbn.getMaxGenoType(individualLogLikelihood);
 
     // Check that the MAP genotype has indeed the highest likelihood
     boolean checkTrioGenoTypeIsDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(maxTrioGenoType);

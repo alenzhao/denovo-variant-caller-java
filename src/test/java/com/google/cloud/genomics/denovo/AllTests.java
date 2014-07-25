@@ -13,7 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -31,7 +31,7 @@ public class AllTests {
     for (Double prob : collection) {
       totProb += prob;
     }
-    assertTrue((totProb >= 1 - EPS && totProb <= 1 + EPS));
+    assertEquals(1.0, totProb, EPS);
   }
 
 }

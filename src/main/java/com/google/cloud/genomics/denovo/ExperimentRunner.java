@@ -207,8 +207,7 @@ public class ExperimentRunner {
 
 
   /*
-   * Experiment 2 : Reads in candidate calls from stage 1 output file and then refines the
-   * candidates
+   * Stage 2 : Reads in candidate calls from stage 1 output file and then refines the candidates
    */
   public void stage2() throws IOException {
 
@@ -230,7 +229,7 @@ public class ExperimentRunner {
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
-    final File exp1CallsFile = new File(outdir, candidatesFile);
+    final File stage1CallsFile = new File(outdir, candidatesFile);
 
     /* Find the readset Ids associated with the datasets */
     Map<TrioIndividual, String> readsetIdMap =
@@ -240,7 +239,12 @@ public class ExperimentRunner {
     System.out.println("Readset Ids Found");
     System.out.println(readsetIdMap.toString());
 
-    try (BufferedReader callCandidateReader = new BufferedReader(new FileReader(exp1CallsFile))) {
+    // Create the BayesNet inference object
+    BayesInfer bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
+    
+    /* Check if each candidate call is truly denovo by Bayesian denovo calling */
+    
+    try (BufferedReader callCandidateReader = new BufferedReader(new FileReader(stage1CallsFile))) {
       for (String line; (line = callCandidateReader.readLine()) != null;) {
         String[] splitLine = line.split(",");
         if (splitLine.length != 2) {
@@ -272,7 +276,7 @@ public class ExperimentRunner {
         /*
          * Call the bayes inference algorithm to generate likelihood
          */
-        boolean isDenovo = BayesInfer.infer(readSummaryMap, cmdLine);
+        boolean isDenovo = bayesInferrer.infer(readSummaryMap);
 
         if (isDenovo) {
           System.out.println("######### Denovo detected ########");
