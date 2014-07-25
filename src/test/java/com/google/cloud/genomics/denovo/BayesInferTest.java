@@ -13,16 +13,15 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
-import org.junit.AfterClass;
+import com.google.api.services.genomics.Genomics;
+import com.google.cloud.genomics.utils.GenomicsFactory;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-
-import com.google.api.services.genomics.Genomics;
-import com.google.cloud.genomics.utils.GenomicsFactory;
 
 public class BayesInferTest {
 
@@ -48,18 +47,13 @@ public class BayesInferTest {
     expRunner = new ExperimentRunner(genomics, cmdLine);
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {}
-
   @Test
   public void testGenomicsIsNotNull() {
-    assertTrue(genomics != null);
+    assertNotNull(genomics);
   }
 
   @Test
   public void testExpRunnerIsNotNull() {
-    assertTrue(expRunner != null);
+    assertNotNull(expRunner);
   }
-
-
 }

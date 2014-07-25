@@ -13,7 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
@@ -49,11 +49,7 @@ public class NodeTest {
     }
 
     // makes sure conditionalProbabilityTable is set up properly
-    double totProb = 0.0;
-    for (Double prob : conditionalProbabilityTable.values()) {
-      totProb += prob;
-    }
-    assertTrue((totProb >= 1 - EPS && totProb <= 1 + EPS));
+    AllTests.assertSumsToOne(conditionalProbabilityTable.values(), EPS);
   }
 
   @After
@@ -66,9 +62,9 @@ public class NodeTest {
 
     Node<TrioIndividual, Genotypes> dadNode =
         new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
-    assertEquals(dadNode.id, TrioIndividual.DAD);
-    assertEquals(dadNode.parents, null);
-    assertEquals(dadNode.conditionalProbabilityTable, conditionalProbabilityTable);
+    assertEquals(TrioIndividual.DAD, dadNode.id);
+    assertEquals(null, dadNode.parents);
+    assertEquals(conditionalProbabilityTable, dadNode.conditionalProbabilityTable);
   }
 
   @Test
@@ -80,8 +76,8 @@ public class NodeTest {
     Node<TrioIndividual, Genotypes> childNode = new Node<>(TrioIndividual.CHILD,
         Collections.singletonList(dadNode), conditionalProbabilityTable);
 
-    assertEquals(dadNode.parents, null);
-    assertEquals(childNode.parents.size(), 1);
-    assertEquals(childNode.parents.get(0), dadNode);
+    assertEquals(null, dadNode.parents);
+    assertEquals(1, childNode.parents.size());
+    assertEquals(dadNode, childNode.parents.get(0));
   }
 }
