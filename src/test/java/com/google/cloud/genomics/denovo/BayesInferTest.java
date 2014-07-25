@@ -44,7 +44,10 @@ public class BayesInferTest {
     genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
         .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
 
-    expRunner = new ExperimentRunner(genomics, cmdLine);
+    // Set genomics state common to whole project
+    DenovoUtil.setGenomics(genomics);
+
+    expRunner = new ExperimentRunner(cmdLine);
   }
 
   @Test

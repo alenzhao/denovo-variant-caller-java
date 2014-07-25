@@ -77,7 +77,7 @@ public class VariantContigStream {
     System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
 
     searchVariantsRequestLoaded =
-        ExperimentRunner.genomics.variants().search(searchVariantsRequest);
+        DenovoUtil.getGenomics().variants().search(searchVariantsRequest);
     searchVariantsExecuted = searchVariantsRequestLoaded.execute();
     List<Variant> variants = searchVariantsExecuted.getVariants();
     return variants;

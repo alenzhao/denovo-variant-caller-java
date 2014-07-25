@@ -13,7 +13,10 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.api.services.genomics.Genomics;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+
 import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Dataset;
@@ -21,10 +24,6 @@ import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.common.base.Optional;
-
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,7 +38,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Holds all the experiments in the project
@@ -60,13 +58,10 @@ public class ExperimentRunner {
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
 
-  static public Genomics genomics;
   public String candidatesFile;
   private CommandLine cmdLine;
 
-
-  public ExperimentRunner(Genomics _genomics, CommandLine _cmdLine) {
-    genomics = _genomics;
+  public ExperimentRunner(CommandLine _cmdLine) {
     cmdLine = _cmdLine;
     qualityThresholdMap.put("GQX", GQX_THRESH);
     qualityThresholdMap.put("QD", QD_THRESH);
@@ -75,9 +70,18 @@ public class ExperimentRunner {
 
     // Check command line for candidates file
     checkAndAddCandidatesFile();
-
   }
 
+  public void execute() throws IOException {
+    if (cmdLine.stageId.equals("stage1")) {
+      stage1();
+    } else if (cmdLine.stageId.equals("stage2")) {
+      stage2();
+    } else {
+      throw new IllegalArgumentException("Unknown stage : " + cmdLine.stageId);
+    }
+  }
+  
   /**
    * Check to see that candidatesFile is defined for experiments
    */
@@ -281,7 +285,6 @@ public class ExperimentRunner {
         if (isDenovo) {
           System.out.println("######### Denovo detected ########");
         }
-
 
         /* Set threshold and write candidate if passed */
         // TODO

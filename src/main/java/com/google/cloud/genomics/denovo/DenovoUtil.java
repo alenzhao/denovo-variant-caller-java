@@ -46,7 +46,8 @@ import com.google.common.base.Optional;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-
+  private static Genomics genomics;
+  
   public enum TrioIndividual {
     DAD, MOM, CHILD;
   }
@@ -161,7 +162,7 @@ public class DenovoUtil {
         createSearchReadsRequest(readsetId, chromosomeName, startPos, endPos);
 
     SearchReadsResponse searchReadsExecuted =
-        ExperimentRunner.genomics.reads().search(searchReadsRequest).execute();
+        genomics.reads().search(searchReadsRequest).execute();
 
     List<Read> reads = searchReadsExecuted.getReads();
     return reads;
@@ -170,7 +171,7 @@ public class DenovoUtil {
   public static List<Readset> getReadsets(String datasetId) throws IOException {
     SearchReadsetsRequest searchReadsetsRequest = createSearchReadsetsRequest(datasetId);
     Genomics.Readsets.Search search =
-        ExperimentRunner.genomics.readsets().search(searchReadsetsRequest);
+        genomics.readsets().search(searchReadsetsRequest);
     SearchReadsetsResponse execute = search.execute();
     List<Readset> readsets = execute.getReadsets();
 
@@ -184,7 +185,7 @@ public class DenovoUtil {
   public static List<Callset> getCallsets(String datasetId) throws IOException {
     SearchCallsetsRequest searchCallsetsRequest = createSearchCallsetsRequest(datasetId);
     Genomics.Callsets.Search search =
-        ExperimentRunner.genomics.callsets().search(searchCallsetsRequest);
+        genomics.callsets().search(searchCallsetsRequest);
     SearchCallsetsResponse execute = search.execute();
     List<Callset> callsets = execute.getCallsets();
 
@@ -204,7 +205,7 @@ public class DenovoUtil {
 
     // Get a list of all the datasets associated with project id
     Genomics.Datasets.List datasetRequest =
-        ExperimentRunner.genomics.datasets().list().setProjectId(ExperimentRunner.PROJECT_ID);
+        genomics.datasets().list().setProjectId(ExperimentRunner.PROJECT_ID);
     datasetRequest.setDisableGZipContent(true);
 
     ListDatasetsResponse execute = datasetRequest.execute();
@@ -224,7 +225,7 @@ public class DenovoUtil {
     System.out.println("Querying DatasetID : " + datasetId);
 
     Genomics.Variants.GetSummary variantsSummaryRequest =
-        ExperimentRunner.genomics.variants().getSummary().setDatasetId(datasetId);
+        genomics.variants().getSummary().setDatasetId(datasetId);
     variantsSummaryRequest.setDisableGZipContent(true);
 
     GetVariantsSummaryResponse execute = variantsSummaryRequest.execute();
@@ -268,6 +269,20 @@ public class DenovoUtil {
     boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
     boolean predicate3 = !(predicate1 | predicate2);
     return predicate3;
+  }
+
+  /**
+   * @return the genomics
+   */
+  public static Genomics getGenomics() {
+    return genomics;
+  }
+
+  /**
+   * @param genomics the genomics to set
+   */
+  public static void setGenomics(Genomics genomics) {
+    DenovoUtil.genomics = genomics;
   }
 
 
