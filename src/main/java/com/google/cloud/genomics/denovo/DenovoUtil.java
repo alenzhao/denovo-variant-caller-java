@@ -136,10 +136,7 @@ public class DenovoUtil {
     return readsetIdMap;
   }
 
-  // TODO : Investigate effect of splitting on "|"
-  public static Optional<List<Integer>> getGenotype(Call call) {
-    List<Integer> genoType = new ArrayList<Integer>();
-
+  public static Optional<List<Integer>> getGenotypeFromInfoField(Call call) {
     String genoTypeString = call.getInfo().get("GT").get(0);
     String splitChar = null;
     if (genoTypeString.contains("/")) {
@@ -150,6 +147,7 @@ public class DenovoUtil {
       return Optional.absent();
     }
 
+    List<Integer> genoType = new ArrayList<>();
     for (String allele : genoTypeString.split(splitChar)) {
       genoType.add(Integer.valueOf(allele));
     }

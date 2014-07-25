@@ -66,7 +66,7 @@ public class DenovoCaller {
 
       // Call is not diploid
       Call call = lastCall.get(trioType);
-      Optional<List<Integer>> genotypeOption = DenovoUtil.getGenotype(call);
+      Optional<List<Integer>> genotypeOption = DenovoUtil.getGenotypeFromInfoField(call);
       if (!genotypeOption.isPresent() || genotypeOption.get().size() != 2) {
         return Optional.absent();
       }
@@ -133,7 +133,7 @@ public class DenovoCaller {
 
     Map<TrioIndividual, DiploidGenotype> trioGenotypes = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
-      List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType)).get();
+      List<Integer> genoTypeList = DenovoUtil.getGenotypeFromInfoField(trioCalls.get(trioType)).get();
       trioGenotypes.put(trioType, new DiploidGenotype(genoTypeList));
     }
 
