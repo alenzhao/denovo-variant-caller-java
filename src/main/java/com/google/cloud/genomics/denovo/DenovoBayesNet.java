@@ -89,56 +89,32 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
       for (Genotypes genoTypeDad : Genotypes.values()) {
         for (Genotypes genoTypeMom : Genotypes.values()) {
 
-          int validInheritanceCases = 0;
-          // Initial pass
-          for (Genotypes genoTypeChild : Genotypes.values()) {
-            double prob;
-            String dadAlleles = genoTypeDad.name();
-            String momAlleles = genoTypeMom.name();
-            String childAlleles = genoTypeChild.name();
-            String c1 = childAlleles.substring(0, 1);
-            String c2 = childAlleles.substring(1, 2);
-            boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
-            boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
-            boolean predicate3 = predicate1 | predicate2;
-            
-            boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(genoTypeDad,genoTypeMom,genoTypeChild));
-            
-            if (predicate3) {
-              prob = 1.0;
-              validInheritanceCases++;
-            } else {
-              prob = 0.0;
-            }
 
-            conditionalProbabilityTable.put(Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild),
-                prob);
+          // Initial pass to count valid inheritance cases
+          int validInheritanceCases = 0;
+          for (Genotypes genoTypeChild : Genotypes.values()) {
+            boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(
+                Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
+
+            if (!isDenovo) {
+              validInheritanceCases++;
+            }
           }
-          // Secondary Pass to normalize prob values
+
+          // Secondary Pass to fill in probability values
           for (Genotypes genoTypeChild : Genotypes.values()) {
             List<Genotypes> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
 
-            boolean isNotInheritenceCase =
-                -DenovoUtil.EPS <= conditionalProbabilityTable.get(cptKey)
-                && conditionalProbabilityTable.get(cptKey) <= DenovoUtil.EPS;
+            boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(cptKey);
             conditionalProbabilityTable.put(
                 cptKey,
-                isNotInheritenceCase
+                isDenovo
                     ? getDenovoMutationRate()
-                    : 1.0 / validInheritanceCases
-                        - getDenovoMutationRate()
-                            * (Genotypes.values().length - validInheritanceCases) / validInheritanceCases);
-          }
-
-          // Sanity check - probabilities should add up to 1.0 (almost)
-          double totProb = 0.0;
-          for (Genotypes genoTypeChild : Genotypes.values()) {
-            List<Genotypes> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
-            totProb += conditionalProbabilityTable.get(cptKey);
-          }
-          if (Math.abs(totProb - 1.0) > DenovoUtil.EPS) {
-            throw new IllegalStateException(
-                "cpt probabilities not adding up : " + String.valueOf(totProb));
+                    : (1.0
+                          - getDenovoMutationRate() 
+                               * (Genotypes.values().length - validInheritanceCases)) 
+                      / validInheritanceCases
+                );
           }
         }
       }

@@ -252,13 +252,13 @@ public class DenovoUtil {
   /**
    * Check if the particular genotype is denovo i.e. present in kids but not in parents
    *
-   * @param maxTrioGenoType
+   * @param trioGenotypeList
    * @return isDenovo
    */
-  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> maxTrioGenoType) {
-    Genotypes genoTypeDad = maxTrioGenoType.get(0);
-    Genotypes genoTypeMom = maxTrioGenoType.get(1);
-    Genotypes genoTypeChild = maxTrioGenoType.get(2);
+  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> trioGenotypeList) {
+    Genotypes genoTypeDad = trioGenotypeList.get(0);
+    Genotypes genoTypeMom = trioGenotypeList.get(1);
+    Genotypes genoTypeChild = trioGenotypeList.get(2);
 
     String childAlleles = genoTypeChild.name();
     String momAlleles = genoTypeMom.name();
