@@ -24,11 +24,12 @@ import com.google.cloud.genomics.utils.GenomicsFactory;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.security.GeneralSecurityException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -48,7 +49,9 @@ public class Benchmarking {
   final static long RANDOM_SEED = 42L;
   private final String benchmarkTarget;
   private final PrintStream logStream;
-
+  private String startTimeStamp;
+  private String endTimeStamp;
+  
   public static class Builder {
 
     // Required parameters
@@ -94,12 +97,14 @@ public class Benchmarking {
   @Override
   public String toString() {
     return String.format("benchmarkTarget : %s%n" +
+        "startTimeStamp : %s%n" +
+        "endTimeStamp : %s%n" +
         "numRepeatExperiment : %d%n" +
         "maxReadstoreRequests : %d%n" +
         "maxVarstoreRequests : %d%n" +
         "maxVariantResults : %d"   
-        , benchmarkTarget, numRepeatExperiment, maxVarstoreRequests, maxReadstoreRequests, 
-        maxVariantResults);
+        , benchmarkTarget, startTimeStamp, endTimeStamp, numRepeatExperiment, maxVarstoreRequests, 
+        maxReadstoreRequests, maxVariantResults);
   }
   
   private Benchmarking(Builder builder) {
@@ -124,6 +129,10 @@ public class Benchmarking {
   }
 
   public void execute() {
+    
+    startTimeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").
+        format(Calendar.getInstance().getTime());
+    
     List<Long> executionTimes = new ArrayList<>();
     try {
       for (int i = 0; i < numRepeatExperiment; i++) {
@@ -139,6 +148,9 @@ public class Benchmarking {
       e.printStackTrace();
     }
 
+    endTimeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").
+        format(Calendar.getInstance().getTime());
+    
     logStream.println(toString());
     printStats(executionTimes, logStream);
   }
@@ -227,34 +239,5 @@ public class Benchmarking {
       throw new IllegalStateException("candidatePos < 0");
     }
     return candidatePosition;
-  }
-  
-  public static void main(String[] args) throws FileNotFoundException {
-    Benchmarking benchmarking ; 
-    
-    // Readstore benchmarking
-    benchmarking = new Benchmarking.Builder("readstore", new PrintStream("/tmp/readstore")).
-        maxReadstoreRequests(20).
-        build();
-    benchmarking.execute();
-    
-    // Varstore benchmarking 1K
-    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore1K")).
-        maxVariantResults(1000L).
-        build();
-    benchmarking.execute();
-    
-    // Varstore benchmarking 10K 
-    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore10K")).
-        maxVariantResults(10000L).
-        build();
-    benchmarking.execute();
-
-    // Varstore benchmarking 20K
-    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore20K")).
-        maxVariantResults(20000L).
-        build();
-    benchmarking.execute();
-
   }
 }
