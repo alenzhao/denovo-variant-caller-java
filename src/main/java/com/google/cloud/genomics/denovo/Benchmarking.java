@@ -19,24 +19,12 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
-/*
- *Copyright 2014 Google Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
 import com.google.cloud.genomics.utils.GenomicsFactory;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.security.GeneralSecurityException;
@@ -51,32 +39,91 @@ import java.util.Random;
 public class Benchmarking {
 
   final static String TRIO_DATASET_ID = "2315870033780478914";
-  final static int MAX_VARSTORE_REQUESTS = 10;
-  final static int MAX_READSTORE_REQUESTS = 10;
-  private static Genomics genomics;
-  private static Random random;
+  private int maxVarstoreRequests;
+  private int maxReadstoreRequests;
+  private Genomics genomics;
+  private Random random;
   final static long RANDOM_SEED = 42L;
+  private final String benchmarkTarget;
+  private final PrintStream logStream;
 
-  public static void main(String[] args) throws IOException, GeneralSecurityException {
+  public static class Builder {
 
+    // Required parameters
+    private final String benchmarkTarget;
+    private final PrintStream logStream;
 
+    // Optional parameters
+    private int maxVarstoreRequests = 10;
+    private int maxReadstoreRequests = 10;
+
+    public Builder(String benchmarkTarget, PrintStream logStream) {
+      this.benchmarkTarget = benchmarkTarget;
+      this.logStream = logStream;
+    }
+
+    public Builder maxVarstoreRequests(int val) {
+      maxVarstoreRequests = val;
+      return this;
+    }
+    
+    public Builder maxReadstoreRequests(int val) {
+      maxReadstoreRequests = val;
+      return this;
+    }
+    
+    public Benchmarking build() {
+      return new Benchmarking(this);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return String.format("benchmarkTarget : %s%n" +
+        "maxVarstoreRequests : %d%n" + 
+        "maxReadstoreRequests : %d" 
+    , benchmarkTarget, maxVarstoreRequests, maxReadstoreRequests);
+  }
+  
+  private Benchmarking(Builder builder) {
+    benchmarkTarget = builder.benchmarkTarget;
+    logStream = builder.logStream;
+    maxVarstoreRequests = builder.maxVarstoreRequests;
+    maxReadstoreRequests = builder.maxReadstoreRequests;
+    
     String homeDir = System.getProperty("user.home");
     String clientSecretsFilename = homeDir + "/Downloads/client_secrets.json";
 
-    genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
-        .fromClientSecretsFile(new File(clientSecretsFilename));
+    try {
+      genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
+          .fromClientSecretsFile(new File(clientSecretsFilename));
+    } catch (IOException | GeneralSecurityException e) {
+      e.printStackTrace();
+    }
 
     random = new Random(RANDOM_SEED);
-
-    List<Long> executionTimes;
-    executionTimes = timeVarstoreRequests();
-    printStats(executionTimes, System.out);
-
-    executionTimes = timeReadstoreRequests();
-    printStats(executionTimes, System.out);
   }
 
-  private static void printStats(List<Long> executionTimes, PrintStream out) {
+  public void execute() {
+    List<Long> executionTimes = null;
+    try {
+      if (benchmarkTarget == "varstore") {
+        executionTimes = timeVarstoreRequests();
+      } else if (benchmarkTarget == "readstore") {
+        executionTimes = timeReadstoreRequests();
+      } else {
+        throw new IllegalArgumentException("Unknown benchmark target" + benchmarkTarget);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    
+    logStream.println(toString());
+    
+    printStats(executionTimes, logStream);
+  }
+
+  private void printStats(List<Long> executionTimes, PrintStream out) {
     // Calculate summary stats
     DescriptiveStatistics stats = new DescriptiveStatistics();
     for (Long time : executionTimes) {
@@ -94,7 +141,7 @@ public class Benchmarking {
   /*
    * time the Varstore Requests
    */
-  private static List<Long> timeVarstoreRequests() throws IOException {
+  private List<Long> timeVarstoreRequests() throws IOException {
 
     // get all the contigbounds
     List<ContigBound> contigBounds = DenovoUtil.getVariantsSummary(TRIO_DATASET_ID, genomics);
@@ -107,7 +154,7 @@ public class Benchmarking {
 
     List<Long> timingResults = new ArrayList<>();
 
-    for (int numRequests = 0; variantContigStream.hasMore() && numRequests < MAX_VARSTORE_REQUESTS;
+    for (int numRequests = 0; variantContigStream.hasMore() && numRequests < maxVarstoreRequests;
         numRequests++) {
 
       long startTime = Long.valueOf(System.currentTimeMillis());
@@ -122,7 +169,7 @@ public class Benchmarking {
   /*
    * time the Varstore Requests
    */
-  private static List<Long> timeReadstoreRequests() throws IOException {
+  private List<Long> timeReadstoreRequests() throws IOException {
 
     // create the readsetIdMap
     Map<TrioIndividual, String> readsetIdMap =
@@ -133,7 +180,7 @@ public class Benchmarking {
 
     List<Long> timingResults = new ArrayList<>();
 
-    for (int numRequests = 0; numRequests < MAX_READSTORE_REQUESTS; numRequests++) {
+    for (int numRequests = 0; numRequests < maxReadstoreRequests; numRequests++) {
 
       System.out.printf("Query #%d%n", numRequests);
       // extract a random contig and position
@@ -151,7 +198,7 @@ public class Benchmarking {
     return timingResults;
   }
 
-  private static long getRandomPosition(ContigBound randomContig) {
+  private long getRandomPosition(ContigBound randomContig) {
     long nextLong = -1L;
     for (nextLong = random.nextLong(); nextLong < 0L; nextLong = random.nextLong()) {
     }
@@ -160,5 +207,19 @@ public class Benchmarking {
       throw new IllegalStateException("candidatePos < 0");
     }
     return candidatePosition;
+  }
+  
+  public static void main(String[] args) throws FileNotFoundException {
+    Benchmarking benchmarking ; 
+    
+    // Readstore benchmarking
+    benchmarking = new Benchmarking.Builder("readstore", new PrintStream("/tmp/readstore"))
+        .maxReadstoreRequests(20)
+        .build();
+    benchmarking.execute();
+    
+    // Varstore benchmarking
+    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore")).build();
+    benchmarking.execute();
   }
 }
