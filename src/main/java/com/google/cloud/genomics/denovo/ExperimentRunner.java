@@ -14,8 +14,10 @@
 package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
-import static com.google.cloud.genomics.denovo.DenovoUtil.readsetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
 
+import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Dataset;
@@ -50,9 +52,11 @@ public class ExperimentRunner {
 
   public String candidatesFile;
   private CommandLine cmdLine;
+  private Genomics genomics;
 
-  public ExperimentRunner(CommandLine _cmdLine) {
-    cmdLine = _cmdLine;
+  public ExperimentRunner(CommandLine cmdLine, Genomics genomics) {
+    this.cmdLine = cmdLine;
+    this.genomics = genomics;
 
     // Check command line for candidates file
     checkAndAddCandidatesFile();
@@ -109,10 +113,10 @@ public class ExperimentRunner {
       Map<TrioIndividual, String> dictRelationCallsetId = new HashMap<>();
 
       /* Get a list of all the datasets */
-      allDatasetsInProject = DenovoUtil.getAllDatasets();
+      allDatasetsInProject = DenovoUtil.getAllDatasets(genomics);
 
       /* Get all the callsets for the trio dataset */
-      callsets = DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID);
+      callsets = DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID, genomics);
 
       // Create a family person type to callset id map
       for (Callset callset : callsets) {
@@ -133,7 +137,7 @@ public class ExperimentRunner {
       }
 
       /* Get a list of all the Variants per contig */
-      contigBounds = DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID);
+      contigBounds = DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics);
 
       long startTime = System.currentTimeMillis();
       long prevTime = startTime;
@@ -144,7 +148,7 @@ public class ExperimentRunner {
         System.out.println("Currently processing contig : " + currentContig.getContig());
 
         VariantContigStream variantContigStream =
-            new VariantContigStream(currentContig, DenovoUtil.TRIO_DATASET_ID);
+            new VariantContigStream(genomics, currentContig, DenovoUtil.TRIO_DATASET_ID);
         variantContigStreams.add(variantContigStream);
 
         DenovoCaller denovoCaller = new DenovoCaller(dictRelationCallsetId);
@@ -192,7 +196,7 @@ public class ExperimentRunner {
   /*
    * Stage 2 : Reads in candidate calls from stage 1 output file and then refines the candidates
    */
-  public void stage2() {
+  public void stage2() throws IOException {
 
     System.out.println("---- Starting Stage2 Bayesian Caller -----");
 
@@ -201,6 +205,9 @@ public class ExperimentRunner {
     final File stage1CallsFile = new File(outdir, candidatesFile);
 
     /* Find the readset Ids associated with the datasets */
+    
+    Map<TrioIndividual, String> readsetIdMap = 
+        DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);
 
     System.out.println();
     System.out.println("Readset Ids Found");
@@ -227,7 +234,7 @@ public class ExperimentRunner {
         Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
         for (TrioIndividual trioIndividual : TrioIndividual.values()) {
           List<Read> reads = DenovoUtil.getReads(readsetIdMap.get(trioIndividual), chromosome,
-              candidatePosition, candidatePosition);
+              candidatePosition, candidatePosition, genomics);
           readMap.put(trioIndividual, reads);
         }
 
@@ -256,5 +263,19 @@ public class ExperimentRunner {
     } catch (IOException | ParseException e) {
       e.printStackTrace();
     }
+  }
+
+  /**
+   * @return the genomics
+   */
+  public Genomics getGenomics() {
+    return genomics;
+  }
+
+  /**
+   * @param genomics the genomics to set
+   */
+  public void setGenomics(Genomics genomics) {
+    this.genomics = genomics;
   }
 }

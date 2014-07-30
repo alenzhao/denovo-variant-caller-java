@@ -37,11 +37,8 @@ public class GenomicsExperiment {
       Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
           .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
       
-      // Set genomics state so that all classes can use it
-      DenovoUtil.setGenomics(genomics);
-
       // Create a new experiment and run it
-      ExperimentRunner expRunner = new ExperimentRunner(cmdLine);
+      ExperimentRunner expRunner = new ExperimentRunner(cmdLine, genomics);
       expRunner.execute();
       
     } catch (Exception e) {

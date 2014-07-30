@@ -50,7 +50,6 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-  private static Genomics genomics;
 
   static public final long PROJECT_ID = 1085016379660L;
   static public final int TOT_CHROMOSOMES = 24;
@@ -62,7 +61,6 @@ public class DenovoUtil {
   static public final String TRIO_DATASET_ID = "2315870033780478914";
 
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
-  static public Map<TrioIndividual, String> readsetIdMap;
   public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
   public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
   static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
@@ -90,12 +88,6 @@ public class DenovoUtil {
     individualCallsetNameMap.put(CHILD, "NA12879");
     individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
     
-    try {
-      readsetIdMap = createReadsetIdMap(datasetIdMap, callsetIdMap);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
   }
   
   public enum TrioIndividual {
@@ -160,12 +152,13 @@ public class DenovoUtil {
    * @throws IOException
    */
   public static Map<TrioIndividual, String> createReadsetIdMap(
-      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap)
+      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap, 
+      Genomics genomics)
       throws IOException {
     Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
     for (TrioIndividual trioIndividual : datasetIdMap.keySet()) {
-      List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual));
+      List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual), genomics);
 
       for (Readset readset : readsets) {
         // System.out.println(
@@ -206,7 +199,7 @@ public class DenovoUtil {
   }
 
   public static List<Read> getReads(String readsetId, String chromosomeName, long startPos,
-      long endPos) throws IOException {
+      long endPos, Genomics genomics) throws IOException {
 
     SearchReadsRequest searchReadsRequest =
         createSearchReadsRequest(readsetId, chromosomeName, startPos, endPos);
@@ -218,7 +211,7 @@ public class DenovoUtil {
     return reads;
   }
 
-  public static List<Readset> getReadsets(String datasetId) throws IOException {
+  public static List<Readset> getReadsets(String datasetId, Genomics genomics) throws IOException {
     SearchReadsetsRequest searchReadsetsRequest = createSearchReadsetsRequest(datasetId);
     Genomics.Readsets.Search search =
         genomics.readsets().search(searchReadsetsRequest);
@@ -232,7 +225,7 @@ public class DenovoUtil {
    * @return List<Callset>
    * @throws IOException
    */
-  public static List<Callset> getCallsets(String datasetId) throws IOException {
+  public static List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
     SearchCallsetsRequest searchCallsetsRequest = createSearchCallsetsRequest(datasetId);
     Genomics.Callsets.Search search =
         genomics.callsets().search(searchCallsetsRequest);
@@ -249,7 +242,7 @@ public class DenovoUtil {
    * @return List<Dataset>
    * @throws IOException
    */
-  public static List<Dataset> getAllDatasets() throws IOException {
+  public static List<Dataset> getAllDatasets(Genomics genomics) throws IOException {
     System.out.println();
     System.out.println("######## Datasets under Project ########");
 
@@ -269,7 +262,8 @@ public class DenovoUtil {
    * @return List<ContigBound>
    * @throws IOException
    */
-  public static List<ContigBound> getVariantsSummary(String datasetId) throws IOException {
+  public static List<ContigBound> getVariantsSummary(String datasetId, Genomics genomics) 
+      throws IOException {
     System.out.println();
     System.out.println("######## Variants in Dataset ########");
     System.out.println("Querying DatasetID : " + datasetId);
@@ -320,20 +314,4 @@ public class DenovoUtil {
     boolean predicate3 = !(predicate1 | predicate2);
     return predicate3;
   }
-
-  /**
-   * @return the genomics
-   */
-  public static Genomics getGenomics() {
-    return genomics;
-  }
-
-  /**
-   * @param genomics the genomics to set
-   */
-  public static void setGenomics(Genomics genomics) {
-    DenovoUtil.genomics = genomics;
-  }
-
-
 }
