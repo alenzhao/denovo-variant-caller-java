@@ -39,8 +39,10 @@ import java.util.Random;
 public class Benchmarking {
 
   final static String TRIO_DATASET_ID = "2315870033780478914";
+  private int numRepeatExperiment;
   private int maxVarstoreRequests;
   private int maxReadstoreRequests;
+  private long maxVariantResults;
   private Genomics genomics;
   private Random random;
   final static long RANDOM_SEED = 42L;
@@ -56,6 +58,8 @@ public class Benchmarking {
     // Optional parameters
     private int maxVarstoreRequests = 10;
     private int maxReadstoreRequests = 10;
+    private int numRepeatExperiment = 2;
+    private long maxVariantResults = DenovoUtil.MAX_VARIANT_RESULTS;
 
     public Builder(String benchmarkTarget, PrintStream logStream) {
       this.benchmarkTarget = benchmarkTarget;
@@ -72,6 +76,16 @@ public class Benchmarking {
       return this;
     }
     
+    public Builder numRepeatExperiment(int val) {
+      numRepeatExperiment = val;
+      return this;
+    }
+    
+    public Builder maxVariantResults(long val) {
+      maxVariantResults = val;
+      return this;
+    }
+    
     public Benchmarking build() {
       return new Benchmarking(this);
     }
@@ -80,9 +94,12 @@ public class Benchmarking {
   @Override
   public String toString() {
     return String.format("benchmarkTarget : %s%n" +
-        "maxVarstoreRequests : %d%n" + 
-        "maxReadstoreRequests : %d" 
-    , benchmarkTarget, maxVarstoreRequests, maxReadstoreRequests);
+        "numRepeatExperiment : %d%n" +
+        "maxReadstoreRequests : %d%n" +
+        "maxVarstoreRequests : %d%n" +
+        "maxVariantResults : %d"   
+        , benchmarkTarget, numRepeatExperiment, maxVarstoreRequests, maxReadstoreRequests, 
+        maxVariantResults);
   }
   
   private Benchmarking(Builder builder) {
@@ -90,6 +107,8 @@ public class Benchmarking {
     logStream = builder.logStream;
     maxVarstoreRequests = builder.maxVarstoreRequests;
     maxReadstoreRequests = builder.maxReadstoreRequests;
+    maxVariantResults = builder.maxVariantResults;
+    numRepeatExperiment = builder.numRepeatExperiment;
     
     String homeDir = System.getProperty("user.home");
     String clientSecretsFilename = homeDir + "/Downloads/client_secrets.json";
@@ -105,21 +124,22 @@ public class Benchmarking {
   }
 
   public void execute() {
-    List<Long> executionTimes = null;
+    List<Long> executionTimes = new ArrayList<>();
     try {
-      if (benchmarkTarget == "varstore") {
-        executionTimes = timeVarstoreRequests();
-      } else if (benchmarkTarget == "readstore") {
-        executionTimes = timeReadstoreRequests();
-      } else {
-        throw new IllegalArgumentException("Unknown benchmark target" + benchmarkTarget);
+      for (int i = 0; i < numRepeatExperiment; i++) {
+        if (benchmarkTarget == "varstore") {
+          executionTimes.addAll(timeVarstoreRequests());
+        } else if (benchmarkTarget == "readstore") {
+          executionTimes.addAll(timeReadstoreRequests());
+        } else {
+          throw new IllegalArgumentException("Unknown benchmark target" + benchmarkTarget);
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
-    
+
     logStream.println(toString());
-    
     printStats(executionTimes, logStream);
   }
 
@@ -150,7 +170,7 @@ public class Benchmarking {
     ContigBound randomContig = contigBounds.get(random.nextInt(contigBounds.size()));
 
     VariantContigStream variantContigStream =
-        new VariantContigStream(genomics, randomContig, TRIO_DATASET_ID);
+        new VariantContigStream(genomics, randomContig, TRIO_DATASET_ID, maxVariantResults);
 
     List<Long> timingResults = new ArrayList<>();
 
@@ -213,13 +233,28 @@ public class Benchmarking {
     Benchmarking benchmarking ; 
     
     // Readstore benchmarking
-    benchmarking = new Benchmarking.Builder("readstore", new PrintStream("/tmp/readstore"))
-        .maxReadstoreRequests(20)
-        .build();
+    benchmarking = new Benchmarking.Builder("readstore", new PrintStream("/tmp/readstore")).
+        maxReadstoreRequests(20).
+        build();
     benchmarking.execute();
     
-    // Varstore benchmarking
-    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore")).build();
+    // Varstore benchmarking 1K
+    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore1K")).
+        maxVariantResults(1000L).
+        build();
     benchmarking.execute();
+    
+    // Varstore benchmarking 10K 
+    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore10K")).
+        maxVariantResults(10000L).
+        build();
+    benchmarking.execute();
+
+    // Varstore benchmarking 20K
+    benchmarking = new Benchmarking.Builder("varstore", new PrintStream("/tmp/varstore20K")).
+        maxVariantResults(20000L).
+        build();
+    benchmarking.execute();
+
   }
 }

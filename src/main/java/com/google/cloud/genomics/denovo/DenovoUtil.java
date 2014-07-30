@@ -103,7 +103,8 @@ public class DenovoUtil {
       long startPos,
       long endPos,
       String datasetId,
-      String nextPageToken) {
+      String nextPageToken,
+      long maxVariantResults) {
 
     // Init searchRequest obj
     SearchVariantsRequest searchVariantsRequest;
@@ -118,7 +119,7 @@ public class DenovoUtil {
         .setDatasetId(datasetId)
         .setStartPosition(startPos)
         .setEndPosition(endPos)
-        .setMaxResults(BigInteger.valueOf(MAX_VARIANT_RESULTS))
+        .setMaxResults(BigInteger.valueOf(maxVariantResults))
         .setPageToken(nextPageToken);
 
     return searchVariantsRequest;

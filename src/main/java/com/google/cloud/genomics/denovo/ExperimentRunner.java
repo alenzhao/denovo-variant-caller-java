@@ -148,7 +148,8 @@ public class ExperimentRunner {
         System.out.println("Currently processing contig : " + currentContig.getContig());
 
         VariantContigStream variantContigStream =
-            new VariantContigStream(genomics, currentContig, DenovoUtil.TRIO_DATASET_ID);
+            new VariantContigStream(genomics, currentContig, DenovoUtil.TRIO_DATASET_ID, 
+                DenovoUtil.MAX_VARIANT_RESULTS);
         variantContigStreams.add(variantContigStream);
 
         DenovoCaller denovoCaller = new DenovoCaller(dictRelationCallsetId);

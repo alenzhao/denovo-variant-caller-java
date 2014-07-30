@@ -34,11 +34,14 @@ public class VariantContigStream {
   private Search searchVariantsRequestLoaded;
   private String datasetId;
   private Genomics genomics;
-
-  public VariantContigStream(Genomics genomics, ContigBound contig, String datasetId) {
+  private long maxVariantResults;
+  
+  public VariantContigStream(Genomics genomics, ContigBound contig, String datasetId, 
+      long maxVariantResults) {
     this.setGenomics(genomics);
     this.contig = contig;
     this.datasetId = datasetId;
+    this.maxVariantResults = maxVariantResults;
     searchVariantsRequest = null;
     searchVariantsRequestLoaded = null;
     searchVariantsExecuted = null;
@@ -61,7 +64,8 @@ public class VariantContigStream {
           DenovoUtil.DEFAULT_START_POS,
           contig.getUpperBound(),
           datasetId,
-          null);
+          null,
+          maxVariantResults);
 
     } else if (searchVariantsExecuted.getNextPageToken() != null) {
 
@@ -71,7 +75,8 @@ public class VariantContigStream {
           DenovoUtil.DEFAULT_START_POS,
           contig.getUpperBound(),
           datasetId,
-          searchVariantsExecuted.getNextPageToken());
+          searchVariantsExecuted.getNextPageToken(),
+          maxVariantResults);
     } else {
       return null;
     }
