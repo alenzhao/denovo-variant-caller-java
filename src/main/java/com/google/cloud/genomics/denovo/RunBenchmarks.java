@@ -69,7 +69,7 @@ public class RunBenchmarks {
       Benchmarking benchmarking = new Benchmarking.Builder("varstore", new PrintStream(logFileString)).
           maxVariantResults(maxResults).
           maxVarstoreRequests(10).
-          numRepeatExperiment(numThreads*5).
+          numRepeatExperiment(numThreads * 5).
           numThreads(numThreads).
           build();
       benchmarking.execute();
@@ -86,7 +86,7 @@ public class RunBenchmarks {
           new PrintStream(benchmarksDir.getAbsolutePath() + "/readstoreThreaded" + 
               String.valueOf(numThreads))).
           maxReadstoreRequests(100).
-          numRepeatExperiment(numThreads*5).
+          numRepeatExperiment(numThreads * 5).
           numThreads(numThreads).
           build();
       benchmarking.execute();
