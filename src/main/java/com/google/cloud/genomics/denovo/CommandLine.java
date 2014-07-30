@@ -36,10 +36,6 @@ class CommandLine {
       usage = "Path to client_secrets.json")
   public String clientSecretsFilename = "client_secrets.json";
 
-  @Option(name = "--require_all_scopes",
-      usage = "Uncommon. If specified, the user will be asked for all Genomics related OAuth scopes.")
-  public boolean requireAllScopes = false;
-
   @Option(name = "--candidates_file", metaVar = "<cand file>",
       usage = "Specify the file onto which to write the candidates")
   public String candidatesFile = null;
@@ -52,7 +48,10 @@ class CommandLine {
       usage = "Specify the denovo mutation rate (default 1e-8)")
   public double denovoMutationRate = 1e-8;
 
-
+  @Option(name = "--num_threads", metaVar = "<num_threads>",
+      usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
+  public int numThreads = 1;
+  
   public CommandLine() {
     parser = new CmdLineParser(this);
   }

@@ -13,14 +13,15 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import java.io.IOException;
-import java.util.List;
-
+import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.Genomics.Variants.Search;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
+
+import java.io.IOException;
+import java.util.List;
 
 /*
  * Creates a Stream of variants for a particular contig
@@ -32,11 +33,15 @@ public class VariantContigStream {
   private SearchVariantsResponse searchVariantsExecuted;
   private Search searchVariantsRequestLoaded;
   private String datasetId;
-
-
-  public VariantContigStream(ContigBound contig, String datasetId) {
+  private Genomics genomics;
+  private long maxVariantResults;
+  
+  public VariantContigStream(Genomics genomics, ContigBound contig, String datasetId, 
+      long maxVariantResults) {
+    this.setGenomics(genomics);
     this.contig = contig;
     this.datasetId = datasetId;
+    this.maxVariantResults = maxVariantResults;
     searchVariantsRequest = null;
     searchVariantsRequestLoaded = null;
     searchVariantsExecuted = null;
@@ -56,20 +61,22 @@ public class VariantContigStream {
       requestCount++;
       searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(null,
           contig,
-          ExperimentRunner.DEFAULT_START_POS,
+          DenovoUtil.DEFAULT_START_POS,
           contig.getUpperBound(),
           datasetId,
-          null);
+          null,
+          maxVariantResults);
 
     } else if (searchVariantsExecuted.getNextPageToken() != null) {
 
       requestCount++;
       searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(searchVariantsRequest,
           contig,
-          ExperimentRunner.DEFAULT_START_POS,
+          DenovoUtil.DEFAULT_START_POS,
           contig.getUpperBound(),
           datasetId,
-          searchVariantsExecuted.getNextPageToken());
+          searchVariantsExecuted.getNextPageToken(),
+          maxVariantResults);
     } else {
       return null;
     }
@@ -77,9 +84,23 @@ public class VariantContigStream {
     System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
 
     searchVariantsRequestLoaded =
-        ExperimentRunner.genomics.variants().search(searchVariantsRequest);
+        getGenomics().variants().search(searchVariantsRequest);
     searchVariantsExecuted = searchVariantsRequestLoaded.execute();
     List<Variant> variants = searchVariantsExecuted.getVariants();
     return variants;
+  }
+
+  /**
+   * @return the genomics
+   */
+  public Genomics getGenomics() {
+    return genomics;
+  }
+
+  /**
+   * @param genomics the genomics to set
+   */
+  public void setGenomics(Genomics genomics) {
+    this.genomics = genomics;
   }
 }

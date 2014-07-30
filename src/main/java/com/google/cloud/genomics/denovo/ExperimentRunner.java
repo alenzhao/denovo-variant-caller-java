@@ -13,18 +13,17 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
+
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
-import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.common.base.Optional;
-
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,14 +31,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Holds all the experiments in the project
@@ -51,33 +50,42 @@ import java.util.Map;
  */
 public class ExperimentRunner {
 
-  static public final long PROJECT_ID = 1085016379660L;
-  static public final int TOT_CHROMOSOMES = 24;
-  static public final long MAX_VARIANT_RESULTS = 10000L;
-  static public final long DEFAULT_START_POS = 1L;
-  static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
-  static public final Float QD_THRESH = Float.valueOf((float) 2.0);
-  static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
-  static public Map<String, Float> qualityThresholdMap = new HashMap<>();
 
-  static public Genomics genomics;
   public String candidatesFile;
   private CommandLine cmdLine;
-
-
-  public ExperimentRunner(Genomics _genomics, CommandLine _cmdLine) {
-    genomics = _genomics;
-    cmdLine = _cmdLine;
-    qualityThresholdMap.put("GQX", GQX_THRESH);
-    qualityThresholdMap.put("QD", QD_THRESH);
-    qualityThresholdMap.put("MQ", MQ_THRESH);
-    qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
-
+  private Genomics genomics;
+  private Map<TrioIndividual, String> individualCallsetIdMap = new HashMap<>();
+  private final int numThreads;
+  private Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
+  private final BayesInfer bayesInferrer;
+  
+  public ExperimentRunner(CommandLine cmdLine, Genomics genomics) {
+    this.cmdLine = cmdLine;
+    this.genomics = genomics;
+    this.numThreads = cmdLine.numThreads;
+    try {
+      readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);
+    } catch (IOException e) {
+      // TODO(smoitra): Auto-generated catch block
+      e.printStackTrace();
+    }
+    // Create the BayesNet inference object
+    bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
+    
     // Check command line for candidates file
     checkAndAddCandidatesFile();
-
   }
 
+  public void execute() throws IOException {
+    if (cmdLine.stageId.equals("stage1")) {
+      stage1();
+    } else if (cmdLine.stageId.equals("stage2")) {
+      stage2();
+    } else {
+      throw new IllegalArgumentException("Unknown stage : " + cmdLine.stageId);
+    }
+  }
+  
   /**
    * Check to see that candidatesFile is defined for experiments
    */
@@ -98,197 +106,237 @@ public class ExperimentRunner {
     System.out.println("---------Starting Stage 1 VCF Filter -----------");
 
     // Define Experiment Specific Constant Values
-    final String TRIO_DATASET_ID = "2315870033780478914";
-
-    Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
-    individualCallsetNameMap.put(DAD, "NA12877");
-    individualCallsetNameMap.put(MOM, "NA12878");
-    individualCallsetNameMap.put(CHILD, "NA12879");
-    individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
-    final File logFile = new File(outdir, "exp1.log");
     final File callFile = new File(outdir, candidatesFile);
-    final File variantFile = new File(outdir, "exp1.vars");
 
     // Open File Outout handles
-    try (PrintWriter logWriter = new PrintWriter(logFile);
-        PrintWriter callWriter = new PrintWriter(callFile);
-        PrintWriter variantWriter = new PrintWriter(variantFile);) {
-
-      @SuppressWarnings("unused")
-      List<Dataset> allDatasetsInProject;
-      List<Variant> variants;
-      List<ContigBound> contigBounds;
-      List<Callset> callsets;
-      List<VariantContigStream> variantContigStreams = new ArrayList<VariantContigStream>();
-      Map<TrioIndividual, String> dictRelationCallsetId = new HashMap<>();
+    try (PrintWriter callWriter = new PrintWriter(callFile);) {
 
       /* Get a list of all the datasets */
-      allDatasetsInProject = DenovoUtil.getAllDatasets();
+      DenovoUtil.getAllDatasets(genomics);
 
       /* Get all the callsets for the trio dataset */
-      callsets = DenovoUtil.getCallsets(TRIO_DATASET_ID);
-
-      // Create a family person type to callset id map
-      for (Callset callset : callsets) {
-        String callsetName = callset.getName();
-        for (TrioIndividual individual : TrioIndividual.values()) {
-          if (callsetName.equals(individualCallsetNameMap.get(individual))) {
-            dictRelationCallsetId.put(individual, callset.getId());
-            break;
-          }
-        }
-      }
-
-      // Check that the mapping has the correct keys
-      // One time Sanity check ; could be replaced with testing
-      if (!new HashSet<TrioIndividual>(dictRelationCallsetId.keySet()).equals(
-          new HashSet<TrioIndividual>(Arrays.asList(TrioIndividual.values())))) {
-        throw new IllegalStateException("Callsets not found");
-      }
+      createCallsetIdMap(DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID, genomics));
 
       /* Get a list of all the Variants per contig */
-      contigBounds = DenovoUtil.getVariantsSummary(TRIO_DATASET_ID);
+      List<ContigBound> contigBounds =
+          DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics);
 
-      long startTime = System.currentTimeMillis();
-      long prevTime = startTime;
-
+      ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       /* Iterate through each contig and do variant filtering for each contig */
-      for (ContigBound currentContig : contigBounds) {
-        System.out.println();
-        System.out.println("Currently processing contig : " + currentContig.getContig());
-
-        VariantContigStream variantContigStream =
-            new VariantContigStream(currentContig, TRIO_DATASET_ID);
-        variantContigStreams.add(variantContigStream);
-
-        DenovoCaller denovoCaller = new DenovoCaller(dictRelationCallsetId);
-
-        long denovoCount = 0;
-        long variantCount = 0;
-
-        while (variantContigStream.hasMore()) {
-          variants = variantContigStream.getVariants();
-          for (Variant variant : variants) {
-
-            variantCount++;
-
-            Optional<String> denovoCallResultOptional =
-                denovoCaller.callDenovoFromVarstore(variant);
-            if (denovoCallResultOptional.isPresent()) {
-              denovoCount++;
-              // callWriter.println("denovo candidate at " + currentContig.getContig() +
-              // ":position "
-              // + variant.getPosition() + " ; Details " + denovoCallResult.details);
-              callWriter.println(currentContig.getContig() + "," + variant.getPosition());
-              callWriter.flush();
-            }
-          }
-        }
-        System.out.println();
-        System.out.println("Denovo calls/variant Calls" + Long.valueOf(denovoCount) + "/"
-            + Long.valueOf(variantCount));
-
-        long contigTime = System.currentTimeMillis();
-        System.out.println();
-        System.out.println(
-            "Time elapsed at Chromosome " + (contigTime - prevTime) + " milliseconds");
-        prevTime = contigTime;
-
+      for (ContigBound contig : contigBounds) {
+        Runnable worker = new SimpleDenovoRunnable(callWriter, contig);
+        executor.execute(worker);
       }
 
-      long endTime = System.currentTimeMillis();
-      System.out.println();
-      System.out.println("Total time taken " + (endTime - startTime) + " milliseconds");
+      executor.shutdown();
+      while (!executor.isTerminated()) {
+      }
+      System.out.println("All contigs processed");
     }
   }
 
+  private class SimpleDenovoRunnable implements Runnable {
+
+    private final PrintWriter writer;
+    private final ContigBound contig;
+
+    public SimpleDenovoRunnable(PrintWriter writer, ContigBound contig) {
+      this.writer = writer;
+      this.contig = contig;
+    }
+
+    @Override
+    public void run() {
+      try {
+        callSimpleDenovo(writer, contig);
+      } catch (IOException e) {
+        // TODO(smoitra): Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+  }
+
+  /*
+   * Writes calls to print stream
+   */
+  public synchronized void writeCalls(PrintWriter writer, String calls) {
+    writer.print(calls);
+    writer.flush();
+  }
+
+  /*
+   * Creates a TrioType to callset ID map
+   */
+  private void createCallsetIdMap(List<Callset> callsets) {
+    // Create a family person type to callset id map
+    for (Callset callset : callsets) {
+      String callsetName = callset.getName();
+      for (TrioIndividual individual : TrioIndividual.values()) {
+        if (callsetName.equals(individualCallsetNameMap.get(individual))) {
+          individualCallsetIdMap.put(individual, callset.getId());
+          break;
+        }
+      }
+    }
+  }
+
+  /*
+   * Check all the variants in the contig using a simple denovo caller
+   */
+  private void callSimpleDenovo(PrintWriter callWriter, ContigBound currentContig)
+      throws IOException {
+    // Create the caller object
+    DenovoCaller denovoCaller = new DenovoCaller(individualCallsetIdMap);
+
+    VariantContigStream variantContigStream = new VariantContigStream(genomics, currentContig,
+        DenovoUtil.TRIO_DATASET_ID, DenovoUtil.MAX_VARIANT_RESULTS);
+
+    while (variantContigStream.hasMore()) {
+      List<Variant> variants = variantContigStream.getVariants();
+      StringBuilder builder = new StringBuilder();
+
+      for (Variant variant : variants) {
+
+        Optional<String> denovoCallResultOptional = denovoCaller.callDenovoFromVarstore(variant);
+        if (denovoCallResultOptional.isPresent()) {
+          builder.append(
+              String.format("%s,%d%n", currentContig.getContig(), variant.getPosition()));
+        }
+      }
+
+      writeCalls(callWriter, builder.toString());
+    }
+  }
 
   /*
    * Stage 2 : Reads in candidate calls from stage 1 output file and then refines the candidates
    */
-  public void stage2() throws IOException {
+  public void stage2() {
 
     System.out.println("---- Starting Stage2 Bayesian Caller -----");
-
-    // Constant Values Needed for stage 2 experiments
-    Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
-    datasetIdMap.put(DAD, "4140720988704892492");
-    datasetIdMap.put(MOM, "2778297328698497799");
-    datasetIdMap.put(CHILD, "6141326619449450766");
-    datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
-
-    Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
-    callsetIdMap.put(DAD, "NA12877");
-    callsetIdMap.put(MOM, "NA12878");
-    callsetIdMap.put(CHILD, "NA12879");
-    callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
-
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
     final File stage1CallsFile = new File(outdir, candidatesFile);
-
-    /* Find the readset Ids associated with the datasets */
-    Map<TrioIndividual, String> readsetIdMap =
-        DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap);
-
-    System.out.println();
-    System.out.println("Readset Ids Found");
-    System.out.println(readsetIdMap.toString());
-
-    // Create the BayesNet inference object
-    BayesInfer bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
+    final File stage2CallsFile = new File(outdir, "stage2.calls");
     
+    ExecutorService executor = new ThreadPoolExecutor(numThreads, // core thread pool size
+        numThreads, // maximum thread pool size
+        1, // time to wait before resizing pool
+        TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(numThreads, true), new ThreadPoolExecutor.CallerRunsPolicy());
+
     /* Check if each candidate call is truly denovo by Bayesian denovo calling */
-    
-    try (BufferedReader callCandidateReader = new BufferedReader(new FileReader(stage1CallsFile))) {
+    try (BufferedReader callCandidateReader = new BufferedReader(new FileReader(stage1CallsFile));
+        PrintWriter callWriter = new PrintWriter(stage2CallsFile);) {
       for (String line; (line = callCandidateReader.readLine()) != null;) {
-        String[] splitLine = line.split(",");
-        if (splitLine.length != 2) {
-          throw new ParseException("Could not parse line : " + line, 0);
-        }
-        String chromosome = splitLine[0];
-        Long candidatePosition = Long.valueOf(splitLine[1]);
+        CallHolder callHolder = parseLine(line);
 
-        System.out.println("Processing " + chromosome + ":" + String.valueOf(candidatePosition));
-
-
-        /* Get reads for the current position */
-        Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
-        for (TrioIndividual trioIndividual : TrioIndividual.values()) {
-          List<Read> reads = DenovoUtil.getReads(readsetIdMap.get(trioIndividual), chromosome,
-              candidatePosition, candidatePosition);
-          readMap.put(trioIndividual, reads);
-        }
-
-        /*
-         * Extract the relevant bases for the currrent position
-         */
-        Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-        for (TrioIndividual trioIndividual : TrioIndividual.values()) {
-          readSummaryMap.put(trioIndividual,
-              new ReadSummary(readMap.get(trioIndividual), candidatePosition));
-        }
-
-        /*
-         * Call the bayes inference algorithm to generate likelihood
-         */
-        boolean isDenovo = bayesInferrer.infer(readSummaryMap);
-
-        if (isDenovo) {
-          System.out.println("######### Denovo detected ########");
-        }
-
-
-        /* Set threshold and write candidate if passed */
-        // TODO
+        executor.submit(new BayesDenovoRunnable(callHolder, callWriter));
       }
 
     } catch (IOException | ParseException e) {
       e.printStackTrace();
+    }
+
+    // shutdown threadpool and wait
+    executor.shutdown();
+    while (!executor.isTerminated()) {
+    }
+  }
+
+  private CallHolder parseLine(String line) throws ParseException {
+    String[] splitLine = line.split(",");
+    if (splitLine.length != 2) {
+      throw new ParseException("Could not parse line : " + line, 0);
+    }
+    String chromosome = splitLine[0];
+    Long candidatePosition = Long.valueOf(splitLine[1]);
+    CallHolder callHolder = new CallHolder(chromosome, candidatePosition);
+    return callHolder;
+  }
+
+  private Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
+      Map<TrioIndividual, List<Read>> readMap) {
+    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioIndividual trioIndividual : TrioIndividual.values()) {
+      readSummaryMap.put(trioIndividual,
+          new ReadSummary(readMap.get(trioIndividual), candidatePosition));
+    }
+    return readSummaryMap;
+  }
+
+  private Map<TrioIndividual, List<Read>> getReadMap(String chromosome, Long candidatePosition)
+      throws IOException {
+    /* Get reads for the current position */
+    Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
+    for (TrioIndividual trioIndividual : TrioIndividual.values()) {
+      List<Read> reads = DenovoUtil.getReads(readsetIdMap.get(trioIndividual), chromosome,
+          candidatePosition, candidatePosition, genomics);
+      readMap.put(trioIndividual, reads);
+    }
+    return readMap;
+  }
+
+  public Genomics getGenomics() {
+    return genomics;
+  }
+
+  public void setGenomics(Genomics genomics) {
+    this.genomics = genomics;
+  }
+
+  private class CallHolder {
+    public final String chromosome;
+    public final Long position;
+
+    public CallHolder(String chromosome, Long position) {
+      this.chromosome = chromosome;
+      this.position = position;
+    }
+  }
+
+  /*
+   * Runs the Bayesian Denovo Calling code
+   */
+  private class BayesDenovoRunnable implements Runnable {
+
+    private final CallHolder callHolder;
+    private final PrintWriter writer;
+
+    public BayesDenovoRunnable(CallHolder callHolder, PrintWriter writer) {
+      this.callHolder = callHolder;
+      this.writer = writer;
+    }
+
+    @Override
+    public void run() {
+      System.out.println(
+          "Processing " + callHolder.chromosome + ":" + String.valueOf(callHolder.position));
+
+      // get reads for chromosome and position
+      Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
+      try {
+        readMap = getReadMap(callHolder.chromosome, callHolder.position);
+      } catch (IOException e) {
+        // TODO(smoitra): Auto-generated catch block
+        e.printStackTrace();
+      }
+      // Extract the relevant bases for the currrent position
+      Map<TrioIndividual, ReadSummary> readSummaryMap =
+          getReadSummaryMap(callHolder.position, readMap);
+
+      // Call the bayes inference algorithm to generate likelihood
+      BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+
+      if (result.isDenovo()) {
+        writeCalls(writer, 
+            String.format("%s,%d,%s", 
+                callHolder.chromosome, callHolder.position, result.getDetails()));
+      }
+
     }
   }
 }

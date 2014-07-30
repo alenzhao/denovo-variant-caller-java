@@ -54,7 +54,7 @@ public class BayesInfer {
    * Performs inference given a set of mom, dad and child reads to determine the most likely
    * genotype for the trio
    */
-  public boolean infer(Map<TrioIndividual, ReadSummary> readSummaryMap) {
+  public InferResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap) {
 
     // Calculate Likelihoods of the different reads
     Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood =
@@ -78,9 +78,33 @@ public class BayesInfer {
           }
         }));
 
-    System.out.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
-        maxTrioGenoType.toString(), checkTrioGenoTypeIsDenovo);
+    InferResult result = new InferResult(checkTrioGenoTypeIsDenovo, 
+        String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
+            maxTrioGenoType.toString(), checkTrioGenoTypeIsDenovo));
 
-    return checkTrioGenoTypeIsDenovo;
+    return result;
+  }
+  
+  public static class InferResult {
+    private final boolean isDenovo;
+    private final String details;
+
+    /**
+     * @param checkTrioGenoTypeIsDenovo
+     * @param format
+     */
+    public InferResult(boolean checkTrioGenoTypeIsDenovo, String format) {
+      this.isDenovo = checkTrioGenoTypeIsDenovo;
+      this.details = format;
+    }
+
+    public boolean isDenovo() {
+      return isDenovo;
+    }
+
+    public String getDetails() {
+      return details;
+    }
+
   }
 }

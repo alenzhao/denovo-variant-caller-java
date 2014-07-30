@@ -44,7 +44,7 @@ public class BayesInferTest {
     genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
         .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
 
-    expRunner = new ExperimentRunner(genomics, cmdLine);
+    expRunner = new ExperimentRunner(cmdLine, genomics);
   }
 
   @Test

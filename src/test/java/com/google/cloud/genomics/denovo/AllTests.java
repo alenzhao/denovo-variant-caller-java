@@ -22,7 +22,10 @@ import org.junit.runners.Suite.SuiteClasses;
 import java.util.Collection;
 
 @RunWith(Suite.class)
-@SuiteClasses({NodeTest.class, DenovoBayesNetTest.class, BayesInferTest.class})
+@SuiteClasses({NodeTest.class,
+  DenovoBayesNetTest.class,
+  BayesInferTest.class,
+  DenovoUtilTest.class})
 public class AllTests {
 
   public static void assertSumsToOne(Collection<Double> collection, double EPS) {

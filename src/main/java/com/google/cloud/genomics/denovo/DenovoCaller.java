@@ -30,6 +30,7 @@ import com.google.common.collect.Iterables;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.qualityThresholdMap;
 
 
 public class DenovoCaller {
@@ -66,7 +67,7 @@ public class DenovoCaller {
 
       // Call is not diploid
       Call call = lastCall.get(trioType);
-      Optional<List<Integer>> genotypeOption = DenovoUtil.getGenotype(call);
+      Optional<List<Integer>> genotypeOption = DenovoUtil.getGenotypeFromInfoField(call);
       if (!genotypeOption.isPresent() || genotypeOption.get().size() != 2) {
         return Optional.absent();
       }
@@ -133,7 +134,7 @@ public class DenovoCaller {
 
     Map<TrioIndividual, DiploidGenotype> trioGenotypes = new HashMap<>();
     for (TrioIndividual trioType : TrioIndividual.values()) {
-      List<Integer> genoTypeList = DenovoUtil.getGenotype(trioCalls.get(trioType)).get();
+      List<Integer> genoTypeList = DenovoUtil.getGenotypeFromInfoField(trioCalls.get(trioType)).get();
       trioGenotypes.put(trioType, new DiploidGenotype(genoTypeList));
     }
 
@@ -187,7 +188,7 @@ public class DenovoCaller {
       return false;
     }
 
-    Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+    Float threshold = qualityThresholdMap.get(qualityKey);
     Float parseFloat = Float.parseFloat(qualityValue);
     if (parseFloat < threshold) {
       return false;

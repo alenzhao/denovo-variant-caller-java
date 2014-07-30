@@ -18,8 +18,6 @@ import com.google.cloud.genomics.utils.GenomicsFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 /**
  * Placeholder for running all Genomics Experiments.
@@ -27,8 +25,6 @@ import java.lang.reflect.Method;
 public class GenomicsExperiment {
 
   static CommandLine cmdLine;
-  static ExperimentRunner expRunner;
-
 
   public static void main(String[] args) throws IOException {
     System.out.println("-------- Starting Genomics Experiment ---------");
@@ -40,35 +36,15 @@ public class GenomicsExperiment {
       cmdLine.setArgs(args);
       Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
           .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
-
-      expRunner = new ExperimentRunner(genomics, cmdLine);
-
-      // Entry point for all Experiments
-      executeExperiment(cmdLine.stageId);
-
+      
+      // Create a new experiment and run it
+      ExperimentRunner expRunner = new ExperimentRunner(cmdLine, genomics);
+      expRunner.execute();
+      
     } catch (Exception e) {
       cmdLine.printHelp(e.getMessage() + "\n", System.err);
       e.printStackTrace();
       return;
     }
   }
-
-  private static void executeExperiment(String stage_id) throws IllegalAccessException,
-      IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
-    Method[] methods = ExperimentRunner.class.getDeclaredMethods();
-
-    Method methodMatch = null;
-    for (Method method : methods) {
-      if (method.getName().equals(stage_id)) {
-        methodMatch = method;
-        break;
-      }
-    }
-    if (methodMatch == null) {
-      throw new NoSuchMethodException("No matching method found for Experiment : " + stage_id);
-    } else {
-      methodMatch.invoke(expRunner);
-    }
-  }
-
 }

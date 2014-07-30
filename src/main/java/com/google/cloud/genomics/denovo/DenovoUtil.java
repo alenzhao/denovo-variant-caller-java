@@ -13,14 +13,9 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Call;
@@ -40,6 +35,15 @@ import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.common.base.Optional;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /*
  * Utility functions shared by other classes in Denovo project
  */
@@ -47,6 +51,45 @@ public class DenovoUtil {
 
   public static final double EPS = 1e-12;
 
+  static public final long PROJECT_ID = 1085016379660L;
+  static public final int TOT_CHROMOSOMES = 24;
+  static public final long MAX_VARIANT_RESULTS = 10000L;
+  static public final long DEFAULT_START_POS = 1L;
+  static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
+  static public final Float QD_THRESH = Float.valueOf((float) 2.0);
+  static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
+  static public final String TRIO_DATASET_ID = "2315870033780478914";
+
+  static public Map<String, Float> qualityThresholdMap = new HashMap<>();
+  public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
+  public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
+  static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
+  
+  static {
+    // Constant Values Needed for stage 2 experiments
+    datasetIdMap.put(DAD, "4140720988704892492");
+    datasetIdMap.put(MOM, "2778297328698497799");
+    datasetIdMap.put(CHILD, "6141326619449450766");
+    datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
+
+
+    callsetIdMap.put(DAD, "NA12877");
+    callsetIdMap.put(MOM, "NA12878");
+    callsetIdMap.put(CHILD, "NA12879");
+    callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
+    
+    qualityThresholdMap.put("GQX", GQX_THRESH);
+    qualityThresholdMap.put("QD", QD_THRESH);
+    qualityThresholdMap.put("MQ", MQ_THRESH);
+    qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
+
+    individualCallsetNameMap.put(DAD, "NA12877");
+    individualCallsetNameMap.put(MOM, "NA12878");
+    individualCallsetNameMap.put(CHILD, "NA12879");
+    individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
+    
+  }
+  
   public enum TrioIndividual {
     DAD, MOM, CHILD;
   }
@@ -60,7 +103,8 @@ public class DenovoUtil {
       long startPos,
       long endPos,
       String datasetId,
-      String nextPageToken) {
+      String nextPageToken,
+      long maxVariantResults) {
 
     // Init searchRequest obj
     SearchVariantsRequest searchVariantsRequest;
@@ -75,7 +119,7 @@ public class DenovoUtil {
         .setDatasetId(datasetId)
         .setStartPosition(startPos)
         .setEndPosition(endPos)
-        .setMaxResults(BigInteger.valueOf(ExperimentRunner.MAX_VARIANT_RESULTS))
+        .setMaxResults(BigInteger.valueOf(maxVariantResults))
         .setPageToken(nextPageToken);
 
     return searchVariantsRequest;
@@ -109,12 +153,13 @@ public class DenovoUtil {
    * @throws IOException
    */
   public static Map<TrioIndividual, String> createReadsetIdMap(
-      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap)
+      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap, 
+      Genomics genomics)
       throws IOException {
     Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
     for (TrioIndividual trioIndividual : datasetIdMap.keySet()) {
-      List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual));
+      List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual), genomics);
 
       for (Readset readset : readsets) {
         // System.out.println(
@@ -136,10 +181,7 @@ public class DenovoUtil {
     return readsetIdMap;
   }
 
-  // TODO : Investigate effect of splitting on "|"
-  public static Optional<List<Integer>> getGenotype(Call call) {
-    List<Integer> genoType = new ArrayList<Integer>();
-
+  public static Optional<List<Integer>> getGenotypeFromInfoField(Call call) {
     String genoTypeString = call.getInfo().get("GT").get(0);
     String splitChar = null;
     if (genoTypeString.contains("/")) {
@@ -150,6 +192,7 @@ public class DenovoUtil {
       return Optional.absent();
     }
 
+    List<Integer> genoType = new ArrayList<>();
     for (String allele : genoTypeString.split(splitChar)) {
       genoType.add(Integer.valueOf(allele));
     }
@@ -157,22 +200,22 @@ public class DenovoUtil {
   }
 
   public static List<Read> getReads(String readsetId, String chromosomeName, long startPos,
-      long endPos) throws IOException {
+      long endPos, Genomics genomics) throws IOException {
 
     SearchReadsRequest searchReadsRequest =
         createSearchReadsRequest(readsetId, chromosomeName, startPos, endPos);
 
     SearchReadsResponse searchReadsExecuted =
-        ExperimentRunner.genomics.reads().search(searchReadsRequest).execute();
+        genomics.reads().search(searchReadsRequest).execute();
 
     List<Read> reads = searchReadsExecuted.getReads();
     return reads;
   }
 
-  private static List<Readset> getReadsets(String datasetId) throws IOException {
+  public static List<Readset> getReadsets(String datasetId, Genomics genomics) throws IOException {
     SearchReadsetsRequest searchReadsetsRequest = createSearchReadsetsRequest(datasetId);
     Genomics.Readsets.Search search =
-        ExperimentRunner.genomics.readsets().search(searchReadsetsRequest);
+        genomics.readsets().search(searchReadsetsRequest);
     SearchReadsetsResponse execute = search.execute();
     List<Readset> readsets = execute.getReadsets();
 
@@ -183,16 +226,13 @@ public class DenovoUtil {
    * @return List<Callset>
    * @throws IOException
    */
-  public static List<Callset> getCallsets(String datasetId) throws IOException {
+  public static List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
     SearchCallsetsRequest searchCallsetsRequest = createSearchCallsetsRequest(datasetId);
     Genomics.Callsets.Search search =
-        ExperimentRunner.genomics.callsets().search(searchCallsetsRequest);
+        genomics.callsets().search(searchCallsetsRequest);
     SearchCallsetsResponse execute = search.execute();
     List<Callset> callsets = execute.getCallsets();
 
-    System.out.println();
-    System.out.println("Callsets found for dataset: " + datasetId);
-    System.out.print(execute.toPrettyString());
     return callsets;
   }
 
@@ -200,19 +240,16 @@ public class DenovoUtil {
    * @return List<Dataset>
    * @throws IOException
    */
-  public static List<Dataset> getAllDatasets() throws IOException {
-    System.out.println();
-    System.out.println("######## Datasets under Project ########");
+  public static List<Dataset> getAllDatasets(Genomics genomics) throws IOException {
 
     // Get a list of all the datasets associated with project id
     Genomics.Datasets.List datasetRequest =
-        ExperimentRunner.genomics.datasets().list().setProjectId(ExperimentRunner.PROJECT_ID);
+        genomics.datasets().list().setProjectId(PROJECT_ID);
     datasetRequest.setDisableGZipContent(true);
 
     ListDatasetsResponse execute = datasetRequest.execute();
     List<Dataset> datasets = execute.getDatasets();
 
-    System.out.println("Datasets : " + execute.toPrettyString());
     return datasets;
   }
 
@@ -220,13 +257,11 @@ public class DenovoUtil {
    * @return List<ContigBound>
    * @throws IOException
    */
-  public static List<ContigBound> getVariantsSummary(String datasetId) throws IOException {
-    System.out.println();
-    System.out.println("######## Variants in Dataset ########");
-    System.out.println("Querying DatasetID : " + datasetId);
+  public static List<ContigBound> getVariantsSummary(String datasetId, Genomics genomics) 
+      throws IOException {
 
     Genomics.Variants.GetSummary variantsSummaryRequest =
-        ExperimentRunner.genomics.variants().getSummary().setDatasetId(datasetId);
+        genomics.variants().getSummary().setDatasetId(datasetId);
     variantsSummaryRequest.setDisableGZipContent(true);
 
     GetVariantsSummaryResponse execute = variantsSummaryRequest.execute();
@@ -237,7 +272,6 @@ public class DenovoUtil {
     for (ContigBound contigBound : contigBounds) {
       totBases = totBases.add(BigInteger.valueOf(contigBound.getUpperBound()));
     }
-    System.out.println("Total Number of Bases : " + totBases.toString());
     return contigBounds;
   }
 
@@ -252,13 +286,13 @@ public class DenovoUtil {
   /**
    * Check if the particular genotype is denovo i.e. present in kids but not in parents
    *
-   * @param maxTrioGenoType
+   * @param trioGenotypeList
    * @return isDenovo
    */
-  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> maxTrioGenoType) {
-    Genotypes genoTypeDad = maxTrioGenoType.get(0);
-    Genotypes genoTypeMom = maxTrioGenoType.get(1);
-    Genotypes genoTypeChild = maxTrioGenoType.get(2);
+  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> trioGenotypeList) {
+    Genotypes genoTypeDad = trioGenotypeList.get(0);
+    Genotypes genoTypeMom = trioGenotypeList.get(1);
+    Genotypes genoTypeChild = trioGenotypeList.get(2);
 
     String childAlleles = genoTypeChild.name();
     String momAlleles = genoTypeMom.name();
@@ -271,6 +305,4 @@ public class DenovoUtil {
     boolean predicate3 = !(predicate1 | predicate2);
     return predicate3;
   }
-
-
 }
