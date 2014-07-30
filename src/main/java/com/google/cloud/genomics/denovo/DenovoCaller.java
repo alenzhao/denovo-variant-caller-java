@@ -30,6 +30,7 @@ import com.google.common.collect.Iterables;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.qualityThresholdMap;
 
 
 public class DenovoCaller {
@@ -187,7 +188,7 @@ public class DenovoCaller {
       return false;
     }
 
-    Float threshold = ExperimentRunner.qualityThresholdMap.get(qualityKey);
+    Float threshold = qualityThresholdMap.get(qualityKey);
     Float parseFloat = Float.parseFloat(qualityValue);
     if (parseFloat < threshold) {
       return false;

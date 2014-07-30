@@ -56,7 +56,7 @@ public class VariantContigStream {
       requestCount++;
       searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(null,
           contig,
-          ExperimentRunner.DEFAULT_START_POS,
+          DenovoUtil.DEFAULT_START_POS,
           contig.getUpperBound(),
           datasetId,
           null);
@@ -66,7 +66,7 @@ public class VariantContigStream {
       requestCount++;
       searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(searchVariantsRequest,
           contig,
-          ExperimentRunner.DEFAULT_START_POS,
+          DenovoUtil.DEFAULT_START_POS,
           contig.getUpperBound(),
           datasetId,
           searchVariantsExecuted.getNextPageToken());

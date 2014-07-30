@@ -13,14 +13,9 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Call;
@@ -40,6 +35,15 @@ import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.common.base.Optional;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /*
  * Utility functions shared by other classes in Denovo project
  */
@@ -47,6 +51,52 @@ public class DenovoUtil {
 
   public static final double EPS = 1e-12;
   private static Genomics genomics;
+
+  static public final long PROJECT_ID = 1085016379660L;
+  static public final int TOT_CHROMOSOMES = 24;
+  static public final long MAX_VARIANT_RESULTS = 10000L;
+  static public final long DEFAULT_START_POS = 1L;
+  static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
+  static public final Float QD_THRESH = Float.valueOf((float) 2.0);
+  static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
+  static public final String TRIO_DATASET_ID = "2315870033780478914";
+
+  static public Map<String, Float> qualityThresholdMap = new HashMap<>();
+  static public Map<TrioIndividual, String> readsetIdMap;
+  public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
+  public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
+  static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
+  
+  static {
+    // Constant Values Needed for stage 2 experiments
+    datasetIdMap.put(DAD, "4140720988704892492");
+    datasetIdMap.put(MOM, "2778297328698497799");
+    datasetIdMap.put(CHILD, "6141326619449450766");
+    datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
+
+
+    callsetIdMap.put(DAD, "NA12877");
+    callsetIdMap.put(MOM, "NA12878");
+    callsetIdMap.put(CHILD, "NA12879");
+    callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
+    
+    qualityThresholdMap.put("GQX", GQX_THRESH);
+    qualityThresholdMap.put("QD", QD_THRESH);
+    qualityThresholdMap.put("MQ", MQ_THRESH);
+    qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
+
+    individualCallsetNameMap.put(DAD, "NA12877");
+    individualCallsetNameMap.put(MOM, "NA12878");
+    individualCallsetNameMap.put(CHILD, "NA12879");
+    individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
+    
+    try {
+      readsetIdMap = createReadsetIdMap(datasetIdMap, callsetIdMap);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+  }
   
   public enum TrioIndividual {
     DAD, MOM, CHILD;
@@ -76,7 +126,7 @@ public class DenovoUtil {
         .setDatasetId(datasetId)
         .setStartPosition(startPos)
         .setEndPosition(endPos)
-        .setMaxResults(BigInteger.valueOf(ExperimentRunner.MAX_VARIANT_RESULTS))
+        .setMaxResults(BigInteger.valueOf(MAX_VARIANT_RESULTS))
         .setPageToken(nextPageToken);
 
     return searchVariantsRequest;
@@ -205,7 +255,7 @@ public class DenovoUtil {
 
     // Get a list of all the datasets associated with project id
     Genomics.Datasets.List datasetRequest =
-        genomics.datasets().list().setProjectId(ExperimentRunner.PROJECT_ID);
+        genomics.datasets().list().setProjectId(PROJECT_ID);
     datasetRequest.setDisableGZipContent(true);
 
     ListDatasetsResponse execute = datasetRequest.execute();
