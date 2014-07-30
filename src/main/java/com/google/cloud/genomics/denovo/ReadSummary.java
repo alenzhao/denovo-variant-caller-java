@@ -34,16 +34,10 @@ public class ReadSummary {
     }
   }
 
-  /**
-   * @return the count
-   */
   public Map<String, Integer> getCount() {
     return count;
   }
 
-  /**
-   * @param count the count to set
-   */
   public void setCount(Map<String, Integer> count) {
     this.count = count;
   }
