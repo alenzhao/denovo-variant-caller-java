@@ -25,19 +25,6 @@ public class RunBenchmarks {
 
   private static File benchmarksDir; 
 
-  /*
-   * Run benchmarking for reads/search
-   */
-  public static void benchmarkReadStore() throws FileNotFoundException {
-    // Readstore benchmarking
-    Benchmarking benchmarking = new Benchmarking.Builder("readstore", 
-        new PrintStream(benchmarksDir.getAbsolutePath() + "/readstore")).
-        maxReadstoreRequests(100).
-        numRepeatExperiment(10).
-        build();
-    benchmarking.execute();
-  }
-  
 /*
  * Run benchmarking for maxResults field of variants/search
  */
@@ -51,7 +38,7 @@ public class RunBenchmarks {
       Benchmarking benchmarking = new Benchmarking.Builder("varstore", new PrintStream(logFileString)).
           maxVariantResults(maxResults).
           maxVarstoreRequests(50).
-          numRepeatExperiment(10).
+          numRepeatExperiment(5).
           build();
       benchmarking.execute();
     }
@@ -77,6 +64,32 @@ public class RunBenchmarks {
   }
   
   /*
+   * Run benchmarking for reads/search
+   */
+  public static void benchmarkReadStore() throws FileNotFoundException {
+    // Readstore benchmarking
+    Benchmarking benchmarking = new Benchmarking.Builder("readstore", 
+        new PrintStream(benchmarksDir.getAbsolutePath() + "/readstore")).
+        maxReadstoreRequests(100).
+        numRepeatExperiment(5).
+        build();
+    benchmarking.execute();
+  }
+  
+  /*
+   * Run benchmarking for reads/search
+   */
+  public static void benchmarkReadStoreContiguous() throws FileNotFoundException {
+    // Readstore benchmarking
+    Benchmarking benchmarking = new Benchmarking.Builder("readstore", 
+        new PrintStream(benchmarksDir.getAbsolutePath() + "/readstoreContig")).
+        maxReadstoreRequests(100).
+        numRepeatExperiment(5).
+        contiguousReads(true).
+        build();
+    benchmarking.execute();
+  }
+  /*
    * Run benchmarking for reads/search using multiple threads
    */
   public static void benchmarkReadstoreThreaded() throws FileNotFoundException {
@@ -93,13 +106,28 @@ public class RunBenchmarks {
     }
   }
 
+  public static void benchmarkReadstoreContiguousThreaded() throws FileNotFoundException {
+    for(int numThreads : Arrays.asList(2,5,10,20,50,100)) {
+        
+      Benchmarking benchmarking = new Benchmarking.Builder("readstore", 
+          new PrintStream(benchmarksDir.getAbsolutePath() + "/readstoreContigThreaded" + 
+              String.valueOf(numThreads))).
+          maxReadstoreRequests(100).
+          numRepeatExperiment(numThreads * 5).
+          numThreads(numThreads).
+          contiguousReads(true).
+          build();
+      benchmarking.execute();
+    }
+  }
+
   
   public static void main(String[] args) throws FileNotFoundException {
  
     benchmarksDir = new File(System.getProperty("user.home") + "/.benchmarks");
     DenovoUtil.helperCreateDirectory(benchmarksDir);
 
-    benchmarkReadstoreThreaded();
-    benchmarkVarstoreThreaded();
+    benchmarkReadStoreContiguous();
+    benchmarkReadstoreContiguousThreaded();
   }
 }

@@ -57,6 +57,7 @@ public class Benchmarking {
   private final PrintStream logStream;
   private String startTimeStamp;
   private String endTimeStamp;
+  private boolean contigousReads;
   
   public static class Builder {
 
@@ -70,12 +71,18 @@ public class Benchmarking {
     private int maxReadstoreRequests = 10;
     private int numRepeatExperiment = 2;
     private long maxVariantResults = DenovoUtil.MAX_VARIANT_RESULTS;
+    private boolean contiguousReads = false;
 
     public Builder(String benchmarkTarget, PrintStream logStream) {
       this.benchmarkTarget = benchmarkTarget;
       this.logStream = logStream;
     }
 
+    public Builder contiguousReads(boolean val) {
+      contiguousReads = val;
+      return this;
+    }
+    
     public Builder numThreads(int val) {
       numThreads = val;
       return this;
@@ -114,10 +121,11 @@ public class Benchmarking {
         "endTimeStamp : %s%n" +
         "numRepeatExperiment : %d%n" +
         "maxReadstoreRequests : %d%n" +
+        "contiguousReads : %b%n" +
         "maxVarstoreRequests : %d%n" +
         "maxVariantResults : %d"   
         , benchmarkTarget, numThreads, startTimeStamp, endTimeStamp, numRepeatExperiment, 
-        maxReadstoreRequests, maxVarstoreRequests, maxVariantResults);
+        maxReadstoreRequests, contigousReads, maxVarstoreRequests, maxVariantResults);
   }
   
   private Benchmarking(Builder builder) {
@@ -128,6 +136,7 @@ public class Benchmarking {
     maxVariantResults = builder.maxVariantResults;
     numRepeatExperiment = builder.numRepeatExperiment;
     numThreads = builder.numThreads;
+    contigousReads = builder.contiguousReads;
     
     String homeDir = System.getProperty("user.home");
     String clientSecretsFilename = homeDir + "/Downloads/client_secrets.json";
@@ -142,7 +151,6 @@ public class Benchmarking {
     random = new Random(RANDOM_SEED);
   }
 
-  
   public class BenchmarkCallable implements Callable<List<Long>> {
 
     @Override
@@ -302,16 +310,23 @@ public class Benchmarking {
 
     List<Long> timingResults = new ArrayList<>();
 
+    ContigBound contig = contigBounds.get(random.nextInt(contigBounds.size()));
+    long candidatePosition = 1L;
+    
     for (int numRequests = 0; numRequests < maxReadstoreRequests; numRequests++) {
 
       System.out.printf("Query #%d%n", numRequests);
-      // extract a random contig and position
-      ContigBound randomContig = contigBounds.get(random.nextInt(contigBounds.size()));
 
-      long candidatePosition = getRandomPosition(randomContig);
+      if(contigousReads) {
+        candidatePosition += random.nextInt(20000);
+      } else {
+        // extract a random contig and position
+        contig = contigBounds.get(random.nextInt(contigBounds.size()));
+        candidatePosition = getRandomPosition(contig);
+      }
 
       long startTime = Long.valueOf(System.currentTimeMillis());
-      DenovoUtil.getReads(readsetIdMap.get(TrioIndividual.DAD), randomContig.getContig(),
+      DenovoUtil.getReads(readsetIdMap.get(TrioIndividual.DAD), contig.getContig(),
           candidatePosition, candidatePosition, genomics);
       long endTime = Long.valueOf(System.currentTimeMillis());
 
