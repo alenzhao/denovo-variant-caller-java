@@ -13,14 +13,13 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
-import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
-import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
@@ -32,12 +31,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Holds all the experiments in the project
@@ -53,10 +51,13 @@ public class ExperimentRunner {
   public String candidatesFile;
   private CommandLine cmdLine;
   private Genomics genomics;
-
+  private Map<TrioIndividual, String> individualCallsetIdMap = new HashMap<>();
+  private final int numThreads;
+  
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) {
     this.cmdLine = cmdLine;
     this.genomics = genomics;
+    this.numThreads = cmdLine.numThreads;
 
     // Check command line for candidates file
     checkAndAddCandidatesFile();
@@ -95,104 +96,110 @@ public class ExperimentRunner {
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
-    final File logFile = new File(outdir, "exp1.log");
     final File callFile = new File(outdir, candidatesFile);
-    final File variantFile = new File(outdir, "exp1.vars");
 
     // Open File Outout handles
-    try (PrintWriter logWriter = new PrintWriter(logFile);
-        PrintWriter callWriter = new PrintWriter(callFile);
-        PrintWriter variantWriter = new PrintWriter(variantFile);) {
-
-      @SuppressWarnings("unused")
-      List<Dataset> allDatasetsInProject;
-      List<Variant> variants;
-      List<ContigBound> contigBounds;
-      List<Callset> callsets;
-      List<VariantContigStream> variantContigStreams = new ArrayList<VariantContigStream>();
-      Map<TrioIndividual, String> dictRelationCallsetId = new HashMap<>();
+    try (PrintWriter callWriter = new PrintWriter(callFile);) {
 
       /* Get a list of all the datasets */
-      allDatasetsInProject = DenovoUtil.getAllDatasets(genomics);
+      DenovoUtil.getAllDatasets(genomics);
 
       /* Get all the callsets for the trio dataset */
-      callsets = DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID, genomics);
-
-      // Create a family person type to callset id map
-      for (Callset callset : callsets) {
-        String callsetName = callset.getName();
-        for (TrioIndividual individual : TrioIndividual.values()) {
-          if (callsetName.equals(individualCallsetNameMap.get(individual))) {
-            dictRelationCallsetId.put(individual, callset.getId());
-            break;
-          }
-        }
-      }
-
-      // Check that the mapping has the correct keys
-      // One time Sanity check ; could be replaced with testing
-      if (!new HashSet<TrioIndividual>(dictRelationCallsetId.keySet()).equals(
-          new HashSet<TrioIndividual>(Arrays.asList(TrioIndividual.values())))) {
-        throw new IllegalStateException("Callsets not found");
-      }
-
+      createCallsetIdMap(DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID, genomics));
+      
       /* Get a list of all the Variants per contig */
-      contigBounds = DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics);
+      List<ContigBound> contigBounds = 
+          DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics);
 
-      long startTime = System.currentTimeMillis();
-      long prevTime = startTime;
-
+      ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       /* Iterate through each contig and do variant filtering for each contig */
-      for (ContigBound currentContig : contigBounds) {
-        System.out.println();
-        System.out.println("Currently processing contig : " + currentContig.getContig());
-
-        VariantContigStream variantContigStream =
-            new VariantContigStream(genomics, currentContig, DenovoUtil.TRIO_DATASET_ID, 
-                DenovoUtil.MAX_VARIANT_RESULTS);
-        variantContigStreams.add(variantContigStream);
-
-        DenovoCaller denovoCaller = new DenovoCaller(dictRelationCallsetId);
-
-        long denovoCount = 0;
-        long variantCount = 0;
-
-        while (variantContigStream.hasMore()) {
-          variants = variantContigStream.getVariants();
-          for (Variant variant : variants) {
-
-            variantCount++;
-
-            Optional<String> denovoCallResultOptional =
-                denovoCaller.callDenovoFromVarstore(variant);
-            if (denovoCallResultOptional.isPresent()) {
-              denovoCount++;
-              // callWriter.println("denovo candidate at " + currentContig.getContig() +
-              // ":position "
-              // + variant.getPosition() + " ; Details " + denovoCallResult.details);
-              callWriter.println(currentContig.getContig() + "," + variant.getPosition());
-              callWriter.flush();
-            }
-          }
-        }
-        System.out.println();
-        System.out.println("Denovo calls/variant Calls" + Long.valueOf(denovoCount) + "/"
-            + Long.valueOf(variantCount));
-
-        long contigTime = System.currentTimeMillis();
-        System.out.println();
-        System.out.println(
-            "Time elapsed at Chromosome " + (contigTime - prevTime) + " milliseconds");
-        prevTime = contigTime;
-
+      for (ContigBound contig : contigBounds) {
+        Runnable worker = new SimpleDenovoRunnable(callWriter, contig); 
+        executor.execute(worker);
       }
-
-      long endTime = System.currentTimeMillis();
-      System.out.println();
-      System.out.println("Total time taken " + (endTime - startTime) + " milliseconds");
+      
+      executor.shutdown();
+      while(!executor.isTerminated()) {
+      }
+      System.out.println("All contigs processed");
     }
   }
 
+  private class SimpleDenovoRunnable implements Runnable {
+
+    private final PrintWriter writer;
+    private final ContigBound contig;
+    
+    public SimpleDenovoRunnable(PrintWriter writer, ContigBound contig) {
+      this.writer = writer;
+      this.contig = contig;
+    }
+    
+    @Override
+    public void run() {
+      try {
+        callSimpleDenovo(writer, contig);
+      } catch (IOException e) {
+        // TODO(smoitra): Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+    
+  }
+  
+  /*
+   * Writes calls to print stream
+   */
+  public synchronized void writeStage1Calls(PrintWriter writer, String calls) {
+    writer.print(calls);
+    writer.flush();
+  }
+
+  /*
+   * Creates a TrioType to callset ID map
+   */
+  private void createCallsetIdMap(List<Callset> callsets) {
+    // Create a family person type to callset id map
+    for (Callset callset : callsets) {
+      String callsetName = callset.getName();
+      for (TrioIndividual individual : TrioIndividual.values()) {
+        if (callsetName.equals(individualCallsetNameMap.get(individual))) {
+          individualCallsetIdMap.put(individual, callset.getId());
+          break;
+        }
+      }
+    }
+  }
+
+  /*
+   * Check all the variants in the contig using a simple denovo caller
+   */
+  private void callSimpleDenovo(PrintWriter callWriter, ContigBound currentContig)
+      throws IOException {
+    // Create the caller object
+    DenovoCaller denovoCaller = new DenovoCaller(individualCallsetIdMap);
+    
+    VariantContigStream variantContigStream =
+        new VariantContigStream(genomics, currentContig, DenovoUtil.TRIO_DATASET_ID, 
+            DenovoUtil.MAX_VARIANT_RESULTS);
+
+    while (variantContigStream.hasMore()) {
+      List<Variant> variants = variantContigStream.getVariants();
+      StringBuilder builder = new StringBuilder();
+      
+      for (Variant variant : variants) {
+
+        Optional<String> denovoCallResultOptional =
+            denovoCaller.callDenovoFromVarstore(variant);
+        if (denovoCallResultOptional.isPresent()) {
+          builder.append(String.format("%s,%d%n", 
+              currentContig.getContig(),variant.getPosition()));
+        }
+      }
+
+      writeStage1Calls(callWriter, builder.toString());
+    }
+  }
 
   /*
    * Stage 2 : Reads in candidate calls from stage 1 output file and then refines the candidates

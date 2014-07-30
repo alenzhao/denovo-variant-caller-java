@@ -233,9 +233,6 @@ public class DenovoUtil {
     SearchCallsetsResponse execute = search.execute();
     List<Callset> callsets = execute.getCallsets();
 
-    System.out.println();
-    System.out.println("Callsets found for dataset: " + datasetId);
-    System.out.print(execute.toPrettyString());
     return callsets;
   }
 
@@ -244,8 +241,6 @@ public class DenovoUtil {
    * @throws IOException
    */
   public static List<Dataset> getAllDatasets(Genomics genomics) throws IOException {
-    System.out.println();
-    System.out.println("######## Datasets under Project ########");
 
     // Get a list of all the datasets associated with project id
     Genomics.Datasets.List datasetRequest =
@@ -255,7 +250,6 @@ public class DenovoUtil {
     ListDatasetsResponse execute = datasetRequest.execute();
     List<Dataset> datasets = execute.getDatasets();
 
-    System.out.println("Datasets : " + execute.toPrettyString());
     return datasets;
   }
 
@@ -265,9 +259,6 @@ public class DenovoUtil {
    */
   public static List<ContigBound> getVariantsSummary(String datasetId, Genomics genomics) 
       throws IOException {
-    System.out.println();
-    System.out.println("######## Variants in Dataset ########");
-    System.out.println("Querying DatasetID : " + datasetId);
 
     Genomics.Variants.GetSummary variantsSummaryRequest =
         genomics.variants().getSummary().setDatasetId(datasetId);
@@ -281,7 +272,6 @@ public class DenovoUtil {
     for (ContigBound contigBound : contigBounds) {
       totBases = totBases.add(BigInteger.valueOf(contigBound.getUpperBound()));
     }
-    System.out.println("Total Number of Bases : " + totBases.toString());
     return contigBounds;
   }
 
