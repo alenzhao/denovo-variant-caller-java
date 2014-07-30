@@ -23,31 +23,83 @@ import java.util.Arrays;
  */
 public class RunBenchmarks {
 
-  public static void main(String[] args) throws FileNotFoundException {
-    Benchmarking benchmarking ; 
-    
-    File benchmarksDir = new File(System.getProperty("user.home") + "/.benchmarks");
-    DenovoUtil.helperCreateDirectory(benchmarksDir);
-    
+  private static File benchmarksDir; 
+
+  /*
+   * Run benchmarking for reads/search
+   */
+  public static void benchmarkReadStore() throws FileNotFoundException {
     // Readstore benchmarking
-    benchmarking = new Benchmarking.Builder("readstore", 
+    Benchmarking benchmarking = new Benchmarking.Builder("readstore", 
         new PrintStream(benchmarksDir.getAbsolutePath() + "/readstore")).
         maxReadstoreRequests(100).
         numRepeatExperiment(10).
         build();
     benchmarking.execute();
+  }
+  
+/*
+ * Run benchmarking for maxResults field of variants/search
+ */
+  public static void benchmarkVarstoreMaxResults() throws FileNotFoundException {
     
     // varstore benchmarking
     for(long maxResults : Arrays.asList(1000L,5000L,10000L,20000L,30000L,40000L,50000L)) {
 
       String logFileString = benchmarksDir.getAbsolutePath() + "/varstore" +
           String.valueOf(maxResults/1000) + "K";
-      benchmarking = new Benchmarking.Builder("varstore", new PrintStream(logFileString)).
+      Benchmarking benchmarking = new Benchmarking.Builder("varstore", new PrintStream(logFileString)).
           maxVariantResults(maxResults).
           maxVarstoreRequests(50).
           numRepeatExperiment(10).
           build();
       benchmarking.execute();
     }
+  }
+  
+  /*
+   * Run benchmarking for variants/search using threads
+   */
+  public static void benchmarkVarstoreThreaded() throws FileNotFoundException {
+
+    int maxResults = 10000;
+    for(int numThreads : Arrays.asList(2,5,10,20,50,100)) {
+      String logFileString = benchmarksDir.getAbsolutePath() + "/varstore" +
+          String.valueOf(maxResults/1000) + "K" + String.valueOf(numThreads);
+      Benchmarking benchmarking = new Benchmarking.Builder("varstore", new PrintStream(logFileString)).
+          maxVariantResults(maxResults).
+          maxVarstoreRequests(10).
+          numRepeatExperiment(numThreads*5).
+          numThreads(numThreads).
+          build();
+      benchmarking.execute();
+    }
+  }
+  
+  /*
+   * Run benchmarking for reads/search using multiple threads
+   */
+  public static void benchmarkReadstoreThreaded() throws FileNotFoundException {
+    for(int numThreads : Arrays.asList(2,5,10,20,50,100)) {
+        
+      Benchmarking benchmarking = new Benchmarking.Builder("readstore", 
+          new PrintStream(benchmarksDir.getAbsolutePath() + "/readstoreThreaded" + 
+              String.valueOf(numThreads))).
+          maxReadstoreRequests(100).
+          numRepeatExperiment(numThreads*5).
+          numThreads(numThreads).
+          build();
+      benchmarking.execute();
+    }
+  }
+
+  
+  public static void main(String[] args) throws FileNotFoundException {
+ 
+    benchmarksDir = new File(System.getProperty("user.home") + "/.benchmarks");
+    DenovoUtil.helperCreateDirectory(benchmarksDir);
+
+    benchmarkReadstoreThreaded();
+    benchmarkVarstoreThreaded();
   }
 }

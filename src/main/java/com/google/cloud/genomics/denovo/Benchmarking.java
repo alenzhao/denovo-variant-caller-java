@@ -33,6 +33,11 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Runs benchmarking for read and variant search requests
@@ -43,6 +48,7 @@ public class Benchmarking {
   private int numRepeatExperiment;
   private int maxVarstoreRequests;
   private int maxReadstoreRequests;
+  private int numThreads;
   private long maxVariantResults;
   private Genomics genomics;
   private Random random;
@@ -59,6 +65,7 @@ public class Benchmarking {
     private final PrintStream logStream;
 
     // Optional parameters
+    private int numThreads = 1;
     private int maxVarstoreRequests = 10;
     private int maxReadstoreRequests = 10;
     private int numRepeatExperiment = 2;
@@ -69,6 +76,11 @@ public class Benchmarking {
       this.logStream = logStream;
     }
 
+    public Builder numThreads(int val) {
+      numThreads = val;
+      return this;
+    }
+    
     public Builder maxVarstoreRequests(int val) {
       maxVarstoreRequests = val;
       return this;
@@ -97,14 +109,15 @@ public class Benchmarking {
   @Override
   public String toString() {
     return String.format("benchmarkTarget : %s%n" +
+        "numThreads : %d%n" + 
         "startTimeStamp : %s%n" +
         "endTimeStamp : %s%n" +
         "numRepeatExperiment : %d%n" +
         "maxReadstoreRequests : %d%n" +
         "maxVarstoreRequests : %d%n" +
         "maxVariantResults : %d"   
-        , benchmarkTarget, startTimeStamp, endTimeStamp, numRepeatExperiment, maxVarstoreRequests, 
-        maxReadstoreRequests, maxVariantResults);
+        , benchmarkTarget, numThreads, startTimeStamp, endTimeStamp, numRepeatExperiment, 
+        maxReadstoreRequests, maxVarstoreRequests, maxVariantResults);
   }
   
   private Benchmarking(Builder builder) {
@@ -114,6 +127,7 @@ public class Benchmarking {
     maxReadstoreRequests = builder.maxReadstoreRequests;
     maxVariantResults = builder.maxVariantResults;
     numRepeatExperiment = builder.numRepeatExperiment;
+    numThreads = builder.numThreads;
     
     String homeDir = System.getProperty("user.home");
     String clientSecretsFilename = homeDir + "/Downloads/client_secrets.json";
@@ -128,10 +142,87 @@ public class Benchmarking {
     random = new Random(RANDOM_SEED);
   }
 
+  
+  public class BenchmarkCallable implements Callable<List<Long>> {
+
+    @Override
+    public List<Long> call() throws Exception {
+      List<Long> executionTimes = new ArrayList<>();
+      try {
+        if (benchmarkTarget == "varstore") {
+          executionTimes.addAll(timeVarstoreRequests());
+        } else if (benchmarkTarget == "readstore") {
+          executionTimes.addAll(timeReadstoreRequests());
+        } else {
+          throw new IllegalArgumentException("Unknown benchmark target" + benchmarkTarget);
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+      return executionTimes;
+    }
+  }
+  
   public void execute() {
     
     startTimeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").
         format(Calendar.getInstance().getTime());
+    
+    List<Long> executionTimes = null;
+    if(numThreads == 1) {
+      executionTimes = executeSingleThreaded(); 
+    } else {
+      executionTimes = executeMultiThreaded();
+    }
+    
+    endTimeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").
+        format(Calendar.getInstance().getTime());
+    
+    logStream.println(toString());
+    printStats(executionTimes, logStream);
+  }
+
+  /**
+   * Parallel process different threads 
+   */
+  private List<Long> executeMultiThreaded() {
+    
+    System.out.println("Executing on multiple threads");
+    
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    List<Future<List<Long>>> futures = new ArrayList<>();
+    List<Long> executionTimes = new ArrayList<>();
+    
+    for (int i = 0; i < numRepeatExperiment; i++) {
+      Callable<List<Long>> worker = new BenchmarkCallable();
+      Future<List<Long>> submit = executor.submit(worker);
+      futures.add(submit);
+    }
+    
+    executor.shutdown();
+    while (!executor.isTerminated()) {
+    }
+    
+    for (Future<List<Long>> future : futures) {
+      try {
+        executionTimes.addAll(future.get());
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
+    }
+    
+    return executionTimes;
+  }
+
+  /**
+   * Execute each experiment on a single thread
+   */
+  private List<Long> executeSingleThreaded() {
+    
+    System.out.println("Executing on a single thread");
     
     List<Long> executionTimes = new ArrayList<>();
     try {
@@ -147,21 +238,20 @@ public class Benchmarking {
     } catch (IOException e) {
       e.printStackTrace();
     }
-
-    endTimeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").
-        format(Calendar.getInstance().getTime());
-    
-    logStream.println(toString());
-    printStats(executionTimes, logStream);
+    return executionTimes;
   }
 
   private void printStats(List<Long> executionTimes, PrintStream out) {
     // Calculate summary stats
     DescriptiveStatistics stats = new DescriptiveStatistics();
+    
+    double totTime = 0.0;
     for (Long time : executionTimes) {
       stats.addValue(time);
+      totTime += time;
     }
 
+    out.printf("Mean/thread : %fms%n", totTime / executionTimes.size() / numThreads);
     out.printf("Min : %fms%n", stats.getMin());
     out.printf("Max : %fms%n", stats.getMax());
     out.printf("Mean : %fms%n", stats.getMean());
