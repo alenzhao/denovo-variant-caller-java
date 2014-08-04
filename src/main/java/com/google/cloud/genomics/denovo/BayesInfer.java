@@ -74,13 +74,13 @@ public class BayesInfer {
         new Function<Entry<TrioIndividual, ReadSummary>, String>() {
           @Override
           public String apply(Entry<TrioIndividual, ReadSummary> e) {
-            return String.format("%s:%s", e.getKey().name(), e.getValue().getCount().toString());
+            return String.format("%s:%s", e.getKey().name(), e.getValue().getCount());
           }
         }));
 
     InferResult result = new InferResult(checkTrioGenoTypeIsDenovo, 
         String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
-            maxTrioGenoType.toString(), checkTrioGenoTypeIsDenovo));
+            maxTrioGenoType, checkTrioGenoTypeIsDenovo));
 
     return result;
   }
