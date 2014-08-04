@@ -237,7 +237,8 @@ public class ExperimentRunner {
     ExecutorService executor = new ThreadPoolExecutor(numThreads, // core thread pool size
         numThreads, // maximum thread pool size
         1, // time to wait before resizing pool
-        TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(numThreads, true), new ThreadPoolExecutor.CallerRunsPolicy());
+        TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(numThreads, true), 
+        new ThreadPoolExecutor.CallerRunsPolicy());
 
     /* Check if each candidate call is truly denovo by Bayesian denovo calling */
     try (BufferedReader callCandidateReader = new BufferedReader(new FileReader(stage1CallsFile));
@@ -245,9 +246,12 @@ public class ExperimentRunner {
       for (String line; (line = callCandidateReader.readLine()) != null;) {
         CallHolder callHolder = parseLine(line);
 
-        executor.submit(new BayesDenovoRunnable(callHolder, callWriter));
+        if (numThreads >= 2) {
+          executor.submit(new BayesDenovoRunnable(callHolder, callWriter));  
+        } else {
+          runBayesDenovoInference(callHolder, callWriter);
+        }
       }
-
     } catch (IOException | ParseException e) {
       e.printStackTrace();
     }
@@ -299,6 +303,41 @@ public class ExperimentRunner {
     this.genomics = genomics;
   }
 
+  /*
+   * Runs the Bayesian Denovo inference on a trio call 
+   */
+  private void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer) {
+    // get reads for chromosome and position
+    Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
+    try {
+      readMap = getReadMap(callHolder.chromosome, callHolder.position);
+    } catch (IOException e) {
+      // TODO(smoitra): Auto-generated catch block
+      e.printStackTrace();
+    }
+    // Extract the relevant bases for the currrent position
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        getReadSummaryMap(callHolder.position, readMap);
+
+    // Call the bayes inference algorithm to generate likelihood
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+
+    if (debugLevel >= 1) {
+      synchronized(this) {
+        System.out.println(
+            "Processing " + callHolder.chromosome + ":" + String.valueOf(callHolder.position));
+        System.out.printf("%s,%d,%s", 
+            callHolder.chromosome, callHolder.position, result.getDetails());
+      }
+    }
+    
+    if (result.isDenovo()) {
+      writeCalls(writer, 
+          String.format("%s,%d,%s", 
+              callHolder.chromosome, callHolder.position, result.getDetails()));
+    }
+  }
+  
   private class CallHolder {
     public final String chromosome;
     public final Long position;
@@ -324,34 +363,7 @@ public class ExperimentRunner {
 
     @Override
     public void run() {
-      if (debugLevel >= 1) {
-        synchronized(this) {
-          System.out.println(
-              "Processing " + callHolder.chromosome + ":" + String.valueOf(callHolder.position));
-        }
-      }
-
-      // get reads for chromosome and position
-      Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
-      try {
-        readMap = getReadMap(callHolder.chromosome, callHolder.position);
-      } catch (IOException e) {
-        // TODO(smoitra): Auto-generated catch block
-        e.printStackTrace();
-      }
-      // Extract the relevant bases for the currrent position
-      Map<TrioIndividual, ReadSummary> readSummaryMap =
-          getReadSummaryMap(callHolder.position, readMap);
-
-      // Call the bayes inference algorithm to generate likelihood
-      BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
-
-      if (result.isDenovo()) {
-        writeCalls(writer, 
-            String.format("%s,%d,%s", 
-                callHolder.chromosome, callHolder.position, result.getDetails()));
-      }
-
+      runBayesDenovoInference(callHolder, writer);
     }
   }
 }
