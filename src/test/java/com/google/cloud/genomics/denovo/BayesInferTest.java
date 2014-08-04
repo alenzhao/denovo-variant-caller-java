@@ -34,8 +34,7 @@ public class BayesInferTest {
     String homeDir = System.getProperty("user.home");
 
     String argsString = "stage1 --candidates_file candidate.calls.tmp "
-        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json "
-        + "--require_all_scopes";
+        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json ";
     String[] args = argsString.split(" ");
 
     CommandLine cmdLine = new CommandLine();
