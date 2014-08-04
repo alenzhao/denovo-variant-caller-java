@@ -20,6 +20,8 @@ import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel; 
+
 import java.io.IOException;
 import java.util.List;
 
@@ -81,7 +83,9 @@ public class VariantContigStream {
       return null;
     }
 
-    System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
+    if (debugLevel >= 1) {
+      System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));  
+    }
 
     searchVariantsRequestLoaded =
         getGenomics().variants().search(searchVariantsRequest);

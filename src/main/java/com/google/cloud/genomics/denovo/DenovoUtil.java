@@ -160,8 +160,6 @@ public class DenovoUtil {
       List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual), genomics);
 
       for (Readset readset : readsets) {
-        // System.out.println(
-        // readset.getDatasetId() + ":" + readset.getName() + ":" + readset.getId());
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
@@ -263,7 +261,9 @@ public class DenovoUtil {
     variantsSummaryRequest.setDisableGZipContent(true);
 
     GetVariantsSummaryResponse execute = variantsSummaryRequest.execute();
-    // System.out.println("Variants : "+execute.toPrettyString());
+    if (debugLevel >= 2) {
+      System.out.println("Variants : " + execute.toPrettyString());
+    }
 
     List<ContigBound> contigBounds = execute.getContigBounds();
     BigInteger totBases = BigInteger.valueOf(0);
@@ -276,7 +276,7 @@ public class DenovoUtil {
   public static void helperCreateDirectory(File theDir) {
     // if the directory does not exist, create it
     if (!theDir.exists()) {
-      System.out.println("creating directory: " + theDir);
+      System.err.println("creating directory: " + theDir);
       theDir.mkdir();
     }
   }

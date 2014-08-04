@@ -16,6 +16,7 @@ package com.google.cloud.genomics.denovo;
 import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
@@ -58,16 +59,14 @@ public class ExperimentRunner {
   private final int numThreads;
   private Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
   private final BayesInfer bayesInferrer;
-  private final int debugLevel;
   
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) {
     this.cmdLine = cmdLine;
     this.genomics = genomics;
     numThreads = cmdLine.numThreads;
-    debugLevel = cmdLine.debugLevel;
     
-    // Set the debug Level 
-    DenovoUtil.debugLevel = debugLevel;
+    // Set the overall System wide debug Level 
+    DenovoUtil.debugLevel = cmdLine.debugLevel;
     
     try {
       readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);
@@ -109,8 +108,10 @@ public class ExperimentRunner {
    * Stage 1 : Get a list of the candidates from VCF file
    */
   public void stage1() throws IOException {
-    System.out.println("---------Starting Stage 1 VCF Filter -----------");
-
+    if (debugLevel >= 0) {
+      System.out.println("---------Starting Stage 1 VCF Filter -----------");  
+    }
+    
     // Define Experiment Specific Constant Values
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
@@ -140,7 +141,9 @@ public class ExperimentRunner {
       executor.shutdown();
       while (!executor.isTerminated()) {
       }
-      System.out.println("All contigs processed");
+      if (debugLevel >= 0) {
+        System.out.println("All contigs processed");
+      }
     }
   }
 
@@ -222,7 +225,9 @@ public class ExperimentRunner {
    */
   public void stage2() {
 
-    System.out.println("---- Starting Stage2 Bayesian Caller -----");
+    if (debugLevel >= 0) {
+      System.out.println("---- Starting Stage2 Bayesian Caller -----");  
+    }
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
@@ -319,8 +324,12 @@ public class ExperimentRunner {
 
     @Override
     public void run() {
-      System.out.println(
-          "Processing " + callHolder.chromosome + ":" + String.valueOf(callHolder.position));
+      if (debugLevel >= 1) {
+        synchronized(this) {
+          System.out.println(
+              "Processing " + callHolder.chromosome + ":" + String.valueOf(callHolder.position));
+        }
+      }
 
       // get reads for chromosome and position
       Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
