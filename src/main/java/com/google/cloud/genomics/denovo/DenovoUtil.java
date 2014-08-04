@@ -50,7 +50,6 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-
   static public final long PROJECT_ID = 1085016379660L;
   static public final int TOT_CHROMOSOMES = 24;
   static public final long MAX_VARIANT_RESULTS = 10000L;
@@ -72,7 +71,6 @@ public class DenovoUtil {
     datasetIdMap.put(CHILD, "6141326619449450766");
     datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
 
-
     callsetIdMap.put(DAD, "NA12877");
     callsetIdMap.put(MOM, "NA12878");
     callsetIdMap.put(CHILD, "NA12879");
@@ -87,7 +85,6 @@ public class DenovoUtil {
     individualCallsetNameMap.put(MOM, "NA12878");
     individualCallsetNameMap.put(CHILD, "NA12879");
     individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
-    
   }
   
   public enum TrioIndividual {
@@ -137,7 +134,6 @@ public class DenovoUtil {
 
     // Init searchRequest obj
     return new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
-
   }
 
   private static SearchCallsetsRequest createSearchCallsetsRequest(String datasetId) {
