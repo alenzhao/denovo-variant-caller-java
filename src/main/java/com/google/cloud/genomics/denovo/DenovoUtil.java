@@ -64,6 +64,8 @@ public class DenovoUtil {
   public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
   static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
   
+  static public int debugLevel = 0; 
+  
   static {
     // Constant Values Needed for stage 2 experiments
     datasetIdMap.put(DAD, "4140720988704892492");

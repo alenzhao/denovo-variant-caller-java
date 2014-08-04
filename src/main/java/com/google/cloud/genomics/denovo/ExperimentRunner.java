@@ -58,11 +58,17 @@ public class ExperimentRunner {
   private final int numThreads;
   private Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
   private final BayesInfer bayesInferrer;
+  private final int debugLevel;
   
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) {
     this.cmdLine = cmdLine;
     this.genomics = genomics;
-    this.numThreads = cmdLine.numThreads;
+    numThreads = cmdLine.numThreads;
+    debugLevel = cmdLine.debugLevel;
+    
+    // Set the debug Level 
+    DenovoUtil.debugLevel = debugLevel;
+    
     try {
       readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);
     } catch (IOException e) {

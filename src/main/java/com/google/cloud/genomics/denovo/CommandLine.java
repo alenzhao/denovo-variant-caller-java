@@ -51,6 +51,10 @@ class CommandLine {
   @Option(name = "--num_threads", metaVar = "<num_threads>",
       usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
   public int numThreads = 1;
+
+  @Option(name = "--debug_level", metaVar = "<debug_level>",
+      usage = "specify the debug level (0 for no debug spew)")
+  public int debugLevel = 0;
   
   public CommandLine() {
     parser = new CmdLineParser(this);
