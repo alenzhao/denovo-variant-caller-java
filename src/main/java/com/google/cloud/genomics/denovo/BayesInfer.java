@@ -78,7 +78,7 @@ public class BayesInfer {
           }
         }));
 
-    InferResult result = new InferResult(checkTrioGenoTypeIsDenovo, 
+    InferResult result = new InferResult(checkTrioGenoTypeIsDenovo, maxTrioGenoType, 
         String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
             maxTrioGenoType, checkTrioGenoTypeIsDenovo));
 
@@ -88,14 +88,12 @@ public class BayesInfer {
   public static class InferResult {
     private final boolean isDenovo;
     private final String details;
+    private final List<Genotypes> maxTrioGenoType;
 
-    /**
-     * @param checkTrioGenoTypeIsDenovo
-     * @param format
-     */
-    public InferResult(boolean checkTrioGenoTypeIsDenovo, String format) {
-      this.isDenovo = checkTrioGenoTypeIsDenovo;
+    public InferResult(boolean isDenovo, List<Genotypes> maxTrioGenoType, String format) {
+      this.isDenovo = isDenovo;
       this.details = format;
+      this.maxTrioGenoType = maxTrioGenoType;
     }
 
     public boolean isDenovo() {
@@ -106,5 +104,8 @@ public class BayesInfer {
       return details;
     }
 
+    public List<Genotypes> getMaxTrioGenoType() {
+      return maxTrioGenoType;
+    }
   }
 }

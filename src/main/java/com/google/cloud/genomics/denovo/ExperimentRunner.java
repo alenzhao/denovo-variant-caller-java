@@ -273,7 +273,7 @@ public class ExperimentRunner {
     return callHolder;
   }
 
-  private Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
+  public Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
       Map<TrioIndividual, List<Read>> readMap) {
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
     for (TrioIndividual trioIndividual : TrioIndividual.values()) {
@@ -283,7 +283,7 @@ public class ExperimentRunner {
     return readSummaryMap;
   }
 
-  private Map<TrioIndividual, List<Read>> getReadMap(String chromosome, Long candidatePosition)
+  public Map<TrioIndividual, List<Read>> getReadMap(String chromosome, Long candidatePosition)
       throws IOException {
     /* Get reads for the current position */
     Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
