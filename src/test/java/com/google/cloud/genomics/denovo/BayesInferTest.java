@@ -13,20 +13,27 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import com.google.api.services.genomics.Genomics;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.utils.GenomicsFactory;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.*;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
 
 public class BayesInferTest {
 
   private static Genomics genomics;
   private static ExperimentRunner expRunner;
+  private static BayesInfer bayesInferrer;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -34,7 +41,8 @@ public class BayesInferTest {
     String homeDir = System.getProperty("user.home");
 
     String argsString = "stage1 --candidates_file candidate.calls.tmp "
-        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json ";
+        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json "
+        + "--seq_err_rate 1e-2 " + "--denovo_mut_rate 1e-8";
     String[] args = argsString.split(" ");
 
     CommandLine cmdLine = new CommandLine();
@@ -44,6 +52,8 @@ public class BayesInferTest {
         .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
 
     expRunner = new ExperimentRunner(cmdLine, genomics);
+    
+    bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
   }
 
   @Test
@@ -55,4 +65,36 @@ public class BayesInferTest {
   public void testExpRunnerIsNotNull() {
     assertNotNull(expRunner);
   }
+  
+  @Test
+  public void testTrioPos816785() throws IOException {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        expRunner.getReadSummaryMap(816785L, expRunner.getReadMap("chr1", 816785L));
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+    
+    assertFalse(result.isDenovo());
+    assertEquals("816785 => [CC,CC,CC]", Arrays.asList(CC,CC,CC), result.getMaxTrioGenoType());
+  }
+  
+  @Test
+  public void testTrioPos846600() throws IOException {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        expRunner.getReadSummaryMap(846600L, expRunner.getReadMap("chr1", 846600L));
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+    
+    assertFalse(result.isDenovo());
+    assertEquals("846600 => [CC,CC,CC]", Arrays.asList(CC,CC,CC), result.getMaxTrioGenoType());
+  }
+
+  @Test
+  public void testTrioPos763769() throws IOException {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        expRunner.getReadSummaryMap(763769L, expRunner.getReadMap("chr1", 763769L));
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+    
+    assertFalse(result.isDenovo());
+    assertEquals("763769 => [AA,AA,AA]", Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
+  }
+
+  
 }
