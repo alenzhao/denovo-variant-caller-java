@@ -324,8 +324,6 @@ public class ExperimentRunner {
 
     if (debugLevel >= 1) {
       synchronized(this) {
-        System.out.println(
-            "Processing " + callHolder.chromosome + ":" + String.valueOf(callHolder.position));
         System.out.printf("%s,%d,%s", 
             callHolder.chromosome, callHolder.position, result.getDetails());
       }
