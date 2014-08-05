@@ -96,5 +96,13 @@ public class BayesInferTest {
     assertEquals("763769 => [AA,AA,AA]", Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
   }
 
-  
+  @Test
+  public void testTrioPos1298169() throws IOException {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        expRunner.getReadSummaryMap(1298169L, expRunner.getReadMap("chr1", 1298169L));
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+
+    assertFalse(result.isDenovo());
+    assertEquals("1298169 => [TT,TT,TT]", Arrays.asList(TT, TT, TT), result.getMaxTrioGenoType());
+  }
 }

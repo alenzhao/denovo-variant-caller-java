@@ -173,8 +173,9 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
           genoType.name().substring(0, 1).equals(genoType.name().substring(1, 2));
 
       double readlogLikelihood = 0.0;
-      for (String base : count.keySet()) {
-        readlogLikelihood += getBaseLikelihood(genoType, isHomozygous, base);
+      for (Map.Entry<String, Integer> entry : count.entrySet()) {
+        readlogLikelihood += entry.getValue() * 
+            getBaseLikelihood(genoType, isHomozygous, entry.getKey());
       }
       genotypeLogLikelihood.put(genoType, readlogLikelihood);
     }
@@ -204,13 +205,10 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
           logLikelihood += individualLogLikelihood.get(CHILD).get(genoTypeChild);
 
           /* Get likelihoods from the trio relationship */
-          logLikelihood += getNodeMap().get(DAD).getConditionalProbabilityTable().get(
-              Collections.singletonList(genoTypeDad));
-          logLikelihood += getNodeMap().get(MOM).getConditionalProbabilityTable().get(
-              Collections.singletonList(genoTypeMom));
-          logLikelihood += getNodeMap().get(CHILD).getConditionalProbabilityTable().get(
-              Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
-
+          logLikelihood += getLogLikelihoodFromCPT(DAD, genoTypeDad);
+          logLikelihood += getLogLikelihoodFromCPT(MOM, genoTypeMom);
+          logLikelihood += getLogLikelihoodFromCPT(CHILD, genoTypeDad, genoTypeMom, genoTypeChild); 
+              
           if (logLikelihood > maxLogLikelihood) {
             maxLogLikelihood = logLikelihood;
             maxGenoType = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
@@ -219,6 +217,14 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
       }
     }
     return maxGenoType;
+  }
+
+  private double getLogLikelihoodFromCPT(TrioIndividual individual, Genotypes... keyParts) {
+    List<Genotypes> cptKey = Arrays.asList(keyParts);
+    return Math.log(getNodeMap().
+        get(individual).
+        getConditionalProbabilityTable().
+        get(cptKey));
   }
 
   /**
