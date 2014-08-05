@@ -37,6 +37,11 @@ public class ReadSummary {
     }
   }
 
+  @Override
+  public String toString() {
+    return count.toString();
+  }
+  
   public Map<String, Integer> getCount() {
     return count;
   }
