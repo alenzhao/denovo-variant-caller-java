@@ -22,13 +22,8 @@ import com.google.api.services.genomics.model.Read;
 public class ReadSummary {
   private Map<String, Integer> count = new HashMap<>();
 
-  private ReadSummary() {
-  }
-  
-  public static ReadSummary newReadSummary(Map<String, Integer> count) {
-    ReadSummary summary = new ReadSummary();
-    summary.setCount(count);
-    return summary;
+  public ReadSummary(Map<String, Integer> count) {
+    this.count = count;
   }
   
   public ReadSummary(List<Read> reads, Long candidatePosition) {
@@ -37,8 +32,8 @@ public class ReadSummary {
       String alignedBases = read.getAlignedBases();
       Integer offset = (int) (candidatePosition - read.getPosition());
       String baseAtPos = alignedBases.substring(offset, offset + 1);
-      getCount().put(baseAtPos,
-          (getCount().containsKey(baseAtPos) ? getCount().get(baseAtPos) : 0) + 1);
+      count.put(baseAtPos,
+          (count.containsKey(baseAtPos) ? count.get(baseAtPos) : 0) + 1);
     }
   }
 
