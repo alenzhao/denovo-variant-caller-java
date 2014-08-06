@@ -21,6 +21,7 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,14 +33,29 @@ import java.util.Map;
  */
 public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
 
-  private double sequenceErrorRate;
-  private double denovoMutationRate;
+  private final double sequenceErrorRate;
+  private final double denovoMutationRate;
   private Map<TrioIndividual, Node<TrioIndividual, Genotypes>> nodeMap;
 
   public DenovoBayesNet(double sequenceErrorRate, double denovoMutationRate) {
-    setNodeMap(new HashMap<TrioIndividual, Node<TrioIndividual, Genotypes>>());
-    setSequenceErrorRate(sequenceErrorRate);
-    setDenovoMutationRate(denovoMutationRate);
+    nodeMap = new HashMap<TrioIndividual, Node<TrioIndividual, Genotypes>>();
+    this.sequenceErrorRate = sequenceErrorRate;
+    this.denovoMutationRate = denovoMutationRate; 
+    
+    // Initialize the nodes and prob tables
+    initializeTrioNodes();
+  }
+
+  /**
+   * 
+   */
+  private void initializeTrioNodes() {
+    addNode(new Node<>(DAD, null, createConditionalProbabilityTable(DAD)));
+    addNode(new Node<>(MOM, null, createConditionalProbabilityTable(MOM)));
+    List<Node<TrioIndividual, Genotypes>> childParents = new ArrayList<>();
+    childParents.add(nodeMap.get(DAD));
+    childParents.add(nodeMap.get(MOM));
+    addNode(new Node<>(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
   }
 
   @Override
@@ -71,11 +87,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * Creates the conditional probability table to be used in the bayes net One each for mom, dad and
    * child
    */
-  /**
-   * @param individual
-   * @return conditionalProbabilityTable
-   */
-  Map<List<Genotypes>, Double> createConditionalProbabilityTable(TrioIndividual individual) {
+  public Map<List<Genotypes>, Double> createConditionalProbabilityTable(TrioIndividual individual) {
 
     Map<List<Genotypes>, Double> conditionalProbabilityTable = new HashMap<>();
     if (individual == DAD || individual == MOM) {
@@ -235,24 +247,10 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
   }
 
   /**
-   * @param sequenceErrorRate the sequenceErrorRate to set
-   */
-  public void setSequenceErrorRate(double sequenceErrorRate) {
-    this.sequenceErrorRate = sequenceErrorRate;
-  }
-
-  /**
    * @return the denovoMutationRate
    */
   public double getDenovoMutationRate() {
     return denovoMutationRate;
-  }
-
-  /**
-   * @param denovoMutationRate the denovoMutationRate to set
-   */
-  public void setDenovoMutationRate(double denovoMutationRate) {
-    this.denovoMutationRate = denovoMutationRate;
   }
 
   /**

@@ -13,17 +13,12 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
-
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,14 +35,8 @@ public class BayesInfer {
     
   public BayesInfer(Double sequenceErrorRate, Double denovoMutationRate) {
 
-    // Create a new Bayes net and fill in the params
+    // Create a new Denovo BayesNet
     dbn = new DenovoBayesNet(sequenceErrorRate, denovoMutationRate);
-    dbn.addNode(new Node<>(DAD, null, dbn.createConditionalProbabilityTable(DAD)));
-    dbn.addNode(new Node<>(MOM, null, dbn.createConditionalProbabilityTable(MOM)));
-    List<Node<TrioIndividual, Genotypes>> childParents = new ArrayList<>();
-    childParents.add(dbn.getNodeMap().get(DAD));
-    childParents.add(dbn.getNodeMap().get(MOM));
-    dbn.addNode(new Node<>(CHILD, childParents, dbn.createConditionalProbabilityTable(CHILD)));
   }
 
   /*
