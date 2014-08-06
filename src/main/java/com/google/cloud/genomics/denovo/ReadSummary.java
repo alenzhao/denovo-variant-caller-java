@@ -20,20 +20,28 @@ import java.util.Map;
 import com.google.api.services.genomics.model.Read;
 
 public class ReadSummary {
-  private Map<String, Integer> count;
+  private Map<String, Integer> count = new HashMap<>();
 
+  public ReadSummary(Map<String, Integer> count) {
+    this.count = count;
+  }
+  
   public ReadSummary(List<Read> reads, Long candidatePosition) {
-    setCount(new HashMap<String, Integer>());
     for (Read read : reads) {
       // TODO : Figure out baseAtPos
       String alignedBases = read.getAlignedBases();
       Integer offset = (int) (candidatePosition - read.getPosition());
       String baseAtPos = alignedBases.substring(offset, offset + 1);
-      getCount().put(baseAtPos,
-          (getCount().containsKey(baseAtPos) ? getCount().get(baseAtPos) : 0) + 1);
+      count.put(baseAtPos,
+          (count.containsKey(baseAtPos) ? count.get(baseAtPos) : 0) + 1);
     }
   }
 
+  @Override
+  public String toString() {
+    return count.toString();
+  }
+  
   public Map<String, Integer> getCount() {
     return count;
   }

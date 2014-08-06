@@ -201,7 +201,7 @@ public class DenovoCaller {
 
     public DiploidGenotype(List<Integer> genotype) {
       if (genotype.size() != 2) {
-        throw new IllegalStateException("Expected Diploid Genotype ; got" + genotype.toString());
+        throw new IllegalStateException("Expected Diploid Genotype ; got" + genotype);
       }
       this.genotype = genotype;
     }

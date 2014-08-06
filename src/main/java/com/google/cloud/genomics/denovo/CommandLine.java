@@ -20,6 +20,7 @@ import org.kohsuke.args4j.Option;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 
 /**
  * Command line options handler for GenomicsExperiment
@@ -32,13 +33,25 @@ class CommandLine {
       metaVar = "<stage id>", required = true)
   public String stageId = null;
 
+  @Option(name = "--job_name", metaVar = "<job name>",
+      usage = "Name of your job", required = true)
+  public String jobName;
+  
+  @Option(name = "--inference_method", metaVar = "<map|bayes|lrt>",
+      usage = "Inference method (map | bayes | lrt)")
+  public String inferMethod = "map";
+
+  @Option(name = "--output_file", metaVar = "<file>",
+      usage = "File to write results")
+  public String outputFileName = null;
+  
+  @Option(name = "--input_file", metaVar = "<file>",
+      usage = "File to read from")
+  public String inputFileName = null;
+  
   @Option(name = "--client_secrets_filename", metaVar = "<client_secrets_filename>",
       usage = "Path to client_secrets.json")
   public String clientSecretsFilename = "client_secrets.json";
-
-  @Option(name = "--candidates_file", metaVar = "<cand file>",
-      usage = "Specify the file onto which to write the candidates")
-  public String candidatesFile = null;
 
   @Option(name = "--seq_err_rate", metaVar = "<seq_err_rate>",
       usage = "Specify the sequence error rate (default 1e-2)")
@@ -48,10 +61,22 @@ class CommandLine {
       usage = "Specify the denovo mutation rate (default 1e-8)")
   public double denovoMutationRate = 1e-8;
 
+  @Option(name = "--lrt_threshold", metaVar = "<lrt_sig_level>",
+      usage = "likelihood ratio test significance level (default 1. ;higher the stricter)")
+  public double lrtThreshold = 1.0;
+  
   @Option(name = "--num_threads", metaVar = "<num_threads>",
       usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
   public int numThreads = 1;
-  
+
+  @Option(name = "--debug_level", metaVar = "<debug_level>",
+      usage = "specify the debug level (0 for no debug spew)")
+  public int debugLevel = 0;
+
+  @Option(name = "--chromosome", metaVar = "<chromosome>",
+      usage = "specify the chromosomes to search (specify multiple times for multiple chromsomes)")
+  public List<String> chromosomes;
+
   public CommandLine() {
     parser = new CmdLineParser(this);
   }

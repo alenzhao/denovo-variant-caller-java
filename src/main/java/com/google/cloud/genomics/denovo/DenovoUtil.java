@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,6 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-
   static public final long PROJECT_ID = 1085016379660L;
   static public final int TOT_CHROMOSOMES = 24;
   static public final long MAX_VARIANT_RESULTS = 10000L;
@@ -59,11 +59,18 @@ public class DenovoUtil {
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
   static public final String TRIO_DATASET_ID = "2315870033780478914";
+  public static final int MAX_API_RETRIES = 5;
+  public static final long API_WAIT_MILLISEC = 5000;
 
+  public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
   public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
   public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
   static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
+  static public Map<Triple<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
+      new HashMap<>();
+  
+  static public int debugLevel = 0; 
   
   static {
     // Constant Values Needed for stage 2 experiments
@@ -71,7 +78,6 @@ public class DenovoUtil {
     datasetIdMap.put(MOM, "2778297328698497799");
     datasetIdMap.put(CHILD, "6141326619449450766");
     datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
-
 
     callsetIdMap.put(DAD, "NA12877");
     callsetIdMap.put(MOM, "NA12878");
@@ -88,16 +94,172 @@ public class DenovoUtil {
     individualCallsetNameMap.put(CHILD, "NA12879");
     individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
     
+    for (Genotype genotypeDad : Genotype.values()) {
+      for (Genotype genotypeMom : Genotype.values()) {
+        for (Genotype genotypeChild : Genotype.values()) {
+          String childAlleles = genotypeChild.name();
+          String momAlleles = genotypeMom.name();
+          String dadAlleles = genotypeDad.name();
+
+          String c1 = childAlleles.substring(0, 1);
+          String c2 = childAlleles.substring(1, 2);
+          boolean alleleInParents = momAlleles.contains(c1) & dadAlleles.contains(c2);
+          boolean alleleInParentsMirror = momAlleles.contains(c2) & dadAlleles.contains(c1);
+          boolean isDenovo = !(alleleInParents || alleleInParentsMirror);
+          isDenovoMap.put(new Triple<>(genotypeDad, genotypeMom, genotypeChild), isDenovo);
+        }
+      }
+    }
   }
   
   public enum TrioIndividual {
     DAD, MOM, CHILD;
   }
 
-  public enum Genotypes {
-    AA, AC, AT, AG, CC, CT, CG, TT, TG, GG;
+  public enum Allele {
+    A, C, G, T;
+    
+    public static final EnumSet<Allele> allHaplotypes = EnumSet.allOf(Allele.class);
+    
+    public EnumSet<Allele> getMutants() {
+      EnumSet<Allele> difference = allHaplotypes.clone();
+      difference.remove(this);
+      return difference;
+    }
+    
+    public Allele getTransversion(Allele all) {
+      switch(all) {
+        case A : return G;
+        case G : return A;
+        case C : return T;
+        case T : return C;
+        default : throw new IllegalArgumentException("Unknown haplotype " + all);
+      }
+    }
+    
+    public EnumSet<Allele> getTransition(Allele all) {
+      switch(all) {
+        case A : return EnumSet.of(C, T);
+        case G : return EnumSet.of(C, T);
+        case C : return EnumSet.of(A, G);
+        case T : return EnumSet.of(A, G);
+        default : throw new IllegalArgumentException("Unknown haplotype " + all);
+      }
+    }
+  }
+  
+  public enum Genotype {
+    AA(true),
+    AC(false),
+    AG(false),
+    AT(false),
+    CC(true),
+    CG(false),
+    CT(false),
+    GG(true),
+    GT(false),
+    TT(true);
+
+    private final boolean isHomozygous;
+
+    Genotype(boolean isHomozygous) {
+      this.isHomozygous = isHomozygous;
+    }
+
+    public boolean isHomozygous() {
+      return isHomozygous;
+    }
+    
+    public static Genotype getGenoTypeFromString(String stringGenoType) {
+      for(Genotype genotype : Genotype.values()) { 
+        if(genotype.name().equals(stringGenoType)){
+          return genotype;
+        }
+      }
+      throw new IllegalArgumentException("Unknown Genotype " + stringGenoType);
+    }
   }
 
+  public enum InferenceMethod {
+    MAP, BAYES, LRT;
+    
+    public static InferenceMethod selectMethodfromString(String method) {
+      for (InferenceMethod inferMethod : InferenceMethod.values()) {
+        if(inferMethod.name().toLowerCase().equals(method.toLowerCase())) { return inferMethod; }  
+      }
+      throw new IllegalArgumentException("Unknown method " + method);
+    }
+  }
+  
+  public static class Pair<T1, T2> {
+    public T1 first;
+    public T2 second;
+    
+    public Pair(T1 first, T2 second) {
+      this.first = first;
+      this.second = second;
+    }
+    
+    @Override
+    public String toString() {
+      return String.format("<%s,%s>", first, second);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) { return true; }
+      if (!(o instanceof Pair)) { return false; }
+      Pair<?,?> m = (Pair<?,?>) o;
+      return (first == m.first || (first != null && first.equals(m.first))) &&
+          (second == m.second || (second != null && second.equals(m.second)));
+    }
+    
+    @Override
+    public int hashCode() {
+      int result = 17;
+      result += first.hashCode() * 31;
+      result += second.hashCode() * 31;
+      return result;
+    }
+
+  }
+
+  public static class Triple<T1, T2, T3> {
+    public T1 first;
+    public T2 second;
+    public T3 third;
+    
+    public Triple(T1 first, T2 second, T3 third) {
+      this.first = first;
+      this.second = second;
+      this.third = third;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("<%s,%s,%s>", first, second, third);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) { return true; }
+      if (!(o instanceof Triple)) { return false; }
+      Triple<?,?,?> m = (Triple<?,?,?>) o;
+      return (first == m.first || (first != null && first.equals(m.first))) &&
+          (second == m.second || (second != null && second.equals(m.second))) &&
+          (third == m.third || (third != null && third.equals(m.third)));
+    }
+
+    @Override
+    public int hashCode() {
+      int result = 17;
+      result += first.hashCode() * 31;
+      result += second.hashCode() * 31;
+      result += third.hashCode() * 31;
+      return result;
+    }
+  }
+  
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
       ContigBound contig,
       long startPos,
@@ -137,7 +299,6 @@ public class DenovoUtil {
 
     // Init searchRequest obj
     return new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
-
   }
 
   private static SearchCallsetsRequest createSearchCallsetsRequest(String datasetId) {
@@ -162,8 +323,6 @@ public class DenovoUtil {
       List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual), genomics);
 
       for (Readset readset : readsets) {
-        // System.out.println(
-        // readset.getDatasetId() + ":" + readset.getName() + ":" + readset.getId());
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
@@ -176,7 +335,7 @@ public class DenovoUtil {
     }
     // Check that the readsetIdMap is sane
     if (readsetIdMap.size() != 3) {
-      throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap.toString());
+      throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap);
     }
     return readsetIdMap;
   }
@@ -265,7 +424,9 @@ public class DenovoUtil {
     variantsSummaryRequest.setDisableGZipContent(true);
 
     GetVariantsSummaryResponse execute = variantsSummaryRequest.execute();
-    // System.out.println("Variants : "+execute.toPrettyString());
+    if (debugLevel >= 2) {
+      System.out.println("Variants : " + execute.toPrettyString());
+    }
 
     List<ContigBound> contigBounds = execute.getContigBounds();
     BigInteger totBases = BigInteger.valueOf(0);
@@ -278,31 +439,29 @@ public class DenovoUtil {
   public static void helperCreateDirectory(File theDir) {
     // if the directory does not exist, create it
     if (!theDir.exists()) {
-      System.out.println("creating directory: " + theDir);
+      System.err.println("creating directory: " + theDir);
       theDir.mkdir();
     }
   }
 
+  /*
+   * overloads and forwards to function
+   */
+  public static boolean checkTrioGenoTypeIsDenovo(Genotype genotypeDad, Genotype genotypeMom, 
+      Genotype genotypeChild) {
+    return isDenovoMap.get(new Triple<>(genotypeDad, genotypeMom, genotypeChild));
+  }
+  
   /**
    * Check if the particular genotype is denovo i.e. present in kids but not in parents
    *
    * @param trioGenotypeList
    * @return isDenovo
    */
-  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> trioGenotypeList) {
-    Genotypes genoTypeDad = trioGenotypeList.get(0);
-    Genotypes genoTypeMom = trioGenotypeList.get(1);
-    Genotypes genoTypeChild = trioGenotypeList.get(2);
-
-    String childAlleles = genoTypeChild.name();
-    String momAlleles = genoTypeMom.name();
-    String dadAlleles = genoTypeDad.name();
-
-    String c1 = childAlleles.substring(0, 1);
-    String c2 = childAlleles.substring(1, 2);
-    boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
-    boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
-    boolean predicate3 = !(predicate1 | predicate2);
-    return predicate3;
+  public static boolean checkTrioGenoTypeIsDenovo(List<Genotype> trioGenotypeList) {
+    Genotype genotypeDad = trioGenotypeList.get(0);
+    Genotype genotypeMom = trioGenotypeList.get(1);
+    Genotype genotypeChild = trioGenotypeList.get(2);
+    return checkTrioGenoTypeIsDenovo(genotypeDad, genotypeMom, genotypeChild);
   }
 }

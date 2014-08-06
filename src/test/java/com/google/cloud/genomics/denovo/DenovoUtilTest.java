@@ -13,16 +13,16 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AA;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AC;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.CC;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.CG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.CT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.GG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.TG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.TT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AA;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AC;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CC;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 
 import com.google.api.services.genomics.model.Call;
@@ -81,24 +81,24 @@ public class DenovoUtilTest {
         DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AA, AC, AT)));
     assertEquals("AA|AA,CG", true,
         DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AA, CG, AA)));
-    assertEquals("GG|AC,TG", true,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, GG)));
-    assertEquals("AA|AC,TG", true,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, AA)));
-    assertEquals("AC|AC,TG", true,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, AC)));
-    assertEquals("TG|AC,TG", true,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, TG)));
+    assertEquals("GG|AC,GT", true,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, GG)));
+    assertEquals("AA|AC,GT", true,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, AA)));
+    assertEquals("AC|AC,GT", true,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, AC)));
+    assertEquals("GT|AC,GT", true,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, GT)));
 
     // Normal Inheritance cases
-    assertEquals("AT|AC,TG", false,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, AT)));
-    assertEquals("CT|AC,TG", false,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, CT)));
-    assertEquals("AG|AC,TG", false,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, AG)));
-    assertEquals("CG|AC,TG", false,
-        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, TG, CG)));
+    assertEquals("AT|AC,GT", false,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, AT)));
+    assertEquals("CT|AC,GT", false,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, CT)));
+    assertEquals("AG|AC,GT", false,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, AG)));
+    assertEquals("CG|AC,GT", false,
+        DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, GT, CG)));
     assertEquals("AA|AA,AC", false,
         DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AA, AC, AA)));
     assertEquals("AC|AA,AC", false,

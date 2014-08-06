@@ -24,7 +24,7 @@ import java.io.IOException;
  */
 public class GenomicsExperiment {
 
-  static CommandLine cmdLine;
+  private static CommandLine cmdLine;
 
   public static void main(String[] args) throws IOException {
     System.out.println("-------- Starting Genomics Experiment ---------");
@@ -34,6 +34,7 @@ public class GenomicsExperiment {
     try {
       // Parse the command line
       cmdLine.setArgs(args);
+      
       Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
           .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
       
