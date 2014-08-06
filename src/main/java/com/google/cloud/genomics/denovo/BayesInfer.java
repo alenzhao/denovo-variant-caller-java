@@ -13,7 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -46,11 +46,11 @@ public class BayesInfer {
   public InferResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap) {
 
     // Calculate Likelihoods of the different reads
-    Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood =
+    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood =
         dbn.getIndividualLogLikelihood(readSummaryMap);
 
     // Get the trio genotype with the max likelihood
-    List<Genotypes> maxTrioGenoType = dbn.getMaxGenoType(individualLogLikelihood);
+    List<Genotype> maxTrioGenoType = dbn.getMaxGenoType(individualLogLikelihood);
 
     // Check that the MAP genotype has indeed the highest likelihood
     boolean checkTrioGenoTypeIsDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(maxTrioGenoType);
@@ -77,9 +77,9 @@ public class BayesInfer {
   public static class InferResult {
     private final boolean isDenovo;
     private final String details;
-    private final List<Genotypes> maxTrioGenoType;
+    private final List<Genotype> maxTrioGenoType;
 
-    public InferResult(boolean isDenovo, List<Genotypes> maxTrioGenoType, String format) {
+    public InferResult(boolean isDenovo, List<Genotype> maxTrioGenoType, String format) {
       this.isDenovo = isDenovo;
       this.details = format;
       this.maxTrioGenoType = maxTrioGenoType;
@@ -93,7 +93,7 @@ public class BayesInfer {
       return details;
     }
 
-    public List<Genotypes> getMaxTrioGenoType() {
+    public List<Genotype> getMaxTrioGenoType() {
       return maxTrioGenoType;
     }
   }

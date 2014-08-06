@@ -19,7 +19,7 @@ import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.utils.GenomicsFactory;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.*;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.*;
 
 import org.junit.BeforeClass;
 import org.junit.Ignore;

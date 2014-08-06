@@ -15,7 +15,7 @@ package com.google.cloud.genomics.denovo;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 import org.junit.After;
@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public class NodeTest {
 
-  private Map<List<Genotypes>, Double> conditionalProbabilityTable;
+  private Map<List<Genotype>, Double> conditionalProbabilityTable;
   private double EPS = 1e-12;
 
   /**
@@ -42,8 +42,8 @@ public class NodeTest {
   @Before
   public void setUp() {
     conditionalProbabilityTable = new HashMap<>();
-    int numGenotypes = Genotypes.values().length;
-    for (Genotypes genotype : Genotypes.values()) {
+    int numGenotypes = Genotype.values().length;
+    for (Genotype genotype : Genotype.values()) {
       conditionalProbabilityTable.put(Collections.singletonList(genotype),
           Double.valueOf(1.0 / numGenotypes));
     }
@@ -60,7 +60,7 @@ public class NodeTest {
   @Test
   public void testSingleNode() {
 
-    Node<TrioIndividual, Genotypes> dadNode =
+    Node<TrioIndividual, Genotype> dadNode =
         new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
     assertEquals(TrioIndividual.DAD, dadNode.getId());
     assertEquals(null, dadNode.getParents());
@@ -70,10 +70,10 @@ public class NodeTest {
   @Test
   public void testLinkedNode() {
 
-    Node<TrioIndividual, Genotypes> dadNode =
+    Node<TrioIndividual, Genotype> dadNode =
         new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
 
-    Node<TrioIndividual, Genotypes> childNode = new Node<>(TrioIndividual.CHILD,
+    Node<TrioIndividual, Genotype> childNode = new Node<>(TrioIndividual.CHILD,
         Collections.singletonList(dadNode), conditionalProbabilityTable);
 
     assertEquals(null, dadNode.getParents());

@@ -13,7 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
@@ -31,14 +31,14 @@ import java.util.Map;
 /*
  * DenovoBayesNet implements abstract BayesNet
  */
-public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
+public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
 
   private final double sequenceErrorRate;
   private final double denovoMutationRate;
-  private Map<TrioIndividual, Node<TrioIndividual, Genotypes>> nodeMap;
+  private Map<TrioIndividual, Node<TrioIndividual, Genotype>> nodeMap;
 
   public DenovoBayesNet(double sequenceErrorRate, double denovoMutationRate) {
-    nodeMap = new HashMap<TrioIndividual, Node<TrioIndividual, Genotypes>>();
+    nodeMap = new HashMap<TrioIndividual, Node<TrioIndividual, Genotype>>();
     this.sequenceErrorRate = sequenceErrorRate;
     this.denovoMutationRate = denovoMutationRate; 
     
@@ -52,14 +52,14 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
   private void initializeTrioNodes() {
     addNode(new Node<>(DAD, null, createConditionalProbabilityTable(DAD)));
     addNode(new Node<>(MOM, null, createConditionalProbabilityTable(MOM)));
-    List<Node<TrioIndividual, Genotypes>> childParents = new ArrayList<>();
+    List<Node<TrioIndividual, Genotype>> childParents = new ArrayList<>();
     childParents.add(nodeMap.get(DAD));
     childParents.add(nodeMap.get(MOM));
     addNode(new Node<>(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
   }
 
   @Override
-  public void addNode(Node<TrioIndividual, Genotypes> node) {
+  public void addNode(Node<TrioIndividual, Genotype> node) {
     getNodeMap().put(node.getId(), node);
   }
 
@@ -70,12 +70,12 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * @param conditionalProbabilityTable
    */
   public static void printConditionalProbabilityTable(PrintStream out,
-      Map<List<Genotypes>, Double> conditionalProbabilityTable) {
+      Map<List<Genotype>, Double> conditionalProbabilityTable) {
 
-    for (Genotypes dadGenotype : Genotypes.values()) {
-      for (Genotypes momGenotype : Genotypes.values()) {
-        for (Genotypes childGenotype : Genotypes.values()) {
-          List<Genotypes> cptKey = Arrays.asList(dadGenotype, momGenotype, childGenotype);
+    for (Genotype dadGenotype : Genotype.values()) {
+      for (Genotype momGenotype : Genotype.values()) {
+        for (Genotype childGenotype : Genotype.values()) {
+          List<Genotype> cptKey = Arrays.asList(dadGenotype, momGenotype, childGenotype);
           Double probVal = conditionalProbabilityTable.get(cptKey);
           out.printf("%s : %s%n", cptKey, probVal);
         }
@@ -87,24 +87,24 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * Creates the conditional probability table to be used in the bayes net One each for mom, dad and
    * child
    */
-  public Map<List<Genotypes>, Double> createConditionalProbabilityTable(TrioIndividual individual) {
+  public Map<List<Genotype>, Double> createConditionalProbabilityTable(TrioIndividual individual) {
 
-    Map<List<Genotypes>, Double> conditionalProbabilityTable = new HashMap<>();
+    Map<List<Genotype>, Double> conditionalProbabilityTable = new HashMap<>();
     if (individual == DAD || individual == MOM) {
-      for (Genotypes genoType : Genotypes.values()) {
+      for (Genotype genoType : Genotype.values()) {
         conditionalProbabilityTable.put(Collections.singletonList(genoType),
-            1.0 / Genotypes.values().length);
+            1.0 / Genotype.values().length);
       }
     } else { // individual == TrioIndividuals.CHILD
 
       // Loops over parent Genotypes
-      for (Genotypes genoTypeDad : Genotypes.values()) {
-        for (Genotypes genoTypeMom : Genotypes.values()) {
+      for (Genotype genoTypeDad : Genotype.values()) {
+        for (Genotype genoTypeMom : Genotype.values()) {
 
 
           // Initial pass to count valid inheritance cases
           int validInheritanceCases = 0;
-          for (Genotypes genoTypeChild : Genotypes.values()) {
+          for (Genotype genoTypeChild : Genotype.values()) {
             boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(
                 Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
 
@@ -114,8 +114,8 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
           }
 
           // Secondary Pass to fill in probability values
-          for (Genotypes genoTypeChild : Genotypes.values()) {
-            List<Genotypes> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
+          for (Genotype genoTypeChild : Genotype.values()) {
+            List<Genotype> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
 
             boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(cptKey);
             conditionalProbabilityTable.put(
@@ -124,7 +124,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
                     ? getDenovoMutationRate()
                     : (1.0
                           - getDenovoMutationRate() 
-                               * (Genotypes.values().length - validInheritanceCases)) 
+                               * (Genotype.values().length - validInheritanceCases)) 
                       / validInheritanceCases
                 );
           }
@@ -142,7 +142,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * @param base
    * @return logLikeliHood
    */
-  public double getBaseLikelihood(Genotypes genoType, boolean isHomozygous, String base) {
+  public double getBaseLikelihood(Genotype genoType, boolean isHomozygous, String base) {
     return isHomozygous
         ? genoType.name().contains(base)
             ? Math.log(1 - getSequenceErrorRate())
@@ -159,13 +159,13 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * @param readSummaryMap
    * @return individualLogLikelihood
    */
-  public Map<TrioIndividual, Map<Genotypes, Double>> getIndividualLogLikelihood(
+  public Map<TrioIndividual, Map<Genotype, Double>> getIndividualLogLikelihood(
       Map<TrioIndividual, ReadSummary> readSummaryMap) {
-    Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood = new HashMap<>();
+    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = new HashMap<>();
     for (TrioIndividual trioIndividual : TrioIndividual.values()) {
 
       ReadSummary readSummary = readSummaryMap.get(trioIndividual);
-      Map<Genotypes, Double> genoTypeLogLikelihood = getGenoTypeLogLikelihood(readSummary);
+      Map<Genotype, Double> genoTypeLogLikelihood = getGenoTypeLogLikelihood(readSummary);
       individualLogLikelihood.put(trioIndividual, genoTypeLogLikelihood);
     }
     return individualLogLikelihood;
@@ -177,9 +177,9 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * @param readSummary
    * @return genotypeLogLikelihood
    */
-  public Map<Genotypes, Double> getGenoTypeLogLikelihood(ReadSummary readSummary) {
-    Map<Genotypes, Double> genotypeLogLikelihood = new HashMap<>();
-    for (Genotypes genoType : Genotypes.values()) {
+  public Map<Genotype, Double> getGenoTypeLogLikelihood(ReadSummary readSummary) {
+    Map<Genotype, Double> genotypeLogLikelihood = new HashMap<>();
+    for (Genotype genoType : Genotype.values()) {
       Map<String, Integer> count = readSummary.getCount();
       boolean isHomozygous =
           genoType.name().substring(0, 1).equals(genoType.name().substring(1, 2));
@@ -200,15 +200,15 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
    * @param individualLogLikelihood
    * @return maxgenoType
    */
-  public List<Genotypes> getMaxGenoType(
-      Map<TrioIndividual, Map<Genotypes, Double>> individualLogLikelihood) {
+  public List<Genotype> getMaxGenoType(
+      Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood) {
     double maxLogLikelihood = Double.NEGATIVE_INFINITY;
-    List<Genotypes> maxGenoType = null;
+    List<Genotype> maxGenoType = null;
 
     // Calculate overall bayes net log likelihood
-    for (Genotypes genoTypeDad : Genotypes.values()) {
-      for (Genotypes genoTypeMom : Genotypes.values()) {
-        for (Genotypes genoTypeChild : Genotypes.values()) {
+    for (Genotype genoTypeDad : Genotype.values()) {
+      for (Genotype genoTypeMom : Genotype.values()) {
+        for (Genotype genoTypeChild : Genotype.values()) {
           double logLikelihood = 0.0;
 
           /* Get likelihood from the reads */
@@ -231,8 +231,8 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
     return maxGenoType;
   }
 
-  private double getLogLikelihoodFromCPT(TrioIndividual individual, Genotypes... keyParts) {
-    List<Genotypes> cptKey = Arrays.asList(keyParts);
+  private double getLogLikelihoodFromCPT(TrioIndividual individual, Genotype... keyParts) {
+    List<Genotype> cptKey = Arrays.asList(keyParts);
     return Math.log(getNodeMap().
         get(individual).
         getConditionalProbabilityTable().
@@ -256,14 +256,14 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotypes> {
   /**
    * @return the nodeMap
    */
-  public Map<TrioIndividual, Node<TrioIndividual, Genotypes>> getNodeMap() {
+  public Map<TrioIndividual, Node<TrioIndividual, Genotype>> getNodeMap() {
     return nodeMap;
   }
 
   /**
    * @param hashMap the nodeMap to set
    */
-  public void setNodeMap(Map<TrioIndividual, Node<TrioIndividual, Genotypes>> hashMap) {
+  public void setNodeMap(Map<TrioIndividual, Node<TrioIndividual, Genotype>> hashMap) {
     this.nodeMap = hashMap;
   }
 }

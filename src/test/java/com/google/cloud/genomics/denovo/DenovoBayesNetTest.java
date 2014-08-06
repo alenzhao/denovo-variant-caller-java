@@ -13,20 +13,20 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AA;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AC;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.AT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.CC;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.CG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.CT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.GG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.TG;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.TT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AA;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AC;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CC;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TG;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotypes;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 import org.junit.Before;
@@ -51,7 +51,7 @@ public class DenovoBayesNetTest {
    */
 
   private DenovoBayesNet dbn;
-  private Map<List<Genotypes>, Double> conditionalProbabilityTable;
+  private Map<List<Genotype>, Double> conditionalProbabilityTable;
   private double EPS = 1e-12;
 
   @Before
@@ -59,8 +59,8 @@ public class DenovoBayesNetTest {
     dbn = new DenovoBayesNet(1e-2, 1e-8);
 
     conditionalProbabilityTable = new HashMap<>();
-    int numGenotypes = Genotypes.values().length;
-    for (Genotypes genotype : Genotypes.values()) {
+    int numGenotypes = Genotype.values().length;
+    for (Genotype genotype : Genotype.values()) {
       conditionalProbabilityTable.put(Collections.singletonList(genotype),
           Double.valueOf(1.0 / numGenotypes));
     }
@@ -81,13 +81,13 @@ public class DenovoBayesNetTest {
    */
   @Test
   public void testAddNodeNodeOfTrioIndividualGenotypes() {
-    Node<TrioIndividual, Genotypes> dadNode =
+    Node<TrioIndividual, Genotype> dadNode =
         new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
 
-    Node<TrioIndividual, Genotypes> momNode =
+    Node<TrioIndividual, Genotype> momNode =
         new Node<>(TrioIndividual.MOM, null, conditionalProbabilityTable);
 
-    Node<TrioIndividual, Genotypes> childNode = new Node<>(TrioIndividual.CHILD,
+    Node<TrioIndividual, Genotype> childNode = new Node<>(TrioIndividual.CHILD,
         Arrays.asList(dadNode, momNode), conditionalProbabilityTable);
 
     dbn.addNode(dadNode);
@@ -108,23 +108,23 @@ public class DenovoBayesNetTest {
    * .
    */
   public void testParentCreateConditionalProbabilityTable(TrioIndividual individual) {
-    Map<List<Genotypes>, Double> cpt = dbn.createConditionalProbabilityTable(individual);
-    int numGenotypes = Genotypes.values().length;
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(individual);
+    int numGenotypes = Genotype.values().length;
 
     // check keys
     assertEquals(
         new HashSet<>(
             Arrays.asList(
-                Collections.singletonList(Genotypes.AA),
-                Collections.singletonList(Genotypes.AC),
-                Collections.singletonList(Genotypes.AT),
-                Collections.singletonList(Genotypes.AG),
-                Collections.singletonList(Genotypes.CC),
-                Collections.singletonList(Genotypes.CT),
-                Collections.singletonList(Genotypes.CG),
-                Collections.singletonList(Genotypes.TT),
-                Collections.singletonList(Genotypes.TG),
-                Collections.singletonList(Genotypes.GG))),
+                Collections.singletonList(Genotype.AA),
+                Collections.singletonList(Genotype.AC),
+                Collections.singletonList(Genotype.AT),
+                Collections.singletonList(Genotype.AG),
+                Collections.singletonList(Genotype.CC),
+                Collections.singletonList(Genotype.CT),
+                Collections.singletonList(Genotype.CG),
+                Collections.singletonList(Genotype.TT),
+                Collections.singletonList(Genotype.TG),
+                Collections.singletonList(Genotype.GG))),
         cpt.keySet());
 
     // check values
@@ -149,7 +149,7 @@ public class DenovoBayesNetTest {
 
   @Test
   public void testChildCreateConditionalProbabilityTableValues() {
-    Map<List<Genotypes>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
 
     // check some key values
     assertEquals("TT|AA,AA", 1e-8, cpt.get(Arrays.asList(AA, AA, TT)), 1e-12);
@@ -172,7 +172,7 @@ public class DenovoBayesNetTest {
   @Test
   @Ignore("Known Failure")
   public void testChildCreateConditionalProbabilityTableValuesHarderCases() {
-    Map<List<Genotypes>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
 
     assertEquals("AA|AC,AC", 0.25, cpt.get(Arrays.asList(AC, AC, AA)), 1e-7);
     assertEquals("AC|AC,AC", 0.5, cpt.get(Arrays.asList(AC, AC, AC)), 1e-7);
@@ -183,13 +183,13 @@ public class DenovoBayesNetTest {
 
   @Test
   public void testChildCreateConditionalProbabilityTableTotalProbability() {
-    Map<List<Genotypes>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
 
     // Sanity check - probabilities should add up to 1.0 (almost)
-    for (Genotypes genoTypeDad : Genotypes.values()) {
-      for (Genotypes genoTypeMom : Genotypes.values()) {
+    for (Genotype genoTypeDad : Genotype.values()) {
+      for (Genotype genoTypeMom : Genotype.values()) {
         double totProb = 0.0;
-        for (Genotypes genoTypeChild : Genotypes.values()) {
+        for (Genotype genoTypeChild : Genotype.values()) {
           totProb += cpt.get(Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
         }
         assertEquals(1.0, totProb, EPS);

@@ -94,39 +94,39 @@ public class DenovoUtil {
     DAD, MOM, CHILD;
   }
 
-  public enum Haplotype {
+  public enum Allele {
     A, C, G, T;
     
-    public static final EnumSet<Haplotype> allHaplotypes = EnumSet.allOf(Haplotype.class);
+    public static final EnumSet<Allele> allHaplotypes = EnumSet.allOf(Allele.class);
     
-    public EnumSet<Haplotype> getMutants() {
-      EnumSet<Haplotype> difference = allHaplotypes.clone();
+    public EnumSet<Allele> getMutants() {
+      EnumSet<Allele> difference = allHaplotypes.clone();
       difference.remove(this);
       return difference;
     }
     
-    public Haplotype getTransversion(Haplotype hap) {
-      switch(hap) {
+    public Allele getTransversion(Allele all) {
+      switch(all) {
         case A : return G;
         case G : return A;
         case C : return T;
         case T : return C;
-        default : throw new IllegalArgumentException("Unknown haplotype " + hap);
+        default : throw new IllegalArgumentException("Unknown haplotype " + all);
       }
     }
     
-    public EnumSet<Haplotype> getTransition(Haplotype hap) {
-      switch(hap) {
+    public EnumSet<Allele> getTransition(Allele all) {
+      switch(all) {
         case A : return EnumSet.of(C, T);
         case G : return EnumSet.of(C, T);
         case C : return EnumSet.of(A, G);
         case T : return EnumSet.of(A, G);
-        default : throw new IllegalArgumentException("Unknown haplotype " + hap);
+        default : throw new IllegalArgumentException("Unknown haplotype " + all);
       }
     }
   }
   
-  public enum Genotypes {
+  public enum Genotype {
     AA(true),
     AC(false),
     AT(false),
@@ -140,7 +140,7 @@ public class DenovoUtil {
 
     private final boolean isDiploid;
 
-    Genotypes(boolean isDiploid) {
+    Genotype(boolean isDiploid) {
       this.isDiploid = isDiploid;
     }
 
@@ -339,10 +339,10 @@ public class DenovoUtil {
    * @param trioGenotypeList
    * @return isDenovo
    */
-  public static boolean checkTrioGenoTypeIsDenovo(List<Genotypes> trioGenotypeList) {
-    Genotypes genoTypeDad = trioGenotypeList.get(0);
-    Genotypes genoTypeMom = trioGenotypeList.get(1);
-    Genotypes genoTypeChild = trioGenotypeList.get(2);
+  public static boolean checkTrioGenoTypeIsDenovo(List<Genotype> trioGenotypeList) {
+    Genotype genoTypeDad = trioGenotypeList.get(0);
+    Genotype genoTypeMom = trioGenotypeList.get(1);
+    Genotype genoTypeChild = trioGenotypeList.get(2);
 
     String childAlleles = genoTypeChild.name();
     String momAlleles = genoTypeMom.name();
