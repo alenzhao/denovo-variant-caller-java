@@ -138,14 +138,14 @@ public class DenovoUtil {
     GT(false),
     TT(true);
 
-    private final boolean isDiploid;
+    private final boolean isHomozygous;
 
-    Genotype(boolean isDiploid) {
-      this.isDiploid = isDiploid;
+    Genotype(boolean isHomozygous) {
+      this.isHomozygous = isHomozygous;
     }
 
-    public boolean isDiploid() {
-      return isDiploid;
+    public boolean isHomozygous() {
+      return isHomozygous;
     }
     
     public static Genotype getGenoTypeFromString(String stringGenoType) {

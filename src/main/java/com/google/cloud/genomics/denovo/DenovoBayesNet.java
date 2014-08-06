@@ -94,7 +94,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     if (individual == DAD || individual == MOM) {
       for (Genotype genoType : Genotype.values()) {
         conditionalProbabilityTable.put(Collections.singletonList(genoType),
-            (genoType.isDiploid() ? 1.0 : 2.0) / (Allele.values().length * Allele.values().length));
+            (genoType.isHomozygous() ? 1.0 : 2.0) / (Allele.values().length * Allele.values().length));
       }
     } else { // individual == TrioIndividuals.CHILD
 
@@ -158,12 +158,11 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
    * Get the log likelihood for a particular read base
    *
    * @param genoType
-   * @param isHomozygous
    * @param base
    * @return logLikeliHood
    */
-  public double getBaseLikelihood(Genotype genoType, boolean isHomozygous, String base) {
-    return isHomozygous
+  public double getBaseLogLikelihood(Genotype genoType, String base) {
+    return genoType.isHomozygous()
         ? genoType.name().contains(base)
             ? Math.log(1 - getSequenceErrorRate())
             : Math.log(getSequenceErrorRate()) - Math.log(3)
@@ -201,13 +200,11 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     Map<Genotype, Double> genotypeLogLikelihood = new HashMap<>();
     for (Genotype genoType : Genotype.values()) {
       Map<String, Integer> count = readSummary.getCount();
-      boolean isHomozygous =
-          genoType.name().substring(0, 1).equals(genoType.name().substring(1, 2));
 
       double readlogLikelihood = 0.0;
       for (Map.Entry<String, Integer> entry : count.entrySet()) {
         readlogLikelihood += entry.getValue() * 
-            getBaseLikelihood(genoType, isHomozygous, entry.getKey());
+            getBaseLogLikelihood(genoType, entry.getKey());
       }
       genotypeLogLikelihood.put(genoType, readlogLikelihood);
     }

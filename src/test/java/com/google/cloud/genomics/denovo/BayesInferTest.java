@@ -122,7 +122,7 @@ public class BayesInferTest {
   }
 
   @Test
-  @Ignore("Known Borderline Failure")
+  //@Ignore("Known Borderline Failure")
   /*chr1,149035163,readCounts=DAD:{T=24, A=2, C=225, -=5};MOM:{T=22, G=3, A=6, C=223, -=2};
    * CHILD:{T=34, G=1, A=2, C=218, -=1},maxGenoType=[CC, CC, CT],isDenovo=true
    */
