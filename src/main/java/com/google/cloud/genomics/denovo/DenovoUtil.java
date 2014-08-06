@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,8 +94,59 @@ public class DenovoUtil {
     DAD, MOM, CHILD;
   }
 
+  public enum Haplotype {
+    A, C, G, T;
+    
+    public static final EnumSet<Haplotype> allHaplotypes = EnumSet.allOf(Haplotype.class);
+    
+    public EnumSet<Haplotype> getMutants() {
+      EnumSet<Haplotype> difference = allHaplotypes.clone();
+      difference.remove(this);
+      return difference;
+    }
+    
+    public Haplotype getTransversion(Haplotype hap) {
+      switch(hap) {
+        case A : return G;
+        case G : return A;
+        case C : return T;
+        case T : return C;
+        default : throw new IllegalArgumentException("Unknown haplotype " + hap);
+      }
+    }
+    
+    public EnumSet<Haplotype> getTransition(Haplotype hap) {
+      switch(hap) {
+        case A : return EnumSet.of(C, T);
+        case G : return EnumSet.of(C, T);
+        case C : return EnumSet.of(A, G);
+        case T : return EnumSet.of(A, G);
+        default : throw new IllegalArgumentException("Unknown haplotype " + hap);
+      }
+    }
+  }
+  
   public enum Genotypes {
-    AA, AC, AT, AG, CC, CT, CG, TT, TG, GG;
+    AA(true),
+    AC(false),
+    AT(false),
+    AG(false),
+    CC(true),
+    CT(false),
+    CG(false),
+    TT(true),
+    TG(false),
+    GG(true);
+
+    private final boolean isDiploid;
+
+    Genotypes(boolean isDiploid) {
+      this.isDiploid = isDiploid;
+    }
+
+    public boolean isDiploid() {
+      return isDiploid;
+    }
   }
 
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
