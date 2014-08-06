@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -55,7 +56,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExperimentRunner {
 
-  public String candidatesFile;
   private CommandLine cmdLine;
   private Genomics genomics;
   private Map<TrioIndividual, String> individualCallsetIdMap = new HashMap<>();
@@ -81,9 +81,6 @@ public class ExperimentRunner {
     }
     // Create the BayesNet inference object
     bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
-    
-    // Check command line for candidates file
-    checkAndAddCandidatesFile();
     
     allChromosomes = fetchAllChromosomes(genomics);
     chromosomes = verifyAndSetChromsomes(cmdLine.chromosomes);
@@ -122,7 +119,7 @@ public class ExperimentRunner {
     return allChromosomes;
   }
 
-  public void execute() throws IOException {
+  public void execute() throws IOException, ParseException {
     if (cmdLine.stageId.equals("stage1")) {
       stage1();
     } else if (cmdLine.stageId.equals("stage2")) {
@@ -132,19 +129,6 @@ public class ExperimentRunner {
     }
   }
   
-  /**
-   * Check to see that candidatesFile is defined for experiments
-   */
-  private void checkAndAddCandidatesFile() {
-    if (cmdLine.stageId == "stage1" || cmdLine.stageId == "stage2") {
-      if (cmdLine.candidatesFile == null) {
-        cmdLine.getUsage();
-        throw new IllegalArgumentException("Candidates File required");
-      }
-    }
-    candidatesFile = cmdLine.candidatesFile;
-  }
-
   /*
    * Stage 1 : Get a list of the candidates from VCF file
    */
@@ -157,10 +141,10 @@ public class ExperimentRunner {
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
-    final File callFile = new File(outdir, candidatesFile);
+    final File outputFile = new File(outdir, cmdLine.outputFileName);
 
     // Open File Outout handles
-    try (PrintWriter callWriter = new PrintWriter(callFile);) {
+    try (PrintWriter callWriter = new PrintWriter(outputFile);) {
 
       /* Get a list of all the datasets */
       DenovoUtil.getAllDatasets(genomics);
@@ -271,7 +255,7 @@ public class ExperimentRunner {
   /*
    * Stage 2 : Reads in candidate calls from stage 1 output file and then refines the candidates
    */
-  public void stage2() {
+  public void stage2() throws FileNotFoundException, IOException, ParseException {
 
     if (debugLevel >= 0) {
       System.out.println("---- Starting Stage2 Bayesian Caller -----");  
@@ -279,8 +263,9 @@ public class ExperimentRunner {
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
-    final File stage1CallsFile = new File(outdir, candidatesFile);
-    final File stage2CallsFile = new File(outdir, "stage2.calls");
+    
+    final File stage1CallsFile = new File(outdir, cmdLine.inputFileName);
+    final File stage2CallsFile = new File(outdir, cmdLine.outputFileName);
     
     ExecutorService executor = new ThreadPoolExecutor(numThreads, // core thread pool size
         numThreads, // maximum thread pool size
@@ -305,10 +290,7 @@ public class ExperimentRunner {
           runBayesDenovoInference(callHolder, callWriter);
         }
       }
-    } catch (IOException | ParseException e) {
-      e.printStackTrace();
-    }
-
+    } 
     // shutdown threadpool and wait
     executor.shutdown();
     while (!executor.isTerminated()) {

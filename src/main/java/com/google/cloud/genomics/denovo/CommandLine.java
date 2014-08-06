@@ -33,13 +33,21 @@ class CommandLine {
       metaVar = "<stage id>", required = true)
   public String stageId = null;
 
+  @Option(name = "--job_name", metaVar = "<job name>",
+      usage = "Name of your job", required = true)
+  public String jobName;
+
+  @Option(name = "--output_file", metaVar = "<file>",
+      usage = "File to write results")
+  public String outputFileName = null;
+  
+  @Option(name = "--input_file", metaVar = "<file>",
+      usage = "File to read from")
+  public String inputFileName = null;
+  
   @Option(name = "--client_secrets_filename", metaVar = "<client_secrets_filename>",
       usage = "Path to client_secrets.json")
   public String clientSecretsFilename = "client_secrets.json";
-
-  @Option(name = "--candidates_file", metaVar = "<cand file>",
-      usage = "Specify the file onto which to write the candidates")
-  public String candidatesFile = null;
 
   @Option(name = "--seq_err_rate", metaVar = "<seq_err_rate>",
       usage = "Specify the sequence error rate (default 1e-2)")
