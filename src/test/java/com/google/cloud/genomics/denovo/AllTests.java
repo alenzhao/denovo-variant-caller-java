@@ -36,5 +36,4 @@ public class AllTests {
     }
     assertEquals(1.0, totProb, EPS);
   }
-
 }

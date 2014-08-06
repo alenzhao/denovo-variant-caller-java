@@ -22,6 +22,7 @@ import com.google.cloud.genomics.utils.GenomicsFactory;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotypes.*;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -105,4 +106,33 @@ public class BayesInferTest {
     assertFalse(result.isDenovo());
     assertEquals("1298169 => [TT,TT,TT]", Arrays.asList(TT, TT, TT), result.getMaxTrioGenoType());
   }
+  
+  @Test
+  @Ignore("Known Borderline Failure")
+  /*chr1,70041751,readCounts=DAD:{T=2, C=58};MOM:{T=2, C=51};
+   * CHILD:{T=8, C=28},maxGenoType=[CC, CC, CT],isDenovo=true
+   */
+  public void testTrioPos70041751() throws IOException {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        expRunner.getReadSummaryMap(70041751L, expRunner.getReadMap("chr1", 70041751L));
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+
+    assertEquals("70041751 => [CC,CC,CC]", Arrays.asList(CC, CC, CC), result.getMaxTrioGenoType());
+    assertFalse(result.isDenovo());
+  }
+
+  @Test
+  @Ignore("Known Borderline Failure")
+  /*chr1,149035163,readCounts=DAD:{T=24, A=2, C=225, -=5};MOM:{T=22, G=3, A=6, C=223, -=2};
+   * CHILD:{T=34, G=1, A=2, C=218, -=1},maxGenoType=[CC, CC, CT],isDenovo=true
+   */
+  public void testTrioPos149035163() throws IOException {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        expRunner.getReadSummaryMap(149035163L, expRunner.getReadMap("chr1", 149035163L));
+    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+
+    assertEquals("149035163 => [CC,CC,CC]", Arrays.asList(CC, CC, CC), result.getMaxTrioGenoType());
+    assertFalse(result.isDenovo());
+  }
+  
 }
