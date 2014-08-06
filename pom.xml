@@ -23,7 +23,7 @@
   </licenses>
 
   <properties>
-    <args4j.version>2.0.25</args4j.version>
+    <args4j.version>2.0.29</args4j.version>
     <junit.version>4.11</junit.version>
     <google.api.version>1.17.0-rc</google.api.version>
     <maven.enforcer.jdk-version>[1.7,)</maven.enforcer.jdk-version>

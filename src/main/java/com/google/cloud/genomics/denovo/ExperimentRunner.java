@@ -15,8 +15,8 @@ package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
-import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
+import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
@@ -24,7 +24,11 @@ import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,11 +50,10 @@ import java.util.concurrent.TimeUnit;
  *
  *  The two stages :
  *
- *  stage1 : Filter to get candidate denovo mutation sites using variantStore variants stage2 :
- * Bayesian Inference engine to select mutation sites from candidate sites
+ *  stage1 : Filter to get candidate denovo mutation sites using variantStore variants 
+ *  stage2 : Bayesian Inference engine to select mutation sites from candidate sites
  */
 public class ExperimentRunner {
-
 
   public String candidatesFile;
   private CommandLine cmdLine;
@@ -59,8 +62,10 @@ public class ExperimentRunner {
   private final int numThreads;
   private Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
   private final BayesInfer bayesInferrer;
+  private final List<String> chromosomes;
+  private final List<String> allChromosomes;
   
-  public ExperimentRunner(CommandLine cmdLine, Genomics genomics) {
+  public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
     this.cmdLine = cmdLine;
     this.genomics = genomics;
     numThreads = cmdLine.numThreads;
@@ -79,6 +84,42 @@ public class ExperimentRunner {
     
     // Check command line for candidates file
     checkAndAddCandidatesFile();
+    
+    allChromosomes = fetchAllChromosomes(genomics);
+    chromosomes = verifyAndSetChromsomes(cmdLine.chromosomes);
+  }
+
+  /*
+   * Verify that the chromosomes supplied from the commandline are legal
+   */
+  private List<String> verifyAndSetChromsomes(List<String> chromosomes) {
+
+    if (chromosomes == null || 
+        chromosomes.size() == 1 && chromosomes.get(0).equals("all") ) {
+      return allChromosomes;
+    }
+
+    for (String chr : chromosomes) {
+      if (!allChromosomes.contains(chr)) {
+        throw new IllegalArgumentException("Unknown chromosome " + chr);
+      }
+    }
+    return chromosomes;
+  }
+
+  private ImmutableList<String> fetchAllChromosomes(Genomics genomics) throws IOException {
+    // verify the commandline chromosomes
+    List<ContigBound> contigBounds =
+        DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics);
+
+    ImmutableList<String> allChromosomes =
+        FluentIterable.from(contigBounds).transform(new Function<ContigBound, String>() {
+          @Override
+          public String apply(ContigBound cb) {
+            return cb.getContig();
+          }
+        }).toList();
+    return allChromosomes;
   }
 
   public void execute() throws IOException {
@@ -127,9 +168,16 @@ public class ExperimentRunner {
       /* Get all the callsets for the trio dataset */
       createCallsetIdMap(DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID, genomics));
 
-      /* Get a list of all the Variants per contig */
-      List<ContigBound> contigBounds =
-          DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics);
+      /* Get a list of all the contigs */
+      List<ContigBound> contigBounds = FluentIterable
+          .from(DenovoUtil.getVariantsSummary(DenovoUtil.TRIO_DATASET_ID, genomics))
+          .filter(new Predicate<ContigBound>() {
+
+            @Override
+            public boolean apply(ContigBound cb) {
+              return chromosomes.contains(cb.getContig());
+            }
+          }).toList();
 
       ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       /* Iterate through each contig and do variant filtering for each contig */
@@ -246,6 +294,11 @@ public class ExperimentRunner {
       for (String line; (line = callCandidateReader.readLine()) != null;) {
         CallHolder callHolder = parseLine(line);
 
+        /* Skip variant if chromosome does not match */
+        if(!chromosomes.contains(callHolder.chromosome)) {
+          continue;
+        }
+        
         if (numThreads >= 2) {
           executor.submit(new BayesDenovoRunnable(callHolder, callWriter));  
         } else {

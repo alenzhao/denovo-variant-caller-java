@@ -34,6 +34,7 @@ public class GenomicsExperiment {
     try {
       // Parse the command line
       cmdLine.setArgs(args);
+      
       Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
           .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
       

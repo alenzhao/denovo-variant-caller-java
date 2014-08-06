@@ -20,6 +20,7 @@ import org.kohsuke.args4j.Option;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 
 /**
  * Command line options handler for GenomicsExperiment
@@ -55,7 +56,11 @@ class CommandLine {
   @Option(name = "--debug_level", metaVar = "<debug_level>",
       usage = "specify the debug level (0 for no debug spew)")
   public int debugLevel = 0;
-  
+
+  @Option(name = "--chromosome", metaVar = "<chromosome>",
+      usage = "specify the chromosomes to search (specify multiple times for multiple chromsomes)")
+  public List<String> chromosomes;
+
   public CommandLine() {
     parser = new CmdLineParser(this);
   }
