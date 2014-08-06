@@ -59,11 +59,14 @@ public class DenovoUtil {
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
   static public final String TRIO_DATASET_ID = "2315870033780478914";
+  public static final double LRT_SIG_LEVEL = 1e-2;
 
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
   public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
   public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
   static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
+  static public Map<Triple<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
+      new HashMap<>();
   
   static public int debugLevel = 0; 
   
@@ -88,6 +91,23 @@ public class DenovoUtil {
     individualCallsetNameMap.put(MOM, "NA12878");
     individualCallsetNameMap.put(CHILD, "NA12879");
     individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
+    
+    for (Genotype genotypeDad : Genotype.values()) {
+      for (Genotype genotypeMom : Genotype.values()) {
+        for (Genotype genotypeChild : Genotype.values()) {
+          String childAlleles = genotypeChild.name();
+          String momAlleles = genotypeMom.name();
+          String dadAlleles = genotypeDad.name();
+
+          String c1 = childAlleles.substring(0, 1);
+          String c2 = childAlleles.substring(1, 2);
+          boolean alleleInParents = momAlleles.contains(c1) & dadAlleles.contains(c2);
+          boolean alleleInParentsMirror = momAlleles.contains(c2) & dadAlleles.contains(c1);
+          boolean isDenovo = !(alleleInParents || alleleInParentsMirror);
+          isDenovoMap.put(new Triple<>(genotypeDad, genotypeMom, genotypeChild), isDenovo);
+        }
+      }
+    }
   }
   
   public enum TrioIndividual {
@@ -158,6 +178,17 @@ public class DenovoUtil {
     }
   }
 
+  public enum InferenceMethod {
+    MAP, BAYES, LRT;
+    
+    public static InferenceMethod selectMethodfromString(String method) {
+      for (InferenceMethod inferMethod : InferenceMethod.values()) {
+        if(inferMethod.name().toLowerCase().equals(method.toLowerCase())) { return inferMethod; }  
+      }
+      throw new IllegalArgumentException("Unknown method " + method);
+    }
+  }
+  
   public static class Pair<T1, T2> {
     public T1 first;
     public T2 second;
@@ -165,6 +196,65 @@ public class DenovoUtil {
     public Pair(T1 first, T2 second) {
       this.first = first;
       this.second = second;
+    }
+    
+    @Override
+    public String toString() {
+      return String.format("<%s,%s>", first, second);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) { return true; }
+      if (!(o instanceof Pair)) { return false; }
+      Pair<?,?> m = (Pair<?,?>) o;
+      return (first == m.first || (first != null && first.equals(m.first))) &&
+          (second == m.second || (second != null && second.equals(m.second)));
+    }
+    
+    @Override
+    public int hashCode() {
+      int result = 17;
+      result += first.hashCode() * 31;
+      result += second.hashCode() * 31;
+      return result;
+    }
+
+  }
+
+  public static class Triple<T1, T2, T3> {
+    public T1 first;
+    public T2 second;
+    public T3 third;
+    
+    public Triple(T1 first, T2 second, T3 third) {
+      this.first = first;
+      this.second = second;
+      this.third = third;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("<%s,%s,%s>", first, second, third);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) { return true; }
+      if (!(o instanceof Triple)) { return false; }
+      Triple<?,?,?> m = (Triple<?,?,?>) o;
+      return (first == m.first || (first != null && first.equals(m.first))) &&
+          (second == m.second || (second != null && second.equals(m.second))) &&
+          (third == m.third || (third != null && third.equals(m.third)));
+    }
+
+    @Override
+    public int hashCode() {
+      int result = 17;
+      result += first.hashCode() * 31;
+      result += second.hashCode() * 31;
+      result += third.hashCode() * 31;
+      return result;
     }
   }
   
@@ -352,6 +442,14 @@ public class DenovoUtil {
     }
   }
 
+  /*
+   * overloads and forwards to function
+   */
+  public static boolean checkTrioGenoTypeIsDenovo(Genotype genotypeDad, Genotype genotypeMom, 
+      Genotype genotypeChild) {
+    return isDenovoMap.get(new Triple<>(genotypeDad, genotypeMom, genotypeChild));
+  }
+  
   /**
    * Check if the particular genotype is denovo i.e. present in kids but not in parents
    *
@@ -359,19 +457,9 @@ public class DenovoUtil {
    * @return isDenovo
    */
   public static boolean checkTrioGenoTypeIsDenovo(List<Genotype> trioGenotypeList) {
-    Genotype genoTypeDad = trioGenotypeList.get(0);
-    Genotype genoTypeMom = trioGenotypeList.get(1);
-    Genotype genoTypeChild = trioGenotypeList.get(2);
-
-    String childAlleles = genoTypeChild.name();
-    String momAlleles = genoTypeMom.name();
-    String dadAlleles = genoTypeDad.name();
-
-    String c1 = childAlleles.substring(0, 1);
-    String c2 = childAlleles.substring(1, 2);
-    boolean predicate1 = momAlleles.contains(c1) & dadAlleles.contains(c2);
-    boolean predicate2 = momAlleles.contains(c2) & dadAlleles.contains(c1);
-    boolean predicate3 = !(predicate1 | predicate2);
-    return predicate3;
+    Genotype genotypeDad = trioGenotypeList.get(0);
+    Genotype genotypeMom = trioGenotypeList.get(1);
+    Genotype genotypeChild = trioGenotypeList.get(2);
+    return checkTrioGenoTypeIsDenovo(genotypeDad, genotypeMom, genotypeChild);
   }
 }

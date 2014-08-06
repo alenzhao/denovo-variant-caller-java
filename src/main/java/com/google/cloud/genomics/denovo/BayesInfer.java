@@ -14,7 +14,12 @@
 package com.google.cloud.genomics.denovo;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
+import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.*;
+
+import com.google.cloud.genomics.denovo.DenovoUtil.Pair;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
@@ -43,18 +48,24 @@ public class BayesInfer {
    * Performs inference given a set of mom, dad and child reads to determine the most likely
    * genotype for the trio
    */
-  public InferResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap) {
+  public InferenceResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap,
+      InferenceMethod inferMethod) {
 
-    // Calculate Likelihoods of the different reads
-    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood =
-        dbn.getIndividualLogLikelihood(readSummaryMap);
+    if (inferMethod == MAP) { return performMAPInference(readSummaryMap); }
+    if (inferMethod == BAYES) { return performBayesInference(readSummaryMap); }
+    if (inferMethod == LRT) { return performLRTInference(readSummaryMap); }
+    
+    throw new IllegalArgumentException("Unexpected method " + inferMethod);
+  }
 
-    // Get the trio genotype with the max likelihood
-    List<Genotype> maxTrioGenoType = dbn.getMaxGenoType(individualLogLikelihood);
+  private InferenceResult createInferenceResult(Pair<List<Genotype>, Boolean> pair, String readCounts) {
+    InferenceResult result = new InferenceResult(pair.second, pair.first, 
+        String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
+            pair.first, pair.second));
+    return result;
+  }
 
-    // Check that the MAP genotype has indeed the highest likelihood
-    boolean checkTrioGenoTypeIsDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(maxTrioGenoType);
-
+  private String createReadCountString(Map<TrioIndividual, ReadSummary> readSummaryMap) {
     // Convert to Tree Map in order to order the keys
     TreeMap<TrioIndividual, ReadSummary> treeReadSummaryMap = new TreeMap<>();
     treeReadSummaryMap.putAll(readSummaryMap);
@@ -66,20 +77,52 @@ public class BayesInfer {
             return String.format("%s:%s", e.getKey().name(), e.getValue().getCount());
           }
         }));
+    return readCounts;
+  }
 
-    InferResult result = new InferResult(checkTrioGenoTypeIsDenovo, maxTrioGenoType, 
-        String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
-            maxTrioGenoType, checkTrioGenoTypeIsDenovo));
+  private InferenceResult performMAPInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
+    
+    // Get the trio genotype with the max likelihood
+    DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
 
-    return result;
+    // Check that the MAP genotype has indeed the highest likelihood
+    boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(dbnResult.maxTrioGenotype);
+
+    return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
+        createReadCountString(readSummaryMap));
   }
   
-  public static class InferResult {
+  private InferenceResult performBayesInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
+    
+    // Get the trio genotype with the max likelihood
+    DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
+
+    // Use the bayesian classifier rule
+    boolean isDenovo = dbnResult.bayesDenovoProb > 0.5;
+
+    return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
+        createReadCountString(readSummaryMap));
+  }
+  
+  private InferenceResult performLRTInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
+    
+    // Get the trio genotype with the max likelihood
+    DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
+
+    // Use the bayesian classifier rule
+    boolean isDenovo = 2 * dbnResult.logOfLikelihoodRatio < Math.log(DenovoUtil.LRT_SIG_LEVEL);
+
+    return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
+        createReadCountString(readSummaryMap));
+  }
+
+  
+  public static class InferenceResult {
     private final boolean isDenovo;
     private final String details;
     private final List<Genotype> maxTrioGenoType;
 
-    public InferResult(boolean isDenovo, List<Genotype> maxTrioGenoType, String format) {
+    public InferenceResult(boolean isDenovo, List<Genotype> maxTrioGenoType, String format) {
       this.isDenovo = isDenovo;
       this.details = format;
       this.maxTrioGenoType = maxTrioGenoType;

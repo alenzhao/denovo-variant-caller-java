@@ -23,6 +23,7 @@ import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -64,6 +65,7 @@ public class ExperimentRunner {
   private final BayesInfer bayesInferrer;
   private final List<String> chromosomes;
   private final List<String> allChromosomes;
+  private final InferenceMethod inferMethod;
   
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
     this.cmdLine = cmdLine;
@@ -81,9 +83,9 @@ public class ExperimentRunner {
     }
     // Create the BayesNet inference object
     bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
-    
     allChromosomes = fetchAllChromosomes(genomics);
     chromosomes = verifyAndSetChromsomes(cmdLine.chromosomes);
+    inferMethod = InferenceMethod.selectMethodfromString(cmdLine.inferMethod);
   }
 
   /*
@@ -355,7 +357,7 @@ public class ExperimentRunner {
         getReadSummaryMap(callHolder.position, readMap);
 
     // Call the bayes inference algorithm to generate likelihood
-    BayesInfer.InferResult result = bayesInferrer.infer(readSummaryMap);
+    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, inferMethod);
 
     if (debugLevel >= 1) {
       synchronized(this) {
@@ -388,7 +390,7 @@ public class ExperimentRunner {
 
     private final CallHolder callHolder;
     private final PrintWriter writer;
-
+    
     public BayesDenovoRunnable(CallHolder callHolder, PrintWriter writer) {
       this.callHolder = callHolder;
       this.writer = writer;

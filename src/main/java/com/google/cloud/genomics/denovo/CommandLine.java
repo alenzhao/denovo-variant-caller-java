@@ -36,6 +36,10 @@ class CommandLine {
   @Option(name = "--job_name", metaVar = "<job name>",
       usage = "Name of your job", required = true)
   public String jobName;
+  
+  @Option(name = "--inference_method", metaVar = "<map|bayes|lrt>",
+      usage = "Inference method (map | bayes | lrt)")
+  public String inferMethod = "map";
 
   @Option(name = "--output_file", metaVar = "<file>",
       usage = "File to write results")
