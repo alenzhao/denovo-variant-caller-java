@@ -129,14 +129,14 @@ public class DenovoUtil {
   public enum Genotype {
     AA(true),
     AC(false),
-    AT(false),
     AG(false),
+    AT(false),
     CC(true),
-    CT(false),
     CG(false),
-    TT(true),
-    TG(false),
-    GG(true);
+    CT(false),
+    GG(true),
+    GT(false),
+    TT(true);
 
     private final boolean isDiploid;
 
@@ -147,8 +147,27 @@ public class DenovoUtil {
     public boolean isDiploid() {
       return isDiploid;
     }
+    
+    public static Genotype getGenoTypeFromString(String stringGenoType) {
+      for(Genotype genotype : Genotype.values()) { 
+        if(genotype.name().equals(stringGenoType)){
+          return genotype;
+        }
+      }
+      throw new IllegalArgumentException("Unknown Genotype " + stringGenoType);
+    }
   }
 
+  public static class Pair<T1, T2> {
+    public T1 first;
+    public T2 second;
+    
+    public Pair(T1 first, T2 second) {
+      this.first = first;
+      this.second = second;
+    }
+  }
+  
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
       ContigBound contig,
       long startPos,

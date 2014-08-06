@@ -13,12 +13,13 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
-
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -93,7 +94,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     if (individual == DAD || individual == MOM) {
       for (Genotype genoType : Genotype.values()) {
         conditionalProbabilityTable.put(Collections.singletonList(genoType),
-            1.0 / Genotype.values().length);
+            (genoType.isDiploid() ? 1.0 : 2.0) / (Allele.values().length * Allele.values().length));
       }
     } else { // individual == TrioIndividuals.CHILD
 
@@ -101,37 +102,56 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
       for (Genotype genoTypeDad : Genotype.values()) {
         for (Genotype genoTypeMom : Genotype.values()) {
 
-
-          // Initial pass to count valid inheritance cases
-          int validInheritanceCases = 0;
-          for (Genotype genoTypeChild : Genotype.values()) {
-            boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(
-                Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
-
-            if (!isDenovo) {
-              validInheritanceCases++;
-            }
+          // Get a map of mendelian genotypes and their frequencies of occurence
+          Map<Genotype, Integer> mendelianAlleles = mendelianGenotypes(genoTypeDad, genoTypeMom);
+          int numDenovoGenotypes = Genotype.values().length - mendelianAlleles.size();
+          Integer mendelianCount = 0;
+          for(Integer count : mendelianAlleles.values() ) { 
+            mendelianCount += count;
           }
-
-          // Secondary Pass to fill in probability values
+          
+          // Initial pass to count valid inheritance cases
           for (Genotype genoTypeChild : Genotype.values()) {
             List<Genotype> cptKey = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
-
             boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(cptKey);
+          
+            double value = isDenovo
+                ? getDenovoMutationRate() / numDenovoGenotypes
+                : (1.0 - getDenovoMutationRate()) / mendelianCount 
+                    * mendelianAlleles.get(genoTypeChild);
             conditionalProbabilityTable.put(
                 cptKey,
-                isDenovo
-                    ? getDenovoMutationRate()
-                    : (1.0
-                          - getDenovoMutationRate() 
-                               * (Genotype.values().length - validInheritanceCases)) 
-                      / validInheritanceCases
+                value
                 );
           }
         }
       }
     }
     return conditionalProbabilityTable;
+  }
+
+  /*
+   * Returns a Map containing mendelian Genotypes and their counts in a mendelian inheritance 
+   * scenario
+   */
+  private Map<Genotype, Integer> mendelianGenotypes(Genotype genoTypeDad, Genotype genoTypeMom) {
+    Map<Genotype, Integer> mendelCases = new HashMap<>();
+    for (int ii = 0 ; ii < genoTypeDad.name().length() ; ii++) {
+      for (int jj= 0 ; jj < genoTypeMom.name().length() ; jj++) {
+        char[] mendelianCharAlleles = new char[2];
+        mendelianCharAlleles[0] = genoTypeDad.name().charAt(ii) ;
+        mendelianCharAlleles[1] = genoTypeMom.name().charAt(jj) ;
+        Arrays.sort(mendelianCharAlleles);
+        Genotype mendelianAlleles = 
+            Genotype.getGenoTypeFromString(new String(mendelianCharAlleles));
+        mendelCases.put(mendelianAlleles, 
+            (mendelCases.containsKey(mendelianAlleles) 
+                ? mendelCases.get(mendelianAlleles)
+                : 0) + 1 );
+      }
+    }
+    return mendelCases;
+    
   }
 
   /**
