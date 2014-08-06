@@ -21,6 +21,7 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.LRT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
@@ -47,7 +48,7 @@ public class BayesInferLRTTest {
 
     String argsString = "stage1 " + "--job_name BayesInferTest "
         + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json "
-        + "--seq_err_rate 1e-2 " + "--denovo_mut_rate 1e-8";
+        + "--seq_err_rate 1e-2 " + "--denovo_mut_rate 1e-8 --lrt_threshold 1.0";
     String[] args = argsString.split(" ");
 
     CommandLine cmdLine = new CommandLine();
@@ -111,7 +112,7 @@ public class BayesInferLRTTest {
     BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
     assertEquals("70041751 => [CC,CC,CC]", Arrays.asList(CC, CC, CT), result.getMaxTrioGenoType());
-    assertFalse(result.isDenovo());
+    assertTrue(result.isDenovo());
   }
 
   @Test
@@ -135,7 +136,7 @@ public class BayesInferLRTTest {
     BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
     assertEquals("14819223 => [AA,AA,AC]", Arrays.asList(AA, AA, AC), result.getMaxTrioGenoType());
-    assertFalse(result.isDenovo());
+    assertTrue(result.isDenovo());
   }
   
 }

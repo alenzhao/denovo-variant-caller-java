@@ -59,8 +59,8 @@ public class DenovoUtil {
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
   static public final String TRIO_DATASET_ID = "2315870033780478914";
-  public static final double LRT_SIG_LEVEL = 1e-2;
 
+  public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
   public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
   public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  

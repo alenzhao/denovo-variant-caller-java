@@ -74,6 +74,7 @@ public class ExperimentRunner {
     
     // Set the overall System wide debug Level 
     DenovoUtil.debugLevel = cmdLine.debugLevel;
+    DenovoUtil.LRT_THRESHOLD = cmdLine.lrtThreshold;
     
     try {
       readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);

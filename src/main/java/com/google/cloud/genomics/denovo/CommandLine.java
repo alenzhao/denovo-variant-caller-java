@@ -61,6 +61,10 @@ class CommandLine {
       usage = "Specify the denovo mutation rate (default 1e-8)")
   public double denovoMutationRate = 1e-8;
 
+  @Option(name = "--lrt_threshold", metaVar = "<lrt_sig_level>",
+      usage = "likelihood ratio test significance level (default 1. ;higher the stricter)")
+  public double lrtThreshold = 1.0;
+  
   @Option(name = "--num_threads", metaVar = "<num_threads>",
       usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
   public int numThreads = 1;

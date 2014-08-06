@@ -37,14 +37,14 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
   public static class InferenceResult {
     public final List<Genotype> maxTrioGenotype;
     public final double bayesDenovoProb;
-    public final double logOfLikelihoodRatio;
+    public final double likelihoodRatio;
     
     public InferenceResult(List<Genotype> maxTrioGenotype,
         double bayesDenovoProb,
         double logOfLikelihoodRatio) {
       this.maxTrioGenotype = maxTrioGenotype;
       this.bayesDenovoProb = bayesDenovoProb;
-      this.logOfLikelihoodRatio = logOfLikelihoodRatio;
+      this.likelihoodRatio = logOfLikelihoodRatio;
     }
   }
 
@@ -307,8 +307,8 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     double bayesDenovoProb = denovoLikelihood  / (denovoLikelihood + mendelianLikelihood);
     
     // ln(likelihood null/likelihood alternate)
-    double logOfLikelihoodRatio = mendelianLikelihood - denovoLikelihood;
+    double likelihoodRatio = denovoLikelihood / mendelianLikelihood;
     
-    return new DenovoBayesNet.InferenceResult(maxGenoType, bayesDenovoProb, logOfLikelihoodRatio);
+    return new DenovoBayesNet.InferenceResult(maxGenoType, bayesDenovoProb, likelihoodRatio);
   }
 }

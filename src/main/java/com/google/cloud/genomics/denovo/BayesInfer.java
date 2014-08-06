@@ -109,8 +109,8 @@ public class BayesInfer {
     // Get the trio genotype with the max likelihood
     DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
 
-    // Use the bayesian classifier rule
-    boolean isDenovo = 2 * dbnResult.logOfLikelihoodRatio < Math.log(DenovoUtil.LRT_SIG_LEVEL);
+    // Use the likelihood ratio rule
+    boolean isDenovo = dbnResult.likelihoodRatio > DenovoUtil.LRT_THRESHOLD;
 
     return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
         createReadCountString(readSummaryMap));

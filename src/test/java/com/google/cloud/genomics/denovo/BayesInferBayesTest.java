@@ -14,17 +14,18 @@
 package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CC;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.BAYES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.utils.GenomicsFactory;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -70,7 +71,6 @@ public class BayesInferBayesTest {
   }
   
   @Test
-  @Ignore("Known Borderline Failure")
   /*chr1,70041751,readCounts=DAD:{T=2, C=58};MOM:{T=2, C=51};
    * CHILD:{T=8, C=28},maxGenoType=[CC, CC, CT],isDenovo=true
    */
@@ -79,8 +79,8 @@ public class BayesInferBayesTest {
         expRunner.getReadSummaryMap(70041751L, expRunner.getReadMap("chr1", 70041751L));
     BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, BAYES);
 
-    assertEquals("70041751 => [CC,CC,CC]", Arrays.asList(CC, CC, CC), result.getMaxTrioGenoType());
-    assertFalse(result.isDenovo());
+    assertEquals("70041751 => [CC,CC,CC]", Arrays.asList(CC, CC, CT), result.getMaxTrioGenoType());
+    assertTrue(result.isDenovo());
   }
 
   @Test
