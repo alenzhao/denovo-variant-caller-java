@@ -16,7 +16,7 @@ variant calling.
 
 * To use, first build the client using `Apache Maven`_::
 
-    cd api-client-java
+    cd denovo-variant-caller
     mvn package
 
 * Then, follow the `sign up instructions`_ to generate a valid
