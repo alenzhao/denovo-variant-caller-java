@@ -17,9 +17,7 @@ import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
-import com.google.api.services.genomics.model.Dataset;
 import com.google.api.services.genomics.model.GetVariantsSummaryResponse;
-import com.google.api.services.genomics.model.ListDatasetsResponse;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Readset;
 import com.google.api.services.genomics.model.SearchCallsetsRequest;
@@ -46,14 +44,12 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-  static public final long PROJECT_ID = 1085016379660L;
   static public final int TOT_CHROMOSOMES = 24;
   static public final long MAX_VARIANT_RESULTS = 10000L;
   static public final long DEFAULT_START_POS = 1L;
   static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
-  static public final String TRIO_DATASET_ID = "14004469326575082626";
   public static final int MAX_API_RETRIES = 5;
   public static final long API_WAIT_MILLISEC = 5000;
 
@@ -284,37 +280,6 @@ public class DenovoUtil {
     return new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
   }
 
-  /**
-   * @param datasetId
-   * @param callsetNameMap
-   * @return Map<String, String>
-   * @throws IOException
-   */
-  public static Map<TrioIndividual, String> createReadsetIdMap(
-      String datasetId, Map<TrioIndividual, String> callsetNameMap, 
-      Genomics genomics)
-      throws IOException {
-    Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
-
-    List<Readset> readsets = getReadsets(datasetId, genomics);
-    
-    for (TrioIndividual individual : TrioIndividual.values()) {
-      for (Readset readset : readsets) {
-        String sampleName = readset.getName();
-        String readsetId = readset.getId();
-
-        if (sampleName.equals(callsetNameMap.get(individual))) {
-          readsetIdMap.put(individual, readsetId);
-        }
-      }
-    }
-    // Check that the readsetIdMap is sane
-    if (readsetIdMap.size() != 3) {
-      throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap);
-    }
-    return readsetIdMap;
-  }
-
   public static Optional<List<Integer>> getGenotype(Call call) {
     List<Integer> genoType = call.getGenotype();
 
@@ -359,23 +324,6 @@ public class DenovoUtil {
     List<Callset> callsets = execute.getCallsets();
 
     return callsets;
-  }
-
-  /**
-   * @return List<Dataset>
-   * @throws IOException
-   */
-  public static List<Dataset> getAllDatasets(Genomics genomics) throws IOException {
-
-    // Get a list of all the datasets associated with project id
-    Genomics.Datasets.List datasetRequest =
-        genomics.datasets().list().setProjectId(PROJECT_ID);
-    datasetRequest.setDisableGZipContent(true);
-
-    ListDatasetsResponse execute = datasetRequest.execute();
-    List<Dataset> datasets = execute.getDatasets();
-
-    return datasets;
   }
 
   /**
