@@ -73,7 +73,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-genomics</artifactId>
-      <version>v1beta-rev17-1.18.0-rc</version>
+      <version>v1beta-rev22-1.19.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.genomics</groupId>

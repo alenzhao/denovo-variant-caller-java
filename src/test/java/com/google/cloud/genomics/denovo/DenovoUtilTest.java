@@ -26,11 +26,11 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 
 import com.google.api.services.genomics.model.Call;
+import com.google.common.base.Optional;
 
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,27 +39,16 @@ import java.util.List;
 public class DenovoUtilTest {
 
   @Test
-  public void testGetGenotypeFrominfoFieldPhased() {
+  public void testGetGenotypeValid() {
     List<Integer> genotype = Arrays.asList(0, 0);
-    Call call =
-        new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("0|0")));
+    Call call = new Call().setGenotype(genotype);
     assertEquals(genotype, DenovoUtil.getGenotype(call).get());
   }
 
-  @Test
-  public void testGetGenotypeFrominfoFieldUnPhased() {
-    List<Integer> genotype = Arrays.asList(0, 1);
-    Call call =
-        new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("0/1")));
-    assertEquals(genotype, DenovoUtil.getGenotype(call).get());
-  }
-  
-  @Test(expected = NumberFormatException.class)
-  public void testGetGenotypeFrominfoFieldNotInt() {
-    List<Integer> genotype = Arrays.asList(0, 1);
-    Call call =
-        new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("./1")));
-    assertEquals(genotype, DenovoUtil.getGenotype(call).get());
+  public void testGetGenotypeInvalid() {
+    List<Integer> genotype = Arrays.asList(-1);
+    Call call = new Call().setGenotype(genotype);
+    assertEquals(Optional.absent(), DenovoUtil.getGenotype(call).get());
   }
   
   /**
