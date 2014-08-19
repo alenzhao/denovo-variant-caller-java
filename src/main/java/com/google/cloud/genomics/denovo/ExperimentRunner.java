@@ -14,7 +14,6 @@
 package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.callsetNameMap;
-import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
 
 import com.google.api.services.genomics.Genomics;
@@ -81,7 +80,8 @@ public class ExperimentRunner {
     DenovoUtil.debugLevel = cmdLine.debugLevel;
     DenovoUtil.LRT_THRESHOLD = cmdLine.lrtThreshold;
 
-    readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetNameMap, genomics);
+    readsetIdMap = DenovoUtil.createReadsetIdMap(DenovoUtil.TRIO_DATASET_ID,
+        callsetNameMap, genomics);
 
     // Create the BayesNet inference object
     bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);

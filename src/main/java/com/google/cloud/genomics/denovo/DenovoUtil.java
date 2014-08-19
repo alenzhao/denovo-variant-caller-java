@@ -63,7 +63,6 @@ public class DenovoUtil {
 
   public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
-  public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
   public static Map<TrioIndividual, String> callsetNameMap = new HashMap<>();  
   static public Map<Triple<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
       new HashMap<>();
@@ -72,11 +71,6 @@ public class DenovoUtil {
   
   static {
     // Constant Values Needed for stage 2 experiments
-    datasetIdMap.put(DAD, "4140720988704892492");
-    datasetIdMap.put(MOM, "2778297328698497799");
-    datasetIdMap.put(CHILD, "6141326619449450766");
-    datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
-
     callsetNameMap.put(DAD, "NA12877");
     callsetNameMap.put(MOM, "NA12878");
     callsetNameMap.put(CHILD, "NA12879");
@@ -301,28 +295,26 @@ public class DenovoUtil {
   }
 
   /**
-   * @param datasetIdMap
+   * @param datasetId
    * @param callsetIdMap
    * @return Map<String, String>
    * @throws IOException
    */
   public static Map<TrioIndividual, String> createReadsetIdMap(
-      Map<TrioIndividual, String> datasetIdMap, Map<TrioIndividual, String> callsetIdMap, 
+      String datasetId, Map<TrioIndividual, String> callsetIdMap, 
       Genomics genomics)
       throws IOException {
     Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
-    for (TrioIndividual trioIndividual : datasetIdMap.keySet()) {
-      List<Readset> readsets = getReadsets(datasetIdMap.get(trioIndividual), genomics);
-
+    List<Readset> readsets = getReadsets(datasetId, genomics);
+    
+    for (TrioIndividual individual : TrioIndividual.values()) {
       for (Readset readset : readsets) {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
-        for (TrioIndividual individual : callsetIdMap.keySet()) {
-          if (callsetIdMap.get(individual).equals(sampleName)) {
-            readsetIdMap.put(individual, readsetId);
-          }
+        if (sampleName.equals(DenovoUtil.callsetNameMap.get(individual))) {
+          readsetIdMap.put(individual, readsetId);
         }
       }
     }
