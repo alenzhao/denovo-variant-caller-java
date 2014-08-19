@@ -19,6 +19,7 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import com.google.api.services.genomics.Genomics;
+import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Read;
@@ -68,7 +69,7 @@ public class ExperimentRunner {
   private CommandLine cmdLine;
   private Genomics genomics;
   private final int numThreads;
-  private final Map<TrioIndividual, String> individualCallsetIdMap;
+  private final Map<TrioIndividual, String> callsetIdMap;
   private final Map<TrioIndividual, String> readsetIdMap;
   private final Map<TrioIndividual, String> callsetNameMap;
   private final BayesInfer bayesInferrer;
@@ -78,7 +79,7 @@ public class ExperimentRunner {
   private final String datasetId;
   private final Long startPosition;
   private final Long endPosition;
-  
+
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
     this.cmdLine = cmdLine;
     this.genomics = genomics;
@@ -89,14 +90,14 @@ public class ExperimentRunner {
     DenovoUtil.LRT_THRESHOLD = cmdLine.lrtThreshold;
 
     datasetId = cmdLine.datasetId;
-    
+
     callsetNameMap = createCallsetNameMap(cmdLine);
     readsetIdMap = createReadsetIdMap(datasetId, callsetNameMap, genomics);
-    individualCallsetIdMap = createCallsetIdMap(DenovoUtil.getCallsets(datasetId, genomics));
+    callsetIdMap = createCallsetIdMap(DenovoUtil.getCallsets(datasetId, genomics));
 
     startPosition = cmdLine.startPosition;
     endPosition = cmdLine.endPosition;
-    
+
     // Create the BayesNet inference object
     bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
     allChromosomes = fetchAllChromosomes(genomics);
@@ -123,8 +124,7 @@ public class ExperimentRunner {
 
   private ImmutableList<String> fetchAllChromosomes(Genomics genomics) throws IOException {
     // verify the commandline chromosomes
-    List<ContigBound> contigBounds =
-        DenovoUtil.getVariantsSummary(datasetId, genomics);
+    List<ContigBound> contigBounds = DenovoUtil.getVariantsSummary(datasetId, genomics);
 
     ImmutableList<String> allChromosomes =
         FluentIterable.from(contigBounds).transform(new Function<ContigBound, String>() {
@@ -174,8 +174,8 @@ public class ExperimentRunner {
             }
           }).toList();
 
-      
-      
+
+
       ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       /* Iterate through each contig and do variant filtering for each contig */
       for (ContigBound contig : contigBounds) {
@@ -197,7 +197,7 @@ public class ExperimentRunner {
     private final PrintWriter writer;
     private final ContigBound contig;
     private int numTries = 0;
-    
+
     public SimpleDenovoRunnable(PrintWriter writer, ContigBound contig) {
       this.writer = writer;
       this.contig = contig;
@@ -238,7 +238,7 @@ public class ExperimentRunner {
    */
   private Map<TrioIndividual, String> createCallsetIdMap(List<Callset> callsets) {
 
-    Map<TrioIndividual, String> callsetIdMap = new HashMap<>(); 
+    Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
     // Create a family person type to callset id map
     for (Callset callset : callsets) {
       String callsetName = callset.getName();
@@ -251,21 +251,19 @@ public class ExperimentRunner {
     }
     return callsetIdMap;
   }
-  
+
   /**
    * @param datasetId
    * @param callsetNameMap
    * @return Map<String, String>
    * @throws IOException
    */
-  public Map<TrioIndividual, String> createReadsetIdMap(
-      String datasetId, Map<TrioIndividual, String> callsetNameMap, 
-      Genomics genomics)
-      throws IOException {
+  public Map<TrioIndividual, String> createReadsetIdMap(String datasetId,
+      Map<TrioIndividual, String> callsetNameMap, Genomics genomics) throws IOException {
     Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
     List<Readset> readsets = DenovoUtil.getReadsets(datasetId, genomics);
-    
+
     for (TrioIndividual individual : TrioIndividual.values()) {
       for (Readset readset : readsets) {
         String sampleName = readset.getName();
@@ -297,30 +295,47 @@ public class ExperimentRunner {
   private void callSimpleDenovo(PrintWriter callWriter, ContigBound currentContig)
       throws IOException {
     // Create the caller object
-    DenovoCaller denovoCaller = new DenovoCaller(individualCallsetIdMap);
+    DenovoCaller denovoCaller = new DenovoCaller(callsetIdMap);
 
+    Map<TrioIndividual, VariantsBuffer> bufferMap = new HashMap<>();
+    for (TrioIndividual person : TrioIndividual.values()) {
+      bufferMap.put(person, new VariantsBuffer());
+    }
+    
     VariantContigStream variantContigStream = new VariantContigStream(genomics, 
         currentContig.getContig(),
         datasetId, 
         DenovoUtil.MAX_VARIANT_RESULTS, 
         startPosition, 
         endPosition == null ? currentContig.getUpperBound() : endPosition,
-        Lists.newArrayList(individualCallsetIdMap.values()));
+        Lists.newArrayList(callsetIdMap.values()));
 
     while (variantContigStream.hasMore()) {
       StringBuilder builder = new StringBuilder();
 
-      // Filter all variants that don't have calls
-      List<Variant> variants = Lists.newArrayList(FluentIterable
+      // Get a fresh batch of variants and filter those without calls
+      FluentIterable<Variant> variants = FluentIterable
         .from(variantContigStream.getVariants())
         .filter(new Predicate<Variant>() {
           @Override
           public boolean apply(Variant variant) {
             return variant.getCalls() != null ? true : false;
           }
-        }));
+        });
       
       for (Variant variant : variants) {
+        
+        // Add the calls to the respective VariantsBuffers 
+        Long startVariant = variant.getPosition();
+        Long endVariant = variant.getEnd();
+        
+        for (TrioIndividual person : TrioIndividual.values()) {
+          for (Call call : variant.getCalls()) {
+            if (call.getCallsetId().equals(callsetIdMap.get(person))) {
+              bufferMap.get(person).push_back(variant);
+            }
+          }
+        }
         
         Optional<String> denovoCallResultOptional = denovoCaller.callDenovoFromVarstore(variant);
         if (denovoCallResultOptional.isPresent()) {
@@ -455,7 +470,7 @@ public class ExperimentRunner {
       this.chromosome = chromosome;
       this.position = position;
     }
-    
+
     @Override
     public String toString() {
       return String.format("<%s,%s>", chromosome, position);
