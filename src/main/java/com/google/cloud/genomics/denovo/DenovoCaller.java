@@ -113,8 +113,8 @@ public class DenovoCaller {
         for (TrioIndividual trioType : TrioIndividual.values()) {
           if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
             lastCall.put(trioType, call);
-            if (call.getInfo().containsKey("END")) {
-              lastPosition.put(trioType, Long.valueOf(call.getInfo().get("END").get(0)));
+            if (variant.getInfo() != null && variant.getInfo().containsKey("END")) {
+              lastPosition.put(trioType, Long.valueOf(variant.getInfo().get("END").get(0)));
             } else {
               lastPosition.put(trioType, variant.getPosition());
             }

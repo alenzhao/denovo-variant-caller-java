@@ -31,6 +31,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -75,7 +76,9 @@ public class ExperimentRunner {
   private final List<String> allChromosomes;
   private final InferenceMethod inferMethod;
   private final String datasetId;
-
+  private final Long startPosition;
+  private final Long endPosition;
+  
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
     this.cmdLine = cmdLine;
     this.genomics = genomics;
@@ -91,6 +94,9 @@ public class ExperimentRunner {
     readsetIdMap = createReadsetIdMap(datasetId, callsetNameMap, genomics);
     individualCallsetIdMap = createCallsetIdMap(DenovoUtil.getCallsets(datasetId, genomics));
 
+    startPosition = cmdLine.startPosition;
+    endPosition = cmdLine.endPosition;
+    
     // Create the BayesNet inference object
     bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
     allChromosomes = fetchAllChromosomes(genomics);
@@ -293,15 +299,29 @@ public class ExperimentRunner {
     // Create the caller object
     DenovoCaller denovoCaller = new DenovoCaller(individualCallsetIdMap);
 
-    VariantContigStream variantContigStream = new VariantContigStream(genomics, currentContig,
-        datasetId, DenovoUtil.MAX_VARIANT_RESULTS);
+    VariantContigStream variantContigStream = new VariantContigStream(genomics, 
+        currentContig.getContig(),
+        datasetId, 
+        DenovoUtil.MAX_VARIANT_RESULTS, 
+        startPosition, 
+        endPosition == null ? currentContig.getUpperBound() : endPosition,
+        Lists.newArrayList(individualCallsetIdMap.values()));
 
     while (variantContigStream.hasMore()) {
-      List<Variant> variants = variantContigStream.getVariants();
       StringBuilder builder = new StringBuilder();
 
+      // Filter all variants that don't have calls
+      List<Variant> variants = Lists.newArrayList(FluentIterable
+        .from(variantContigStream.getVariants())
+        .filter(new Predicate<Variant>() {
+          @Override
+          public boolean apply(Variant variant) {
+            return variant.getCalls() != null ? true : false;
+          }
+        }));
+      
       for (Variant variant : variants) {
-
+        
         Optional<String> denovoCallResultOptional = denovoCaller.callDenovoFromVarstore(variant);
         if (denovoCallResultOptional.isPresent()) {
           builder.append(

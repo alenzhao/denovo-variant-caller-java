@@ -46,7 +46,6 @@ public class DenovoUtil {
   public static final double EPS = 1e-12;
   static public final int TOT_CHROMOSOMES = 24;
   static public final long MAX_VARIANT_RESULTS = 10000L;
-  static public final long DEFAULT_START_POS = 1L;
   static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
@@ -234,12 +233,13 @@ public class DenovoUtil {
   }
   
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
-      ContigBound contig,
+      String contig,
       long startPos,
       long endPos,
       String datasetId,
       String nextPageToken,
-      long maxVariantResults) {
+      long maxVariantResults,
+      List<String> callsetIds) {
 
     // Init searchRequest obj
     SearchVariantsRequest searchVariantsRequest;
@@ -250,12 +250,13 @@ public class DenovoUtil {
     }
 
     searchVariantsRequest
-        .setContig(contig.getContig())
+        .setContig(contig)
         .setDatasetId(datasetId)
         .setStartPosition(startPos)
         .setEndPosition(endPos)
         .setMaxResults(BigInteger.valueOf(maxVariantResults))
-        .setPageToken(nextPageToken);
+        .setPageToken(nextPageToken)
+        .setCallsetIds(callsetIds);
 
     return searchVariantsRequest;
   }
