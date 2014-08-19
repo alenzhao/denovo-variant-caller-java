@@ -13,10 +13,9 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.callsetNameMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
-import static com.google.cloud.genomics.denovo.DenovoUtil.individualCallsetNameMap;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
@@ -82,7 +81,7 @@ public class ExperimentRunner {
     DenovoUtil.debugLevel = cmdLine.debugLevel;
     DenovoUtil.LRT_THRESHOLD = cmdLine.lrtThreshold;
 
-    readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);
+    readsetIdMap = DenovoUtil.createReadsetIdMap(datasetIdMap, callsetNameMap, genomics);
 
     // Create the BayesNet inference object
     bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
@@ -231,7 +230,7 @@ public class ExperimentRunner {
     for (Callset callset : callsets) {
       String callsetName = callset.getName();
       for (TrioIndividual individual : TrioIndividual.values()) {
-        if (callsetName.equals(individualCallsetNameMap.get(individual))) {
+        if (callsetName.equals(DenovoUtil.callsetNameMap.get(individual))) {
           individualCallsetIdMap.put(individual, callset.getId());
           break;
         }

@@ -13,7 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.callsetIdMap;
+import static com.google.cloud.genomics.denovo.DenovoUtil.callsetNameMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.datasetIdMap;
 
 import com.google.api.services.genomics.Genomics;
@@ -303,7 +303,7 @@ public class Benchmarking {
 
     // create the readsetIdMap
     Map<TrioIndividual, String> readsetIdMap =
-        DenovoUtil.createReadsetIdMap(datasetIdMap, callsetIdMap, genomics);
+        DenovoUtil.createReadsetIdMap(datasetIdMap, callsetNameMap, genomics);
 
     // get all the contigbounds
     List<ContigBound> contigBounds = DenovoUtil.getVariantsSummary(TRIO_DATASET_ID, genomics);

@@ -64,8 +64,7 @@ public class DenovoUtil {
   public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
   public static Map<TrioIndividual, String> datasetIdMap = new HashMap<>();
-  public static Map<TrioIndividual, String> callsetIdMap = new HashMap<>();  
-  static public Map<TrioIndividual, String> individualCallsetNameMap = new HashMap<>();
+  public static Map<TrioIndividual, String> callsetNameMap = new HashMap<>();  
   static public Map<Triple<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
       new HashMap<>();
   
@@ -78,21 +77,16 @@ public class DenovoUtil {
     datasetIdMap.put(CHILD, "6141326619449450766");
     datasetIdMap = Collections.unmodifiableMap(datasetIdMap);
 
-    callsetIdMap.put(DAD, "NA12877");
-    callsetIdMap.put(MOM, "NA12878");
-    callsetIdMap.put(CHILD, "NA12879");
-    callsetIdMap = Collections.unmodifiableMap(callsetIdMap);
+    callsetNameMap.put(DAD, "NA12877");
+    callsetNameMap.put(MOM, "NA12878");
+    callsetNameMap.put(CHILD, "NA12879");
+    callsetNameMap = Collections.unmodifiableMap(callsetNameMap);
     
     qualityThresholdMap.put("GQX", GQX_THRESH);
     qualityThresholdMap.put("QD", QD_THRESH);
     qualityThresholdMap.put("MQ", MQ_THRESH);
     qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
 
-    individualCallsetNameMap.put(DAD, "NA12877");
-    individualCallsetNameMap.put(MOM, "NA12878");
-    individualCallsetNameMap.put(CHILD, "NA12879");
-    individualCallsetNameMap = Collections.unmodifiableMap(individualCallsetNameMap);
-    
     for (Genotype genotypeDad : Genotype.values()) {
       for (Genotype genotypeMom : Genotype.values()) {
         for (Genotype genotypeChild : Genotype.values()) {
