@@ -150,9 +150,6 @@ public class ExperimentRunner {
     // Open File Outout handles
     try (PrintWriter callWriter = new PrintWriter(outputFile);) {
 
-      /* Get a list of all the datasets */
-      DenovoUtil.getAllDatasets(genomics);
-
       /* Get all the callsets for the trio dataset */
       createCallsetIdMap(DenovoUtil.getCallsets(DenovoUtil.TRIO_DATASET_ID, genomics));
 
@@ -167,6 +164,8 @@ public class ExperimentRunner {
             }
           }).toList();
 
+      
+      
       ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       /* Iterate through each contig and do variant filtering for each contig */
       for (ContigBound contig : contigBounds) {

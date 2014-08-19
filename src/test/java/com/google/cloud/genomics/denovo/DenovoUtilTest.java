@@ -43,7 +43,7 @@ public class DenovoUtilTest {
     List<Integer> genotype = Arrays.asList(0, 0);
     Call call =
         new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("0|0")));
-    assertEquals(genotype, DenovoUtil.getGenotypeFromInfoField(call).get());
+    assertEquals(genotype, DenovoUtil.getGenotype(call).get());
   }
 
   @Test
@@ -51,7 +51,7 @@ public class DenovoUtilTest {
     List<Integer> genotype = Arrays.asList(0, 1);
     Call call =
         new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("0/1")));
-    assertEquals(genotype, DenovoUtil.getGenotypeFromInfoField(call).get());
+    assertEquals(genotype, DenovoUtil.getGenotype(call).get());
   }
   
   @Test(expected = NumberFormatException.class)
@@ -59,7 +59,7 @@ public class DenovoUtilTest {
     List<Integer> genotype = Arrays.asList(0, 1);
     Call call =
         new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("./1")));
-    assertEquals(genotype, DenovoUtil.getGenotypeFromInfoField(call).get());
+    assertEquals(genotype, DenovoUtil.getGenotype(call).get());
   }
   
   /**

@@ -38,7 +38,6 @@ import com.google.common.base.Optional;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -58,7 +57,7 @@ public class DenovoUtil {
   static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
   static public final Float QD_THRESH = Float.valueOf((float) 2.0);
   static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
-  static public final String TRIO_DATASET_ID = "2315870033780478914";
+  static public final String TRIO_DATASET_ID = "14004469326575082626";
   public static final int MAX_API_RETRIES = 5;
   public static final long API_WAIT_MILLISEC = 5000;
 
@@ -340,20 +339,11 @@ public class DenovoUtil {
     return readsetIdMap;
   }
 
-  public static Optional<List<Integer>> getGenotypeFromInfoField(Call call) {
-    String genoTypeString = call.getInfo().get("GT").get(0);
-    String splitChar = null;
-    if (genoTypeString.contains("/")) {
-      splitChar = "/";
-    } else if (genoTypeString.contains("|")) {
-      splitChar = "\\|";
-    } else {
-      return Optional.absent();
-    }
+  public static Optional<List<Integer>> getGenotype(Call call) {
+    List<Integer> genoType = call.getGenotype();
 
-    List<Integer> genoType = new ArrayList<>();
-    for (String allele : genoTypeString.split(splitChar)) {
-      genoType.add(Integer.valueOf(allele));
+    if (genoType.contains(-1)) {
+      return Optional.absent();
     }
     return Optional.of(genoType);
   }
