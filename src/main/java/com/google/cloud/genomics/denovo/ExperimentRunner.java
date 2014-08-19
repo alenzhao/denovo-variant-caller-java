@@ -13,8 +13,10 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.callsetNameMap;
 import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
@@ -66,6 +68,7 @@ public class ExperimentRunner {
   private Map<TrioIndividual, String> individualCallsetIdMap = new HashMap<>();
   private final int numThreads;
   private Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
+  private Map<TrioIndividual, String> callsetNameMap = new HashMap<>();
   private final BayesInfer bayesInferrer;
   private final List<String> chromosomes;
   private final List<String> allChromosomes;
@@ -80,6 +83,10 @@ public class ExperimentRunner {
     DenovoUtil.debugLevel = cmdLine.debugLevel;
     DenovoUtil.LRT_THRESHOLD = cmdLine.lrtThreshold;
 
+    callsetNameMap.put(DAD, cmdLine.dadCallsetName);
+    callsetNameMap.put(MOM, cmdLine.momCallsetName);
+    callsetNameMap.put(CHILD, cmdLine.childCallsetName);
+    
     readsetIdMap = DenovoUtil.createReadsetIdMap(DenovoUtil.TRIO_DATASET_ID,
         callsetNameMap, genomics);
 
@@ -230,7 +237,7 @@ public class ExperimentRunner {
     for (Callset callset : callsets) {
       String callsetName = callset.getName();
       for (TrioIndividual individual : TrioIndividual.values()) {
-        if (callsetName.equals(DenovoUtil.callsetNameMap.get(individual))) {
+        if (callsetName.equals(callsetNameMap.get(individual))) {
           individualCallsetIdMap.put(individual, callset.getId());
           break;
         }

@@ -13,10 +13,6 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
-
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Callset;
@@ -63,7 +59,6 @@ public class DenovoUtil {
 
   public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
-  public static Map<TrioIndividual, String> callsetNameMap = new HashMap<>();  
   static public Map<Triple<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
       new HashMap<>();
   
@@ -71,11 +66,6 @@ public class DenovoUtil {
   
   static {
     // Constant Values Needed for stage 2 experiments
-    callsetNameMap.put(DAD, "NA12877");
-    callsetNameMap.put(MOM, "NA12878");
-    callsetNameMap.put(CHILD, "NA12879");
-    callsetNameMap = Collections.unmodifiableMap(callsetNameMap);
-    
     qualityThresholdMap.put("GQX", GQX_THRESH);
     qualityThresholdMap.put("QD", QD_THRESH);
     qualityThresholdMap.put("MQ", MQ_THRESH);
@@ -296,12 +286,12 @@ public class DenovoUtil {
 
   /**
    * @param datasetId
-   * @param callsetIdMap
+   * @param callsetNameMap
    * @return Map<String, String>
    * @throws IOException
    */
   public static Map<TrioIndividual, String> createReadsetIdMap(
-      String datasetId, Map<TrioIndividual, String> callsetIdMap, 
+      String datasetId, Map<TrioIndividual, String> callsetNameMap, 
       Genomics genomics)
       throws IOException {
     Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
@@ -313,7 +303,7 @@ public class DenovoUtil {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
-        if (sampleName.equals(DenovoUtil.callsetNameMap.get(individual))) {
+        if (sampleName.equals(callsetNameMap.get(individual))) {
           readsetIdMap.put(individual, readsetId);
         }
       }

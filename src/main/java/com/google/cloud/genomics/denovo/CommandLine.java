@@ -53,6 +53,19 @@ class CommandLine {
       usage = "Path to client_secrets.json")
   public String clientSecretsFilename = "client_secrets.json";
 
+  @Option(name = "--dad_callset_name", metaVar = "<dad_callset_name>",
+      usage = "Dad's callset name (usually NA12877)")
+  public String dadCallsetName = "NA12877";
+
+  @Option(name = "--mom_callset_name", metaVar = "<mom_callset_name>",
+      usage = "Mom's callset name (usually NA12878)")
+  public String momCallsetName = "NA12878";
+
+  @Option(name = "--child_callset_name", metaVar = "<child_callset_name>",
+      usage = "Child's callset name (usually NA12879)")
+  public String childCallsetName = "NA12879";
+  
+  
   @Option(name = "--seq_err_rate", metaVar = "<seq_err_rate>",
       usage = "Specify the sequence error rate (default 1e-2)")
   public double sequenceErrorRate = 1e-2;
