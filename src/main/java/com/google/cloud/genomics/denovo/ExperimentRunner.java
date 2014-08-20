@@ -62,10 +62,6 @@ public class ExperimentRunner {
   /**
    * Placeholder for running denovo variant calling
    */
-  public class SingleThreadedBayesDenovoRunnanble {
-
-  }
-
   private CommandLine cmdLine;
   private Genomics genomics;
   private final int numThreads;
