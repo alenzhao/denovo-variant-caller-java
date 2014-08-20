@@ -37,12 +37,10 @@ public class DenovoCaller {
 
   private Map<TrioIndividual, Long> lastPosition;
   private Map<TrioIndividual, Call> lastCall;
-  private Map<TrioIndividual, String> dictRelationCallsetId;
+  private Map<String, TrioIndividual> callsetIdToPersonMap;
 
-
-  public DenovoCaller(Map<TrioIndividual, String> dictRelationCallsetId) {
-
-    this.dictRelationCallsetId = dictRelationCallsetId;
+  public DenovoCaller(ExperimentRunner expRunner) {
+    this.callsetIdToPersonMap = expRunner.getCallsetIdToPersonMap();
 
     lastPosition = new HashMap<>();
     lastCall = new HashMap<>();
@@ -110,15 +108,13 @@ public class DenovoCaller {
       if (passesAllQualityFilters(call)) {
 
         // Update the lastcall and the last position
-        for (TrioIndividual trioType : TrioIndividual.values()) {
-          if (call.getCallsetId().equals(dictRelationCallsetId.get(trioType))) {
-            lastCall.put(trioType, call);
-            if (variant.getInfo() != null && variant.getInfo().containsKey("END")) {
-              lastPosition.put(trioType, Long.valueOf(variant.getInfo().get("END").get(0)));
-            } else {
-              lastPosition.put(trioType, variant.getPosition());
-            }
-          }
+        
+        TrioIndividual person = callsetIdToPersonMap.get(call.getCallsetId());
+        lastCall.put(person, call);
+        if (variant.getInfo() != null && variant.getInfo().containsKey("END")) {
+          lastPosition.put(person, Long.valueOf(variant.getInfo().get("END").get(0)));
+        } else {
+          lastPosition.put(person, variant.getPosition());
         }
       }
     }

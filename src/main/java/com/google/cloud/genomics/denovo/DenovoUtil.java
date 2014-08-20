@@ -231,6 +231,17 @@ public class DenovoUtil {
       return result;
     }
   }
+
+  /*
+   * Reverse a dictionary
+   */
+  public static <K, V> Map<V, K> getReversedMap(Map<K, V> map) {
+    Map<V, K> reversed = new HashMap<>();
+    for (Map.Entry<K, V> entry : map.entrySet()) {
+      reversed.put(entry.getValue(), entry.getKey());
+    }
+    return reversed;
+  }
   
   public static SearchVariantsRequest createSearchVariantsRequest(SearchVariantsRequest oldRequest,
       String contig,

@@ -27,7 +27,8 @@ import java.util.Collection;
   DenovoUtilTest.class,
   BayesInferMapTest.class,
   BayesInferBayesTest.class,
-  BayesInferLRTTest.class
+  BayesInferLRTTest.class,
+  VariantsBufferTest.class
   })
 public class AllTests {
 
