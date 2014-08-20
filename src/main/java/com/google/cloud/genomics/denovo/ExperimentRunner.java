@@ -320,8 +320,7 @@ public class ExperimentRunner {
           @Override
           public boolean apply(Variant variant) {
             return variant.getCalls() != null ? true : false;
-          }
-        });
+          }});
       
       for (Variant variant : variants) {
         

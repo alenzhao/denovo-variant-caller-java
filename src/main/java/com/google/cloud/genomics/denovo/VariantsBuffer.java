@@ -13,11 +13,16 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.FluentIterable;
 
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,11 +45,11 @@ public class VariantsBuffer {
     bufferMap.get(person).addLast(variant);
   }
 
-  public void pop(TrioIndividual person) {
+  public Variant pop(TrioIndividual person) {
     if (bufferMap.get(person).isEmpty()) {
       throw new IllegalStateException("Trying to pop from empty queue");
     }
-    bufferMap.get(person).removeFirst();
+    return bufferMap.get(person).removeFirst();
   }
 
   /*
@@ -68,16 +73,37 @@ public class VariantsBuffer {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    for (TrioIndividual person : TrioIndividual.values()) {
-      sb.append(person);
-      sb.append(" : [");
-      sb.append(
-          Joiner.on(',')
-          .join(FluentIterable<String>.from(bufferMap.get(person))));
-      sb.append(" : ]\n");
-    }
-    return sb.toString();
+    final Function<Variant, String> getStartAndEnd = new Function<Variant, String>() {
+      @Override
+      public String apply(Variant input) {
+        // TODO(smoitra): Auto-generated method stub
+        return input.getPosition().toString() + "-" + input.getEnd().toString();
+      }
+    };
+    
+    return Joiner.on(", ").join(FluentIterable
+        .from(Arrays.asList(TrioIndividual.values()))
+        .transform(new Function<TrioIndividual, String>() {
+          @Override
+          public String apply(TrioIndividual person) {
+            return person.toString() + ":[" + Joiner.on(",").join(
+                FluentIterable
+                  .from(bufferMap.get(person))
+                  .transform(getStartAndEnd)) + "]";
+          }
+        }));
+  }
+  
+  public Map<TrioIndividual, Deque<Variant>> getBufferMap() {
+    return bufferMap;
+  }
+  
+  public static void main(String[] args) {
+    Variant v = new Variant().setPosition(1L).setEnd(1000L);
+    VariantsBuffer vbuf = new VariantsBuffer();
+    vbuf.push(DAD, v); vbuf.push(DAD, v); vbuf.push(DAD, v);
+    vbuf.push(MOM, v); vbuf.push(MOM, new Variant().setPosition(3L).setEnd(5000L));
+    System.out.println(vbuf);
   }
   
 }
