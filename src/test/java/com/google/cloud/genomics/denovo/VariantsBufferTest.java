@@ -4,10 +4,15 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 import static org.junit.Assert.assertEquals;
 
+import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.utils.GenomicsFactory;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
 
 /**
  * Test Cases for Variants Buffer
@@ -16,9 +21,29 @@ public class VariantsBufferTest {
 
   VariantsBuffer vbuf;
 
+  private static Genomics genomics;
+  private static ExperimentRunner expRunner;
+
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+
+    String homeDir = System.getProperty("user.home");
+    String argsString = "stage1 " + "--job_name VariantsBufferTest "
+        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json ";
+    String[] args = argsString.split(" ");
+
+    CommandLine cmdLine = new CommandLine();
+    cmdLine.setArgs(args);
+
+    genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
+        .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
+    expRunner = new ExperimentRunner(cmdLine, genomics);
+  }
+  
   @Before
   public void setUp() throws Exception {
-    vbuf = new VariantsBuffer();
+    vbuf = new VariantsBuffer(expRunner);
   }
 
   @Test
