@@ -136,7 +136,7 @@ public class VariantsBuffer {
     if (isEmpty(CHILD)) return;
     
     for (TrioIndividual parent : Arrays.asList(MOM, DAD)) {
-      while(!isEmpty(parent) && getEndPosition(parent) <= getStartPosition(CHILD)) {
+      while(!isEmpty(parent) && getFirst(parent).getEnd() < getStartPosition(CHILD)) {
         pop(parent);
       }
     }
@@ -146,13 +146,13 @@ public class VariantsBuffer {
     return getQueue(person).getFirst();
   }
 
-  public Map<TrioIndividual,Iterable<PositionwiseCalls>> retreiveNextCalls() {
+  public Map<TrioIndividual,List<PositionwiseCalls>> retreiveNextCalls() {
     evictParents();
     Variant firstChildVariant = getFirst(CHILD);
     Long startPosition = firstChildVariant.getPosition();
     Long endPosition = firstChildVariant.getEnd();
 
-    Map<TrioIndividual,Iterable<PositionwiseCalls>> callsMap = new HashMap<>();
+    Map<TrioIndividual,List<PositionwiseCalls>> callsMap = new HashMap<>();
     for(TrioIndividual person : TrioIndividual.values()) {
       callsMap.put(person, getPositionWiseCallsInRange(startPosition, endPosition, person));
     }
@@ -160,7 +160,7 @@ public class VariantsBuffer {
     return callsMap;
   }
   
-  private Iterable<PositionwiseCalls> getPositionWiseCallsInRange(final Long startPosition,
+  private List<PositionwiseCalls> getPositionWiseCallsInRange(final Long startPosition,
       final Long endPosition, final TrioIndividual person) {
 
     Iterable<Variant> variantsInRange = getVariantsInRange(person, startPosition, endPosition);
@@ -171,27 +171,30 @@ public class VariantsBuffer {
             return convertVariantToPositionwiseCalls(variant, person);
           }
         }));
-    return Iterables.filter(positionwiseCalls, new Predicate<PositionwiseCalls>() {
-      @Override
-      public boolean apply(PositionwiseCalls pcall) {
-        return pcall.position >= startPosition && pcall.position <= endPosition;
-      }
-    });
+    return Lists.newArrayList(
+        FluentIterable
+        .from(positionwiseCalls)
+        .filter(new Predicate<PositionwiseCalls>() {
+          @Override
+          public boolean apply(PositionwiseCalls pcall) {
+            return pcall.position >= startPosition && pcall.position < endPosition;
+          }
+        }));
   }
   
-  private Iterable<Variant> getVariantsInRange(TrioIndividual person, final Long startPosition, 
+  private List<Variant> getVariantsInRange(TrioIndividual person, final Long startPosition, 
       final Long endPosition) {
     Deque<Variant> queue = getQueue(person);
-    return Iterables.filter(queue, new Predicate<Variant>() {
+    return Lists.newArrayList(Iterables.filter(queue, new Predicate<Variant>() {
       @Override
       public boolean apply(Variant variant) {
         return !(variant.getEnd() < startPosition || variant.getPosition() > endPosition); 
-      }});
+      }}));
   }
   
-  private Iterable<PositionwiseCalls> convertVariantToPositionwiseCalls(Variant variant,
+  private List<PositionwiseCalls> convertVariantToPositionwiseCalls(Variant variant,
       TrioIndividual person) {
-    List<PositionwiseCalls> callsList = new LinkedList<>();
+    List<PositionwiseCalls> callsList = new ArrayList<>();
 
     // All calls are conserved
     if (variant.getInfo() != null && variant.getInfo().containsKey("BLOCKAVG_min30p3a")) {
@@ -207,8 +210,20 @@ public class VariantsBuffer {
     Call call =
         Optional.of(DenovoUtil.getCallInVariant(variant, person, personToCallsetIdMap)).get();
     List<Integer> genotype = call.getGenotype();
-
     String[] baseStrings = new String[2];
+
+    // Make haploid genotype diploid
+    if (genotype.size() == 1) { 
+      genotype.add(0);
+    }
+    
+    // Reject -1 calls
+    if (genotype.contains(-1)) {
+      for (Long pos = variant.getPosition(); pos < variant.getEnd(); pos++) {
+        callsList.add(new PositionwiseCalls(pos, Pair.with(".", ".")));
+      }
+      return callsList;
+    }
 
     // call contains reference sequence or not
     int referenceIndex = genotype.indexOf(Integer.valueOf(0));
@@ -217,11 +232,11 @@ public class VariantsBuffer {
       if (genotype.get(1 - referenceIndex) == Integer.valueOf(0)) {
         baseStrings[1] = referenceBases;  
       } else {
-        baseStrings[1] = alternateBases.get(genotype.get(1 - referenceIndex));
+        baseStrings[1] = alternateBases.get(genotype.get(1 - referenceIndex) - 1);
       }
     } else {
       for (int i = 0; i < 2; i++) {
-        baseStrings[i] = alternateBases.get(genotype.get(i));
+        baseStrings[i] = alternateBases.get(genotype.get(i) - 1);
       }
     }
 

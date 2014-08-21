@@ -330,7 +330,11 @@ public class ExperimentRunner {
         
         // Try to see if buffer can be processed
         while(vbuffer.canProcess()) {
-          Map<TrioIndividual, Iterable<PositionwiseCalls>> nextCalls = vbuffer.retreiveNextCalls();
+          Map<TrioIndividual, List<PositionwiseCalls>> nextCalls = vbuffer.retreiveNextCalls();
+
+          if(debugLevel > 1) {
+            System.out.println(vbuffer);  
+          }
           vbuffer.pop(CHILD);
         }
 
