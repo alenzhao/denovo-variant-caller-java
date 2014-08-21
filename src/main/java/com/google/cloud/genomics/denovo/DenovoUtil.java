@@ -27,7 +27,10 @@ import com.google.api.services.genomics.model.SearchReadsResponse;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
+import com.google.api.services.genomics.model.Variant;
 import com.google.common.base.Optional;
+
+import org.javatuples.Triplet;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +57,7 @@ public class DenovoUtil {
 
   public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
-  static public Map<Triple<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
+  static public Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
       new HashMap<>();
   
   static public int debugLevel = 0; 
@@ -78,7 +81,7 @@ public class DenovoUtil {
           boolean alleleInParents = momAlleles.contains(c1) & dadAlleles.contains(c2);
           boolean alleleInParentsMirror = momAlleles.contains(c2) & dadAlleles.contains(c1);
           boolean isDenovo = !(alleleInParents || alleleInParentsMirror);
-          isDenovoMap.put(new Triple<>(genotypeDad, genotypeMom, genotypeChild), isDenovo);
+          isDenovoMap.put(Triplet.with(genotypeDad, genotypeMom, genotypeChild), isDenovo);
         }
       }
     }
@@ -163,75 +166,6 @@ public class DenovoUtil {
     }
   }
   
-  public static class Pair<T1, T2> {
-    public T1 first;
-    public T2 second;
-    
-    public Pair(T1 first, T2 second) {
-      this.first = first;
-      this.second = second;
-    }
-    
-    @Override
-    public String toString() {
-      return String.format("<%s,%s>", first, second);
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) { return true; }
-      if (!(o instanceof Pair)) { return false; }
-      Pair<?,?> m = (Pair<?,?>) o;
-      return (first == m.first || (first != null && first.equals(m.first))) &&
-          (second == m.second || (second != null && second.equals(m.second)));
-    }
-    
-    @Override
-    public int hashCode() {
-      int result = 17;
-      result += first.hashCode() * 31;
-      result += second.hashCode() * 31;
-      return result;
-    }
-
-  }
-
-  public static class Triple<T1, T2, T3> {
-    public T1 first;
-    public T2 second;
-    public T3 third;
-    
-    public Triple(T1 first, T2 second, T3 third) {
-      this.first = first;
-      this.second = second;
-      this.third = third;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("<%s,%s,%s>", first, second, third);
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) { return true; }
-      if (!(o instanceof Triple)) { return false; }
-      Triple<?,?,?> m = (Triple<?,?,?>) o;
-      return (first == m.first || (first != null && first.equals(m.first))) &&
-          (second == m.second || (second != null && second.equals(m.second))) &&
-          (third == m.third || (third != null && third.equals(m.third)));
-    }
-
-    @Override
-    public int hashCode() {
-      int result = 17;
-      result += first.hashCode() * 31;
-      result += second.hashCode() * 31;
-      result += third.hashCode() * 31;
-      return result;
-    }
-  }
-
   /*
    * Reverse a dictionary
    */
@@ -375,7 +309,7 @@ public class DenovoUtil {
    */
   public static boolean checkTrioGenoTypeIsDenovo(Genotype genotypeDad, Genotype genotypeMom, 
       Genotype genotypeChild) {
-    return isDenovoMap.get(new Triple<>(genotypeDad, genotypeMom, genotypeChild));
+    return isDenovoMap.get(Triplet.with(genotypeDad, genotypeMom, genotypeChild));
   }
   
   /**
@@ -389,5 +323,15 @@ public class DenovoUtil {
     Genotype genotypeMom = trioGenotypeList.get(1);
     Genotype genotypeChild = trioGenotypeList.get(2);
     return checkTrioGenoTypeIsDenovo(genotypeDad, genotypeMom, genotypeChild);
+  }
+  
+  public static Call getCallInVariant(Variant variant, TrioIndividual person, 
+      Map<TrioIndividual, String> personToCallsetId) {
+    for(Call call: variant.getCalls()) {
+      if (personToCallsetId.get(person).equals(call.getCallsetId())) {
+        return call;
+      }
+    }
+    return null;
   }
 }

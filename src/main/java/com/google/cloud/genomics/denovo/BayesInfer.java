@@ -13,16 +13,18 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.BAYES;
+import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.LRT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.MAP;
+
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
-
-import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.*;
-
-import com.google.cloud.genomics.denovo.DenovoUtil.Pair;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
+
+import org.javatuples.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -59,9 +61,9 @@ public class BayesInfer {
   }
 
   private InferenceResult createInferenceResult(Pair<List<Genotype>, Boolean> pair, String readCounts) {
-    InferenceResult result = new InferenceResult(pair.second, pair.first, 
+    InferenceResult result = new InferenceResult(pair.getValue1(), pair.getValue0(), 
         String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
-            pair.first, pair.second));
+            pair.getValue0(), pair.getValue1()));
     return result;
   }
 
@@ -88,7 +90,7 @@ public class BayesInfer {
     // Check that the MAP genotype has indeed the highest likelihood
     boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(dbnResult.maxTrioGenotype);
 
-    return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
+    return createInferenceResult(Pair.with(dbnResult.maxTrioGenotype, isDenovo), 
         createReadCountString(readSummaryMap));
   }
   

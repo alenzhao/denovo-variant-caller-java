@@ -27,6 +27,7 @@ import com.google.api.services.genomics.model.Readset;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.VariantsBuffer.PositionwiseCalls;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -299,10 +300,7 @@ public class ExperimentRunner {
       throws IOException {
     // Create the caller object
 
-    Map<TrioIndividual, VariantsBuffer> bufferMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
-      bufferMap.put(person, new VariantsBuffer());
-    }
+    VariantsBuffer vbuffer = new VariantsBuffer(this);
     
     VariantContigStream variantContigStream = new VariantContigStream(genomics, 
         currentContig.getContig(),
@@ -316,7 +314,7 @@ public class ExperimentRunner {
       StringBuilder builder = new StringBuilder();
 
       // Get a fresh batch of variants and filter those without calls
-      FluentIterable<Variant> variants = FluentIterable
+      Iterable<Variant> variants = FluentIterable
         .from(variantContigStream.getVariants())
         .filter(new Predicate<Variant>() {
           @Override
@@ -326,12 +324,14 @@ public class ExperimentRunner {
       
       for (Variant variant : variants) {
         
-        // Add the calls to the respective VariantsBuffers 
-        Long startVariant = variant.getPosition();
-        Long endVariant = variant.getEnd();
-
         for (Call call : variant.getCalls()) {
-          TrioIndividual person = callsetIdToPersonMap.get(call.getCallsetId());
+          vbuffer.push(callsetIdToPersonMap.get(call.getCallsetId()), variant);
+        }
+        
+        // Try to see if buffer can be processed
+        while(vbuffer.canProcess()) {
+          Map<TrioIndividual, Iterable<PositionwiseCalls>> nextCalls = vbuffer.retreiveNextCalls();
+          vbuffer.pop(CHILD);
         }
 
         Optional<String> denovoCallResultOptional = denovoCaller.callDenovoFromVarstore(variant);

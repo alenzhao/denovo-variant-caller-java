@@ -111,7 +111,7 @@ public class DenovoCaller {
         
         TrioIndividual person = callsetIdToPersonMap.get(call.getCallsetId());
         lastCall.put(person, call);
-        if (variant.getInfo() != null && variant.getInfo().containsKey("END")) {
+        if (variant.getInfo() != null && variant.getInfo().containsKey("BLOCKAVG_min30p3a")) {
           lastPosition.put(person, Long.valueOf(variant.getInfo().get("END").get(0)));
         } else {
           lastPosition.put(person, variant.getPosition());
