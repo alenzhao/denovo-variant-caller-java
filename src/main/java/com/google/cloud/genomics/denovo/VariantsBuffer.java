@@ -19,23 +19,21 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
 
 import org.javatuples.Pair;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,21 +41,19 @@ import java.util.Map;
  */
 public class VariantsBuffer {
 
-  private Map<TrioIndividual, Deque<Variant>> bufferMap = new HashMap<>();
-  private final Map<TrioIndividual, String> personToCallsetIdMap;
-  
-  public VariantsBuffer(ExperimentRunner expRunner) {
-    personToCallsetIdMap = expRunner.getPersonToCallsetIdMap();
+  private Map<TrioIndividual, Deque<Pair<Variant,Call>>> bufferMap = new HashMap<>();
+
+  public VariantsBuffer() {
     for (TrioIndividual person : TrioIndividual.values()) {
-      bufferMap.put(person, new LinkedList<Variant>());
+      bufferMap.put(person, new LinkedList<Pair<Variant,Call>>());
     }
   }
-  
-  public void push(TrioIndividual person, Variant variant) {
-    getQueue(person).addLast(variant);
+
+  public void push(TrioIndividual person, Pair<Variant,Call> pair) {
+    getQueue(person).addLast(pair);
   }
 
-  public Variant pop(TrioIndividual person) {
+  public Pair<Variant,Call> pop(TrioIndividual person) {
     if (isEmpty(person)) {
       throw new IllegalStateException("Trying to pop from empty queue");
     }
@@ -65,30 +61,29 @@ public class VariantsBuffer {
   }
 
   /*
-   * Checks if first variant in CHILD buffer can be processed 
+   * Checks if first variant in CHILD buffer can be processed
    */
   public boolean canProcess() {
-    return (!isEmpty(CHILD) 
-        && getEndPosition(MOM) >= getEndPosition(CHILD)
+    return (!isEmpty(CHILD) && getEndPosition(MOM) >= getEndPosition(CHILD)
         && getEndPosition(DAD) >= getEndPosition(CHILD)
         && getStartPosition(MOM) <= getStartPosition(CHILD)
-        && getStartPosition(DAD) <= getStartPosition(CHILD));  
+        && getStartPosition(DAD) <= getStartPosition(CHILD));
   }
-  
+
   /*
    * Returns 0 if the buffer is empty for that person otherwise coord position
    */
   public Long getStartPosition(TrioIndividual person) {
-    return isEmpty(person) ? 0 : getQueue(person).getFirst().getPosition();
+    return isEmpty(person) ? 0 : getQueue(person).getFirst().getValue0().getPosition();
   }
 
   /*
    * Returns 0 if the buffer is empty for that person otherwise coord position
    */
   public Long getEndPosition(TrioIndividual person) {
-    return isEmpty(person) ? 0 : getQueue(person).getLast().getEnd();
+    return isEmpty(person) ? 0 : getQueue(person).getLast().getValue0().getEnd();
   }
-  
+
   @Override
   public int hashCode() {
     return bufferMap.hashCode();
@@ -96,187 +91,193 @@ public class VariantsBuffer {
 
   @Override
   public String toString() {
-    final Function<Variant, String> getStartAndEnd = new Function<Variant, String>() {
+    final Function<Pair<Variant,Call>, String> getStartAndEnd = new Function<Pair<Variant,Call>, String>() {
       @Override
-      public String apply(Variant input) {
+      public String apply(Pair<Variant,Call> pair) {
         // TODO(smoitra): Auto-generated method stub
-        return input.getPosition().toString() + "-" + input.getEnd().toString();
+        return pair.getValue0().getPosition().toString() + "-" 
+            + pair.getValue0().getEnd().toString();
       }
     };
-    
-    return Joiner.on(", ").join(FluentIterable
-        .from(Arrays.asList(TrioIndividual.values()))
+
+    return Joiner.on(", ").join(FluentIterable.from(Arrays.asList(TrioIndividual.values()))
         .transform(new Function<TrioIndividual, String>() {
           @Override
           public String apply(TrioIndividual person) {
             return person.toString() + ":[" + Joiner.on(",").join(
-                FluentIterable
-                  .from(getQueue(person))
-                  .transform(getStartAndEnd)) + "]";
+                FluentIterable.from(getQueue(person)).transform(getStartAndEnd)) + "]";
           }
         }));
   }
-  
-  public Map<TrioIndividual, Deque<Variant>> getBufferMap() {
+
+  public Map<TrioIndividual, Deque<Pair<Variant,Call>>> getBufferMap() {
     return bufferMap;
   }
 
-  public Deque<Variant> getQueue(TrioIndividual person) {
+  public Deque<Pair<Variant,Call>> getQueue(TrioIndividual person) {
     return bufferMap.get(person);
   }
-  
+
   public boolean isEmpty(TrioIndividual person) {
     return getQueue(person).isEmpty();
   }
-  
+
   /**
-   * Evicts parent variants that are no longer needed 
+   * Evicts parent variants that are no longer needed
    */
   private void evictParents() {
-    if (isEmpty(CHILD)) return;
-    
+    if (isEmpty(CHILD)) {
+      return;
+    }
+
     for (TrioIndividual parent : Arrays.asList(MOM, DAD)) {
-      while(!isEmpty(parent) && getFirst(parent).getEnd() < getStartPosition(CHILD)) {
+      while (!isEmpty(parent) && getFirst(parent).getValue0().getEnd() < getStartPosition(CHILD)) {
         pop(parent);
       }
     }
   }
 
-  public Variant getFirst(TrioIndividual person) {
+  public Pair<Variant,Call> getFirst(TrioIndividual person) {
     return getQueue(person).getFirst();
   }
 
-  public Map<TrioIndividual,List<PositionwiseCalls>> retreiveNextCalls() {
+  /*
+   * Check if a call passes filters for queue and then add it
+   */
+  public boolean checkAndAdd(TrioIndividual person, Pair<Variant, Call> pair) {
+    if (person == CHILD && !isSnp(pair)) {
+      return false;
+    }
+
+    if (callContainsDot(pair.getValue1())) {
+      return false;
+    }
+    
+    if (!passesFilter(pair.getValue1())) {
+      return false;
+    }
+    push(person, pair);
+    return true;
+  }
+
+  /*
+   * Returns the next available PositionCall
+   */
+  public PositionCall retrieveNextCall() {
     evictParents();
-    Variant firstChildVariant = getFirst(CHILD);
-    Long startPosition = firstChildVariant.getPosition();
-    Long endPosition = firstChildVariant.getEnd();
 
-    Map<TrioIndividual,List<PositionwiseCalls>> callsMap = new HashMap<>();
-    for(TrioIndividual person : TrioIndividual.values()) {
-      callsMap.put(person, getPositionWiseCallsInRange(startPosition, endPosition, person));
+    Pair<Variant, Call> childSNP = getNextSNP(CHILD);
+    Long snpPosition = childSNP.getValue0().getPosition();
+    String referenceBase = childSNP.getValue0().getReferenceBases();
+    Map<TrioIndividual, Genotype> genotypeMap = new HashMap<>();
+
+    for (TrioIndividual person : TrioIndividual.values()) {
+
+      if (person == CHILD) {
+        genotypeMap.put(CHILD, getGenotypeFromSNP(childSNP));
+        continue;
+      }
+      Pair<Variant, Call> parentVariant = Optional.of(getMatchingPair(person, snpPosition)).get();
+      genotypeMap.put(person, isSnp(parentVariant) 
+          ? getGenotypeFromSNP(parentVariant) 
+          : Genotype.valueOf(referenceBase + referenceBase));
     }
-    
-    return callsMap;
+    return new PositionCall(snpPosition, genotypeMap);
+  }
+
+  /**
+   * Return the genotype corresponding to the SNP
+   */
+  private Genotype getGenotypeFromSNP(Pair<Variant, Call> pair) {
+    Variant variant = pair.getValue0();
+    Call call = pair.getValue1();
+    Allele[] allelePair = new Allele[2];
+
+    for (int idx = 0; idx < 2; idx++) {
+      int gtidx = call.getGenotype().get(idx);
+      allelePair[idx] = gtidx > 0 ? Allele.valueOf(variant.getAlternateBases().get(gtidx - 1))
+          : Allele.valueOf(variant.getReferenceBases());
+    }
+    return Genotype.valueOfPairAlleles(allelePair[0], allelePair[1]);
+  }
+
+  /*
+   * Check if a call has PASS filter annotation
+   */
+  private boolean passesFilter(Call call) {
+    return call.getInfo().containsKey("FILTER") && call.getInfo().get("FILTER").equals("PASS");
+  }
+
+  private boolean callContainsDot(Call call) {
+    // Check if call is unknown
+    return call.getGenotype().contains(-1);
   }
   
-  private List<PositionwiseCalls> getPositionWiseCallsInRange(final Long startPosition,
-      final Long endPosition, final TrioIndividual person) {
+  private boolean isSnp(Pair<Variant, Call> pair) {
+    Variant variant = pair.getValue0();
+    Call call = pair.getValue1();
+    if (variant.getEnd() != variant.getPosition() + Long.valueOf(1L)) {
+      return false;
+    }
 
-    Iterable<Variant> variantsInRange = getVariantsInRange(person, startPosition, endPosition);
-    Iterable<PositionwiseCalls> positionwiseCalls = Iterables.concat(
-        Iterables.transform(variantsInRange, new Function<Variant, Iterable<PositionwiseCalls>>() {
-          @Override
-          public Iterable<PositionwiseCalls> apply(Variant variant) {
-            return convertVariantToPositionwiseCalls(variant, person);
-          }
-        }));
-    return Lists.newArrayList(
-        FluentIterable
-        .from(positionwiseCalls)
-        .filter(new Predicate<PositionwiseCalls>() {
-          @Override
-          public boolean apply(PositionwiseCalls pcall) {
-            return pcall.position >= startPosition && pcall.position < endPosition;
-          }
-        }));
+    // check for Indels
+    if (variant.getReferenceBases().length() != 1) {
+      return false;
+    }
+
+    for (int gtIdx : call.getGenotype()) {
+      if (gtIdx > 0 && variant.getAlternateBases().get(gtIdx - 1).length() != 1) {
+        return false;
+      }
+    }
+    return true;
   }
-  
-  private List<Variant> getVariantsInRange(TrioIndividual person, final Long startPosition, 
-      final Long endPosition) {
-    Deque<Variant> queue = getQueue(person);
-    return Lists.newArrayList(Iterables.filter(queue, new Predicate<Variant>() {
-      @Override
-      public boolean apply(Variant variant) {
-        return !(variant.getEnd() < startPosition || variant.getPosition() > endPosition); 
-      }}));
+
+  /**
+   * Get Matching variant from the queue
+   */
+  private Pair<Variant, Call> getMatchingPair(TrioIndividual person, Long snpPosition) {
+    for (Pair<Variant, Call> pair : getQueue(person)) {
+      Variant variant = pair.getValue0();
+
+      if (!isSnp(pair)) {
+        throw new IllegalStateException("Expected SNP ; got : " + pair);
+      }
+
+      if (Range.closedOpen(variant.getPosition(), variant.getEnd()).contains(snpPosition)) {
+        return pair;
+      }
+    }
+    return null;
   }
-  
-  private List<PositionwiseCalls> convertVariantToPositionwiseCalls(Variant variant,
-      TrioIndividual person) {
-    List<PositionwiseCalls> callsList = new ArrayList<>();
 
-    // All calls are conserved
-    if (variant.getInfo() != null && variant.getInfo().containsKey("BLOCKAVG_min30p3a")) {
-      for (Long pos = variant.getPosition(); pos < variant.getEnd(); pos++) {
-        callsList.add(new PositionwiseCalls(pos, Pair.with("0", "0")));
-      }
-      return callsList;
-    }
+  /**
+   * Get next available SNP
+   */
+  private Pair<Variant, Call> getNextSNP(TrioIndividual person) {
+    Pair<Variant, Call> pair = getFirst(person);
 
-    // Calls have alternative alleles
-    String referenceBases = variant.getReferenceBases();
-    List<String> alternateBases = variant.getAlternateBases();
-    Call call =
-        Optional.of(DenovoUtil.getCallInVariant(variant, person, personToCallsetIdMap)).get();
-    List<Integer> genotype = call.getGenotype();
-    String[] baseStrings = new String[2];
-
-    // Make haploid genotype diploid
-    if (genotype.size() == 1) { 
-      genotype.add(0);
+    if (!isSnp(pair)) { 
+      throw new IllegalStateException("Expected SNP : got " + pair);
     }
-    
-    // Reject -1 calls
-    if (genotype.contains(-1)) {
-      for (Long pos = variant.getPosition(); pos < variant.getEnd(); pos++) {
-        callsList.add(new PositionwiseCalls(pos, Pair.with(".", ".")));
-      }
-      return callsList;
-    }
-
-    // call contains reference sequence or not
-    int referenceIndex = genotype.indexOf(Integer.valueOf(0));
-    if (referenceIndex != -1) {
-      baseStrings[0] = referenceBases;
-      if (genotype.get(1 - referenceIndex) == Integer.valueOf(0)) {
-        baseStrings[1] = referenceBases;  
-      } else {
-        baseStrings[1] = alternateBases.get(genotype.get(1 - referenceIndex) - 1);
-      }
-    } else {
-      for (int i = 0; i < 2; i++) {
-        baseStrings[i] = alternateBases.get(genotype.get(i) - 1);
-      }
-    }
-
-    int idx = 0;
-    for (Long pos = variant.getPosition(); pos < variant.getEnd(); pos++) {
-      String[] posStrings = new String[2];
-      for (int i = 0; i < 2; i++) {
-        // Deletion
-        if (idx >= baseStrings[i].length()) {
-          posStrings[i] = "-";
-          continue;
-        }
-        // Insertion
-        if (pos == variant.getEnd() - 1L) {
-          posStrings[i] = baseStrings[i].substring(idx);
-        }
-        // Regular base
-        posStrings[i] = String.valueOf(baseStrings[i].charAt(idx));
-      }
-      callsList.add(new PositionwiseCalls(pos, Pair.with(posStrings[0], posStrings[1])));
-      idx++;
-    }
-    return callsList;
+    return pair;
   }
 
   /*
    * A data class for storing position
    */
-  public static class PositionwiseCalls {
-    public Long position;
-    public Pair<String, String> calls;
+  public static class PositionCall {
+    public final Long position;
+    public final Map<TrioIndividual, Genotype> genotypeMap;
 
-    public PositionwiseCalls(Long position, Pair<String, String> calls) {
-      this.position = position;
-      this.calls = calls;
+    public PositionCall(Long snpPosition, Map<TrioIndividual, Genotype> map) {
+      this.position = snpPosition;
+      this.genotypeMap = map;
     }
 
     @Override
     public String toString() {
-      return "[" + position.toString() + "," + calls.toString() + "]";
+      return "[" + position.toString() + "," + genotypeMap.toString() + "]";
     }
   }
 }

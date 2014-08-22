@@ -326,6 +326,13 @@ public class DenovoUtil {
     return checkTrioGenoTypeIsDenovo(genotypeDad, genotypeMom, genotypeChild);
   }
   
+  /*
+   * Does the variant not contain any variations
+   */
+  public static boolean isConserved(Variant variant) {
+    return variant.getInfo() != null && variant.getInfo().containsKey("BLOCKAVG_min30p3a");
+  }
+  
   public static Call getCallInVariant(Variant variant, TrioIndividual person, 
       Map<TrioIndividual, String> personToCallsetId) {
     for(Call call: variant.getCalls()) {

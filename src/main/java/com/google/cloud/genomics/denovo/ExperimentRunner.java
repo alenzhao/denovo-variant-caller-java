@@ -27,13 +27,15 @@ import com.google.api.services.genomics.model.Readset;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
-import com.google.cloud.genomics.denovo.VariantsBuffer.PositionwiseCalls;
+import com.google.cloud.genomics.denovo.VariantsBuffer.PositionCall;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import org.javatuples.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,7 +46,6 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -301,7 +302,7 @@ public class ExperimentRunner {
       throws IOException {
     // Create the caller object
 
-    VariantsBuffer vbuffer = new VariantsBuffer(this);
+    VariantsBuffer vbuffer = new VariantsBuffer();
     
     VariantContigStream variantContigStream = new VariantContigStream(genomics, 
         currentContig.getContig(),
@@ -326,12 +327,13 @@ public class ExperimentRunner {
       for (Variant variant : variants) {
         
         for (Call call : variant.getCalls()) {
-          vbuffer.push(callsetIdToPersonMap.get(call.getCallsetId()), variant);
+          vbuffer.checkAndAdd(callsetIdToPersonMap.get(call.getCallsetId()), 
+              Pair.with(variant, call));
         }
         
         // Try to see if buffer can be processed
         while(vbuffer.canProcess()) {
-          //List<Map<TrioIndividual, Set<String>>> nextCalls = vbuffer.retreiveNextCalls();
+          PositionCall nextCall = vbuffer.retrieveNextCall();
 
           if(debugLevel > 1) {
             System.out.println(vbuffer);  
