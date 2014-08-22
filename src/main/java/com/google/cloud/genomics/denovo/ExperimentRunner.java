@@ -44,6 +44,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -330,7 +331,7 @@ public class ExperimentRunner {
         
         // Try to see if buffer can be processed
         while(vbuffer.canProcess()) {
-          Map<TrioIndividual, List<PositionwiseCalls>> nextCalls = vbuffer.retreiveNextCalls();
+          //List<Map<TrioIndividual, Set<String>>> nextCalls = vbuffer.retreiveNextCalls();
 
           if(debugLevel > 1) {
             System.out.println(vbuffer);  

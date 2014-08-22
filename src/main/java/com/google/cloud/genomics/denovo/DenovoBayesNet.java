@@ -157,7 +157,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
         mendelianCharAlleles[1] = genoTypeMom.name().charAt(jj) ;
         Arrays.sort(mendelianCharAlleles);
         Genotype mendelianAlleles = 
-            Genotype.getGenoTypeFromString(new String(mendelianCharAlleles));
+            Genotype.valueOf(new String(mendelianCharAlleles));
         mendelCases.put(mendelianAlleles, 
             (mendelCases.containsKey(mendelianAlleles) 
                 ? mendelCases.get(mendelianAlleles)

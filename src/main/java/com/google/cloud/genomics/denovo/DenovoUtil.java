@@ -35,6 +35,7 @@ import org.javatuples.Triplet;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -141,17 +142,17 @@ public class DenovoUtil {
       this.isHomozygous = isHomozygous;
     }
 
-    public boolean isHomozygous() {
-      return isHomozygous;
+    /*
+     * Return a genotype from a pair of allele objects
+     */
+    public static Genotype valueOfPairAlleles(Allele a, Allele b) {
+      Allele[] allelePair = new Allele[]{a, b};
+      Arrays.sort(allelePair);
+      return valueOf(allelePair[0].toString()+allelePair[1].toString());
     }
     
-    public static Genotype getGenoTypeFromString(String stringGenoType) {
-      for(Genotype genotype : Genotype.values()) { 
-        if(genotype.name().equals(stringGenoType)){
-          return genotype;
-        }
-      }
-      throw new IllegalArgumentException("Unknown Genotype " + stringGenoType);
+    public boolean isHomozygous() {
+      return isHomozygous;
     }
   }
 
