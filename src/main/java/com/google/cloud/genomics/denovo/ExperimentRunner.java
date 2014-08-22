@@ -80,8 +80,6 @@ public class ExperimentRunner {
   private final String datasetId;
   private final Long startPosition;
   private final Long endPosition;
-
-  private final DenovoCaller denovoCaller;
   
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
     this.cmdLine = cmdLine;
@@ -107,8 +105,6 @@ public class ExperimentRunner {
     allChromosomes = fetchAllChromosomes(genomics);
     chromosomes = verifyAndSetChromsomes(cmdLine.chromosomes);
     inferMethod = InferenceMethod.selectMethodfromString(cmdLine.inferMethod);
-    
-    denovoCaller = new DenovoCaller(this);
   }
 
   /*
@@ -329,25 +325,38 @@ public class ExperimentRunner {
         for (Call call : variant.getCalls()) {
           vbuffer.checkAndAdd(callsetIdToPersonMap.get(call.getCallsetId()), 
               Pair.with(variant, call));
+          
+          if(debugLevel > 1) {
+            System.out.println(vbuffer);  
+          }
         }
         
         // Try to see if buffer can be processed
         while(vbuffer.canProcess()) {
-          PositionCall nextCall = vbuffer.retrieveNextCall();
-
           if(debugLevel > 1) {
-            System.out.println(vbuffer);  
+            System.out.println("canProcess1 : "+vbuffer.toString());  
+          }
+
+          Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
+          if (nextCall.isPresent()) {
+            System.out.println(nextCall);
+            if (nextCall.get().isDenovo()) {
+              builder.append(
+                  String.format("%s,%d,%s%n", currentContig.getContig(), nextCall.get().position,
+                      nextCall.get()));
+            }
+          }
+          
+          if(debugLevel > 1) {
+            System.out.println("canProcess2 : "+vbuffer.toString());  
           }
           vbuffer.pop(CHILD);
-        }
-
-        Optional<String> denovoCallResultOptional = denovoCaller.callDenovoFromVarstore(variant);
-        if (denovoCallResultOptional.isPresent()) {
-          builder.append(
-              String.format("%s,%d%n", currentContig.getContig(), variant.getPosition()));
+          
+          if(debugLevel > 1) {
+            System.out.println("canProcess3 : "+vbuffer.toString());  
+          }
         }
       }
-
       writeCalls(callWriter, builder.toString());
     }
   }

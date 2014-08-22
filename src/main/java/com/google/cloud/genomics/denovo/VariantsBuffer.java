@@ -29,6 +29,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Range;
 
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 
 import java.util.Arrays;
 import java.util.Deque;
@@ -42,15 +43,18 @@ import java.util.Map;
 public class VariantsBuffer {
 
   private Map<TrioIndividual, Deque<Pair<Variant,Call>>> bufferMap = new HashMap<>();
+  private Map<TrioIndividual, Long> mostRecentStartPosition = new HashMap<>();
 
   public VariantsBuffer() {
     for (TrioIndividual person : TrioIndividual.values()) {
       bufferMap.put(person, new LinkedList<Pair<Variant,Call>>());
+      mostRecentStartPosition.put(person, 0L);
     }
   }
 
   public void push(TrioIndividual person, Pair<Variant,Call> pair) {
     getQueue(person).addLast(pair);
+    mostRecentStartPosition.put(person, pair.getValue0().getPosition());
   }
 
   public Pair<Variant,Call> pop(TrioIndividual person) {
@@ -64,10 +68,13 @@ public class VariantsBuffer {
    * Checks if first variant in CHILD buffer can be processed
    */
   public boolean canProcess() {
-    return (!isEmpty(CHILD) && getEndPosition(MOM) >= getEndPosition(CHILD)
-        && getEndPosition(DAD) >= getEndPosition(CHILD)
-        && getStartPosition(MOM) <= getStartPosition(CHILD)
-        && getStartPosition(DAD) <= getStartPosition(CHILD));
+    return (!isEmpty(CHILD) 
+        && getMostRecentStartPosition(MOM) >= getStartPosition(CHILD)
+        && getMostRecentStartPosition(DAD) >= getStartPosition(CHILD));
+  }
+
+  private Long getMostRecentStartPosition(TrioIndividual person) {
+    return mostRecentStartPosition.get(person);
   }
 
   /*
@@ -145,19 +152,25 @@ public class VariantsBuffer {
    * Check if a call passes filters for queue and then add it
    */
   public boolean checkAndAdd(TrioIndividual person, Pair<Variant, Call> pair) {
-    if (person == CHILD && !isSnp(pair)) {
-      return false;
-    }
-
-    if (callContainsDot(pair.getValue1())) {
-      return false;
-    }
     
-    if (!passesFilter(pair.getValue1())) {
+    Call variant = pair.getValue1();
+    if (person == CHILD && !isSnp(pair) 
+        ||callContainsDot(variant) 
+        || !callIsBiAllelic(variant) 
+        || !passesFilter(variant) 
+        || isInsertion(pair) 
+        || isDeletion(pair)) {
       return false;
     }
     push(person, pair);
     return true;
+  }
+
+  /**
+   * Does the call contain two calls
+   */
+  private boolean callIsBiAllelic(Call call) {
+    return call.getGenotype().size() == 2;
   }
 
   /*
@@ -177,9 +190,15 @@ public class VariantsBuffer {
         genotypeMap.put(CHILD, getGenotypeFromSNP(childSNP));
         continue;
       }
-      Pair<Variant, Call> parentVariant = Optional.of(getMatchingPair(person, snpPosition)).get();
-      genotypeMap.put(person, isSnp(parentVariant) 
-          ? getGenotypeFromSNP(parentVariant) 
+      
+      Optional<Pair<Variant, Call>> parentVariant = 
+          Optional.fromNullable(getMatchingPair(person, snpPosition));
+      if (!parentVariant.isPresent()) {
+        return null;
+      }
+      
+      genotypeMap.put(person, isSnp(parentVariant.get()) 
+          ? getGenotypeFromSNP(parentVariant.get()) 
           : Genotype.valueOf(referenceBase + referenceBase));
     }
     return new PositionCall(snpPosition, genotypeMap);
@@ -205,7 +224,9 @@ public class VariantsBuffer {
    * Check if a call has PASS filter annotation
    */
   private boolean passesFilter(Call call) {
-    return call.getInfo().containsKey("FILTER") && call.getInfo().get("FILTER").equals("PASS");
+    return call.getInfo().containsKey("FILTER") && 
+        call.getInfo().get("FILTER").size() == 1 &&
+        call.getInfo().get("FILTER").get(0).equals("PASS");
   }
 
   private boolean callContainsDot(Call call) {
@@ -232,6 +253,23 @@ public class VariantsBuffer {
     }
     return true;
   }
+  
+  private boolean isDeletion(Pair<Variant, Call> pair) {
+    Variant variant = pair.getValue0();
+    return variant.getReferenceBases().length() != 1 ;
+  }
+
+  private boolean isInsertion(Pair<Variant, Call> pair) {
+    Variant variant = pair.getValue0();
+    Call call = pair.getValue1();
+    for (int gtIdx : call.getGenotype()) {
+      if (gtIdx > 0 && variant.getAlternateBases().get(gtIdx - 1).length() != 1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 
   /**
    * Get Matching variant from the queue
@@ -239,10 +277,6 @@ public class VariantsBuffer {
   private Pair<Variant, Call> getMatchingPair(TrioIndividual person, Long snpPosition) {
     for (Pair<Variant, Call> pair : getQueue(person)) {
       Variant variant = pair.getValue0();
-
-      if (!isSnp(pair)) {
-        throw new IllegalStateException("Expected SNP ; got : " + pair);
-      }
 
       if (Range.closedOpen(variant.getPosition(), variant.getEnd()).contains(snpPosition)) {
         return pair;
@@ -275,6 +309,14 @@ public class VariantsBuffer {
       this.genotypeMap = map;
     }
 
+    /*
+     * Is call denovo
+     */
+    public boolean isDenovo() {
+      return DenovoUtil.isDenovoMap.get(Triplet.with(genotypeMap.get(DAD),
+            genotypeMap.get(MOM),genotypeMap.get(CHILD)));
+    }
+    
     @Override
     public String toString() {
       return "[" + position.toString() + "," + genotypeMap.toString() + "]";
