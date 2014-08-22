@@ -42,12 +42,7 @@ import java.util.Map;
 /**
  * Tests DenovoBayesNet
  */
-public class DenovoBayesNetTest {
-
-  /**
-   * Test method for
-   * {@link com.google.cloud.genomics.denovo.DenovoBayesNet#DenovoBayesNet(double, double)}.
-   */
+public class DenovoBayesNetTest extends DenovoTest {
 
   private DenovoBayesNet dbn;
   private Map<List<Genotype>, Double> conditionalProbabilityTable;
@@ -65,7 +60,7 @@ public class DenovoBayesNetTest {
     }
 
     // makes sure conditionalProbabilityTable is set up properly
-    AllTests.assertSumsToOne(conditionalProbabilityTable.values(), EPS);
+    assertSumsToOne(conditionalProbabilityTable.values(), EPS);
   }
 
   @Test
@@ -138,7 +133,7 @@ public class DenovoBayesNetTest {
     assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.GG)), EPS);
     
     // check total probability Values
-    AllTests.assertSumsToOne(cpt.values(), EPS);
+    assertSumsToOne(cpt.values(), EPS);
   }
 
   @Test

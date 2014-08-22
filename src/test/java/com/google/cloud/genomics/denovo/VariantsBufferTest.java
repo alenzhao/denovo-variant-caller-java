@@ -27,7 +27,7 @@ import org.junit.Test;
 /**
  * Test Cases for Variants Buffer
  */
-public class VariantsBufferTest {
+public class VariantsBufferTest extends DenovoTest {
 
   VariantsBuffer vbuf;
   Call dummyCall;

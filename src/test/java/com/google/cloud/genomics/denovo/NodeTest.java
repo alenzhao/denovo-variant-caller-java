@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * Tests Node class
  */
-public class NodeTest {
+public class NodeTest extends DenovoTest {
 
   private Map<List<Genotype>, Double> conditionalProbabilityTable;
   private double EPS = 1e-12;
@@ -49,7 +49,7 @@ public class NodeTest {
     }
 
     // makes sure conditionalProbabilityTable is set up properly
-    AllTests.assertSumsToOne(conditionalProbabilityTable.values(), EPS);
+    assertSumsToOne(conditionalProbabilityTable.values(), EPS);
   }
 
   @After

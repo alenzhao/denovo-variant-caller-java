@@ -62,7 +62,7 @@ public class BayesInfer {
 
   private InferenceResult createInferenceResult(Pair<List<Genotype>, Boolean> pair, String readCounts) {
     InferenceResult result = new InferenceResult(pair.getValue1(), pair.getValue0(), 
-        String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b%n", readCounts,
+        String.format("readCounts=%s,maxGenoType=%s,isDenovo=%b", readCounts,
             pair.getValue0(), pair.getValue1()));
     return result;
   }
@@ -130,6 +130,11 @@ public class BayesInfer {
       this.maxTrioGenoType = maxTrioGenoType;
     }
 
+    @Override
+    public String toString() {
+      return "<" + details + ">";
+    }
+    
     public boolean isDenovo() {
       return isDenovo;
     }

@@ -22,6 +22,9 @@ import com.google.api.services.genomics.model.Read;
 public class ReadSummary {
   private Map<String, Integer> count = new HashMap<>();
 
+  public ReadSummary() {
+  }
+  
   public ReadSummary(Map<String, Integer> count) {
     this.count = count;
   }
@@ -46,7 +49,8 @@ public class ReadSummary {
     return count;
   }
 
-  public void setCount(Map<String, Integer> count) {
+  public ReadSummary setCount(Map<String, Integer> count) {
     this.count = count;
+    return this;
   }
 }

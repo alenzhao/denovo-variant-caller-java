@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * Some tests for the DenovoUtil class
  */
-public class DenovoUtilTest {
+public class DenovoUtilTest extends DenovoTest {
 
   @Test
   public void testGetGenotypeValid() {
