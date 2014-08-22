@@ -100,8 +100,8 @@ class CommandLine {
 
   @Option(name = "--start_position", metaVar = "<start_position>",
       usage = "start position ( usually 1 )")
-  public long startPosition = 1L;
-
+  public Long startPosition = null; 
+  
   @Option(name = "--end_position", metaVar = "<end_position>",
       usage = "end position ( usually set automatically )")
   public Long endPosition = null;

@@ -176,19 +176,26 @@ public class ExperimentRunner {
             }
           }).toList();
 
-
-
       ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       /* Iterate through each contig and do variant filtering for each contig */
-      for (ContigBound contig : contigBounds) {
-        Runnable worker = new SimpleDenovoRunnable(callWriter, contig);
-        executor.execute(worker);
+      for (ContigBound contigBound : contigBounds) {
+        Long startContigPos = startPosition == null ? 1L : startPosition;
+        Long endContigPos = endPosition == null ? contigBound.getUpperBound() : endPosition;
+        Long strideLength = (endContigPos - startContigPos) / numThreads;
+
+        for (int threadIdx = 0 ; threadIdx < numThreads ; threadIdx++) {
+          long start = startContigPos + threadIdx * strideLength;
+          long end = threadIdx == numThreads - 1 ? endContigPos : start + strideLength - 1;
+          Runnable worker = new SimpleDenovoRunnable(callWriter, contigBound.getContig(),
+              start, end);
+          executor.execute(worker);
+        }
       }
 
       executor.shutdown();
       while (!executor.isTerminated()) {
       }
-      if (debugLevel >= 0) {
+      if (debugLevel >= 1) {
         System.out.println("All contigs processed");
       }
     }
@@ -197,19 +204,24 @@ public class ExperimentRunner {
   private class SimpleDenovoRunnable implements Runnable {
 
     private final PrintWriter writer;
-    private final ContigBound contig;
+    private final String contig;
+    private final Long startPos;
+    private final Long endPos;
     private int numTries = 0;
 
-    public SimpleDenovoRunnable(PrintWriter writer, ContigBound contig) {
+    public SimpleDenovoRunnable(PrintWriter writer, String contig, 
+        Long startPosition, Long endPosition) {
       this.writer = writer;
       this.contig = contig;
+      this.startPos = startPosition;
+      this.endPos = endPosition;
     }
 
     @Override
     public void run() {
       try {
         numTries++;
-        callSimpleDenovo(writer, contig);
+        callSimpleDenovo(writer, contig, startPos, endPos);
       } catch (IOException e) {
         e.printStackTrace();
         if (numTries < DenovoUtil.MAX_API_RETRIES) {
@@ -294,26 +306,34 @@ public class ExperimentRunner {
   /*
    * Check all the variants in the contig using a simple denovo caller
    */
-  private void callSimpleDenovo(PrintWriter callWriter, ContigBound currentContig)
+  private void callSimpleDenovo(PrintWriter callWriter, String contig, 
+      Long startPosition, Long endPosition)
       throws IOException {
     // Create the caller object
 
     VariantsBuffer vbuffer = new VariantsBuffer();
     
     VariantContigStream variantContigStream = new VariantContigStream(genomics, 
-        currentContig.getContig(),
+        contig,
         datasetId, 
         DenovoUtil.MAX_VARIANT_RESULTS, 
         startPosition, 
-        endPosition == null ? currentContig.getUpperBound() : endPosition,
+        endPosition,
         Lists.newArrayList(personToCallsetIdMap.values()));
 
     while (variantContigStream.hasMore()) {
       StringBuilder builder = new StringBuilder();
 
       // Get a fresh batch of variants and filter those without calls
+      Optional<List<Variant>> variantsFromStream = 
+          Optional.fromNullable(variantContigStream.getVariants());
+      
+      if (!variantsFromStream.isPresent()) {
+        return; 
+      }
+      
       Iterable<Variant> variants = FluentIterable
-        .from(variantContigStream.getVariants())
+        .from(variantsFromStream.get())
         .filter(new Predicate<Variant>() {
           @Override
           public boolean apply(Variant variant) {
@@ -326,9 +346,9 @@ public class ExperimentRunner {
           vbuffer.checkAndAdd(callsetIdToPersonMap.get(call.getCallsetId()), 
               Pair.with(variant, call));
           
-          if(debugLevel > 1) {
-            System.out.println(vbuffer);  
-          }
+        }
+        if(debugLevel > 1) {
+          System.out.println(vbuffer);  
         }
         
         // Try to see if buffer can be processed
@@ -339,10 +359,13 @@ public class ExperimentRunner {
 
           Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
           if (nextCall.isPresent()) {
-            System.out.println(nextCall);
+            if (debugLevel > 1) {
+              System.out.println(nextCall);  
+            }
+            
             if (nextCall.get().isDenovo()) {
               builder.append(
-                  String.format("%s,%d,%s%n", currentContig.getContig(), nextCall.get().position,
+                  String.format("%s,%d,%s%n", contig, nextCall.get().position,
                       nextCall.get()));
             }
           }
@@ -359,6 +382,31 @@ public class ExperimentRunner {
       }
       writeCalls(callWriter, builder.toString());
     }
+    
+    // Flush remaining buffer
+    StringBuilder builder = new StringBuilder();
+    while (!vbuffer.isEmpty(CHILD)) {
+      
+      if(debugLevel > 1) {
+        System.out.println("Flush1 : "+vbuffer.toString());  
+      }
+      
+      Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
+      if (nextCall.isPresent()) {
+        System.out.println(nextCall);
+        if (nextCall.get().isDenovo()) {
+          builder.append(
+              String.format("%s,%d,%s%n", contig, nextCall.get().position,
+                  nextCall.get()));
+        }
+      }
+      
+      if(debugLevel > 1) {
+        System.out.println("Flush2 : "+vbuffer.toString());  
+      }
+      vbuffer.pop(CHILD);
+    }
+    writeCalls(callWriter, builder.toString());
   }
 
   /*
