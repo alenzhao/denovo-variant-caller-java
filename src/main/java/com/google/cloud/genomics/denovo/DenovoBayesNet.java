@@ -196,7 +196,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     for (TrioIndividual trioIndividual : TrioIndividual.values()) {
 
       ReadSummary readSummary = readSummaryMap.get(trioIndividual);
-      Map<Genotype, Double> genoTypeLogLikelihood = getGenoTypeLogLikelihood(readSummary);
+      Map<Genotype, Double> genoTypeLogLikelihood = getReadSummaryLogLikelihood(readSummary);
       individualLogLikelihood.put(trioIndividual, genoTypeLogLikelihood);
     }
     return individualLogLikelihood;
@@ -208,7 +208,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
    * @param readSummary
    * @return genotypeLogLikelihood
    */
-  public Map<Genotype, Double> getGenoTypeLogLikelihood(ReadSummary readSummary) {
+  public Map<Genotype, Double> getReadSummaryLogLikelihood(ReadSummary readSummary) {
     Map<Genotype, Double> genotypeLogLikelihood = new HashMap<>();
     for (Genotype genoType : Genotype.values()) {
       Map<Allele, Integer> count = readSummary.getCount();
