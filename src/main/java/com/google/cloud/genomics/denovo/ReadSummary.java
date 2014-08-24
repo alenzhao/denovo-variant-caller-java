@@ -20,6 +20,9 @@ import java.util.Map;
 import com.google.api.services.genomics.model.Read;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 
+/**
+ * Summary counts of a reads at a particular position
+ */
 public class ReadSummary {
   private Map<Allele, Integer> count = new HashMap<>();
 

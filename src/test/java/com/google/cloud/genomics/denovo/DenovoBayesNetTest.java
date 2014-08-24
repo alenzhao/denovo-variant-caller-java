@@ -239,9 +239,32 @@ public class DenovoBayesNetTest extends DenovoTest {
     }
   }
 
+  @Test
+  public void testGetReadSummaryLogLikelihood_AllSame() {
+    Map<Allele, Integer> baseCount = new HashMap<>();
+    baseCount.put(Allele.A,40);
+    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+    for(TrioIndividual person : TrioIndividual.values()) {
+      readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
+    }
+    
+    
+  }
+  
+  @Test
+  public void testGetReadSummaryLogLikelihood_AllGap() {
+    
+  }
+  
+  
   @Test(expected = NullPointerException.class)
   public void testBaseLogLikelihood_null() {
     dbn.getBaseLogLikelihood(AA, null);
+  }
+  
+  @Test(expected = NullPointerException.class)
+  public void testGetReadSummaryLogLikelihood_null() {
+    dbn.getReadSummaryLogLikelihood(null);
   }
   
 }

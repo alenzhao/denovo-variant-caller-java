@@ -27,55 +27,34 @@ import static org.junit.Assert.assertTrue;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BayesInferMapTest extends DenovoTest {
-
-  private static BayesInfer bayesInferrer;
-  
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    bayesInferrer = new BayesInfer(1e-2, 1e-8);
-  }
-
+public class BayesInferMapTest extends BayesInferTest {
 
   @Test 
   public void testAllBasesSame() {
+    ReadSummary summary = createSameReadSummary();
+    Map<TrioIndividual, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
     
-    Map<Allele, Integer> baseCount = new HashMap<>();
-    baseCount.put(Allele.A,40);
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for(TrioIndividual person : TrioIndividual.values()) {
-      readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
-    }
-    
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, MAP);
+    BayesInfer.InferenceResult result = bayesInferrer.infer(summaryMap, MAP);
     assertFalse(result.isDenovo());
-    assertEquals(readSummaryMap.toString()+" => [AA,AA,AA]", 
+    assertEquals(summaryMap.toString()+" => [AA,AA,AA]", 
         Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
   }
   
 
   @Test
   public void testAlmostAllBasesSame() {
-    Map<Allele, Integer> baseCount = new HashMap<>();
-    baseCount.put(Allele.A,38);
-    baseCount.put(Allele.C,2);
-    baseCount.put(Allele.G,3);
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for(TrioIndividual person : TrioIndividual.values()) {
-      readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
-    }
+    ReadSummary summary = createAlmostSameReadSummary();
+    Map<TrioIndividual, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
     
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, MAP);
+    BayesInfer.InferenceResult result = bayesInferrer.infer(summaryMap, MAP);
     assertFalse(result.isDenovo());
-    assertEquals(readSummaryMap.toString()+" => [AA,AA,AA]", 
+    assertEquals(summaryMap.toString()+" => [AA,AA,AA]", 
         Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
   }
 

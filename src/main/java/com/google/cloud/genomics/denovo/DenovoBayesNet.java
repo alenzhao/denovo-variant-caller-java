@@ -13,10 +13,11 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.*;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
@@ -209,6 +210,11 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
    * @return genotypeLogLikelihood
    */
   public Map<Genotype, Double> getReadSummaryLogLikelihood(ReadSummary readSummary) {
+    
+    if (readSummary == null) {
+      throw new NullPointerException("Did not expect ReadSummary to be null");
+    }
+    
     Map<Genotype, Double> genotypeLogLikelihood = new HashMap<>();
     for (Genotype genoType : Genotype.values()) {
       Map<Allele, Integer> count = readSummary.getCount();
