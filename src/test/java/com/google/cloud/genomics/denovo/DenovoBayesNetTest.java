@@ -26,14 +26,15 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,12 +45,11 @@ import java.util.Map;
  */
 public class DenovoBayesNetTest extends DenovoTest {
 
-  private DenovoBayesNet dbn;
-  private Map<List<Genotype>, Double> conditionalProbabilityTable;
-  private double EPS = 1e-12;
+  private static final DenovoBayesNet dbn;
+  private static final Map<List<Genotype>, Double> conditionalProbabilityTable;
+  private static final double EPS = 1e-12;
 
-  @Before
-  public void setUp() {
+  static {
     dbn = new DenovoBayesNet(1e-2, 1e-8);
 
     conditionalProbabilityTable = new HashMap<>();
@@ -62,7 +62,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     // makes sure conditionalProbabilityTable is set up properly
     assertSumsToOne(conditionalProbabilityTable.values(), EPS);
   }
-
+  
   @Test
   public void testDenovoBayesNet() {
     assertNotNull(dbn);
@@ -74,7 +74,7 @@ public class DenovoBayesNetTest extends DenovoTest {
    * Test method for {@link com.google.cloud.genomics.denovo.DenovoBayesNet#addNode(com.google.cloud.genomics.denovo.Node)}
    */
   @Test
-  public void testAddNodeNodeOfTrioIndividualGenotypes() {
+  public void testAddNode_NodeOfTrioIndividualGenotypes() {
     Node<TrioIndividual, Genotype> dadNode =
         new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
 
@@ -194,4 +194,54 @@ public class DenovoBayesNetTest extends DenovoTest {
       }
     }
   }
+  
+  @Test
+  public void testBaseLogLikelihood_HomozygousMatch() {
+    for(Genotype genotype : Genotype.values()) {
+      if (genotype.isHomozygous()) {
+        for (Allele allele : genotype.getAlleleSet()) {
+          assertEquals(Math.log(0.99), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testBaseLogLikelihood_HomozygousNoMatch() {
+    for(Genotype genotype : Genotype.values()) {
+      if (genotype.isHomozygous()) {
+        for (Allele allele : EnumSet.complementOf(genotype.getAlleleSet())) {
+          assertEquals(Math.log(1e-2 / 3), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testBaseLogLikelihood_HeterozygousMatch() {
+    for(Genotype genotype : Genotype.values()) {
+      if (!genotype.isHomozygous()) {
+        for (Allele allele : genotype.getAlleleSet()) {
+          assertEquals(Math.log(0.5 * (1 - 2 * 1e-2 / 3)), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testBaseLogLikelihood_HeterozygousNoMatch() {
+    for(Genotype genotype : Genotype.values()) {
+      if (!genotype.isHomozygous()) {
+        for (Allele allele : EnumSet.complementOf(genotype.getAlleleSet())) {
+          assertEquals(Math.log(1e-2 / 3), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+        }
+      }
+    }
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testBaseLogLikelihood_null() {
+    dbn.getBaseLogLikelihood(AA, null);
+  }
+  
 }

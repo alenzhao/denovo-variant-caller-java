@@ -16,6 +16,7 @@ package com.google.cloud.genomics.denovo;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.*;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
@@ -56,15 +57,8 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     nodeMap = new HashMap<TrioIndividual, Node<TrioIndividual, Genotype>>();
     this.sequenceErrorRate = sequenceErrorRate;
     this.denovoMutationRate = denovoMutationRate; 
-    
-    // Initialize the nodes and prob tables
-    initializeTrioNodes();
-  }
 
-  /**
-   * 
-   */
-  private void initializeTrioNodes() {
+    // Initialize the conditional Probability table
     addNode(new Node<>(DAD, null, createConditionalProbabilityTable(DAD)));
     addNode(new Node<>(MOM, null, createConditionalProbabilityTable(MOM)));
     List<Node<TrioIndividual, Genotype>> childParents = new ArrayList<>();
@@ -171,16 +165,20 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
   /**
    * Get the log likelihood for a particular read base
    *
-   * @param genoType
+   * @param genotype
    * @param base
    * @return logLikeliHood
    */
-  public double getBaseLogLikelihood(Genotype genoType, String base) {
-    return genoType.isHomozygous()
-        ? genoType.name().contains(base)
+  public double getBaseLogLikelihood(Genotype genotype, Allele base) {
+    if (base == null || genotype == null) {
+      throw new NullPointerException("Can't get base log likelihood of null members");
+    }
+
+    return genotype.isHomozygous()
+        ? genotype.containsAllele(base)
             ? Math.log(1 - getSequenceErrorRate())
             : Math.log(getSequenceErrorRate()) - Math.log(3)
-        : genoType.name().contains(base)
+        : genotype.containsAllele(base)
             ? Math.log(1 - 2 * getSequenceErrorRate() / 3) - Math.log(2)
             : Math.log(getSequenceErrorRate()) - Math.log(3);
   }
@@ -213,10 +211,10 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
   public Map<Genotype, Double> getGenoTypeLogLikelihood(ReadSummary readSummary) {
     Map<Genotype, Double> genotypeLogLikelihood = new HashMap<>();
     for (Genotype genoType : Genotype.values()) {
-      Map<String, Integer> count = readSummary.getCount();
+      Map<Allele, Integer> count = readSummary.getCount();
 
       double readlogLikelihood = 0.0;
-      for (Map.Entry<String, Integer> entry : count.entrySet()) {
+      for (Map.Entry<Allele, Integer> entry : count.entrySet()) {
         readlogLikelihood += entry.getValue() * 
             getBaseLogLikelihood(genoType, entry.getKey());
       }
@@ -274,6 +272,8 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     
     List<Genotype> maxGenoType = null;
 
+    Map<List<Genotype>, Double> llMap = new HashMap<>(); 
+    
     // Calculate overall bayes net log likelihood
     for (Genotype genoTypeDad : Genotype.values()) {
       for (Genotype genoTypeMom : Genotype.values()) {
@@ -300,9 +300,15 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
             maxLogLikelihood = logLikelihood;
             maxGenoType = Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild);
           }
+          
+          llMap.put(Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild), logLikelihood);
         }
       }
     }
+    
+    String s1 = Arrays.asList(TT,TT,CT).toString() + llMap.get(Arrays.asList(TT,TT,CT)).toString();
+    String s2 = Arrays.asList(CT,TT,CT).toString() + llMap.get(Arrays.asList(CT,TT,CT)).toString();
+    
     
     double bayesDenovoProb = denovoLikelihood  / (denovoLikelihood + mendelianLikelihood);
     

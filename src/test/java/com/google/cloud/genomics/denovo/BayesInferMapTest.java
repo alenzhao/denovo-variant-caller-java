@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 import org.junit.BeforeClass;
@@ -44,10 +45,11 @@ public class BayesInferMapTest extends DenovoTest {
   }
 
 
-  @Test
+  @Test 
   public void testAllBasesSame() {
-    Map<String, Integer> baseCount = new HashMap<>();
-    baseCount.put("A",40);
+    
+    Map<Allele, Integer> baseCount = new HashMap<>();
+    baseCount.put(Allele.A,40);
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
     for(TrioIndividual person : TrioIndividual.values()) {
       readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
@@ -62,10 +64,10 @@ public class BayesInferMapTest extends DenovoTest {
 
   @Test
   public void testAlmostAllBasesSame() {
-    Map<String, Integer> baseCount = new HashMap<>();
-    baseCount.put("A",38);
-    baseCount.put("C",2);
-    baseCount.put("G",3);
+    Map<Allele, Integer> baseCount = new HashMap<>();
+    baseCount.put(Allele.A,38);
+    baseCount.put(Allele.C,2);
+    baseCount.put(Allele.G,3);
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
     for(TrioIndividual person : TrioIndividual.values()) {
       readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
@@ -77,17 +79,16 @@ public class BayesInferMapTest extends DenovoTest {
         Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
   }
 
-
   @Test
   public void testChrXPos154226820() {
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
     for (TrioIndividual person : TrioIndividual.values()) {
-      Map<String, Integer> baseCount = new HashMap<>();
-      if (person == DAD ) baseCount.put("T",28);
-      if (person == MOM ) baseCount.put("T",36);
+      Map<Allele, Integer> baseCount = new HashMap<>();
+      if (person == DAD ) baseCount.put(Allele.T,28);
+      if (person == MOM ) baseCount.put(Allele.T,36);
       if (person == CHILD ) {
-        baseCount.put("T",33);
-        baseCount.put("C",15);
+        baseCount.put(Allele.T,33);
+        baseCount.put(Allele.C,15);
       }
       readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
     }

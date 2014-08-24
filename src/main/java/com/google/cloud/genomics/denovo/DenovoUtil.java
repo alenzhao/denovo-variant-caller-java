@@ -28,6 +28,7 @@ import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.common.base.Optional;
 
 import org.javatuples.Triplet;
@@ -125,21 +126,30 @@ public class DenovoUtil {
   }
   
   public enum Genotype {
-    AA(true),
-    AC(false),
-    AG(false),
-    AT(false),
-    CC(true),
-    CG(false),
-    CT(false),
-    GG(true),
-    GT(false),
-    TT(true);
+    AA(Zygosity.HOMOZYGOUS, Allele.A),
+    AC(Zygosity.HETEROZYGOUS, Allele.A, Allele.C),
+    AG(Zygosity.HETEROZYGOUS, Allele.A, Allele.G),
+    AT(Zygosity.HETEROZYGOUS, Allele.A, Allele.T),
+    CC(Zygosity.HOMOZYGOUS, Allele.C),
+    CG(Zygosity.HETEROZYGOUS, Allele.C, Allele.G),
+    CT(Zygosity.HETEROZYGOUS, Allele.C, Allele.T),
+    GG(Zygosity.HOMOZYGOUS, Allele.G),
+    GT(Zygosity.HETEROZYGOUS, Allele.G, Allele.T),
+    TT(Zygosity.HOMOZYGOUS, Allele.T);
 
-    private final boolean isHomozygous;
+    private enum Zygosity {HOMOZYGOUS, HETEROZYGOUS}
 
-    Genotype(boolean isHomozygous) {
-      this.isHomozygous = isHomozygous;
+    private final Zygosity zygosity;
+    private final EnumSet<Allele> alleles;
+    
+    Genotype(Zygosity zygosity, Allele a) {
+      this.zygosity = zygosity;
+      alleles = EnumSet.of(a);
+    }
+
+    Genotype(Zygosity zygosity, Allele a, Allele b) {
+      this.zygosity= zygosity;
+      alleles = EnumSet.of(a,b);
     }
 
     /*
@@ -150,9 +160,21 @@ public class DenovoUtil {
       Arrays.sort(allelePair);
       return valueOf(allelePair[0].toString()+allelePair[1].toString());
     }
+
+    public EnumSet<Allele> getAlleleSet() {
+      return alleles;
+    }
     
     public boolean isHomozygous() {
-      return isHomozygous;
+      return zygosity == Zygosity.HOMOZYGOUS;
+    }
+
+    /**
+     * @param base the base to check for 
+     * @return whether this contains the allele
+     */
+    public boolean containsAllele(Allele base) {
+      return alleles.contains(base);
     }
   }
 
