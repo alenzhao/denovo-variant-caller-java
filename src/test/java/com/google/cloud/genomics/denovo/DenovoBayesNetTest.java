@@ -23,14 +23,18 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.*;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import com.google.cloud.genomics.denovo.DenovoBayesNet.InferenceResult;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -46,7 +50,7 @@ import java.util.Map;
  */
 public class DenovoBayesNetTest extends DenovoTest {
 
-  private static final DenovoBayesNet dbn;
+  private DenovoBayesNet dbn;
   private static final Map<List<Genotype>, Double> conditionalProbabilityTable;
   private static final double EPS_SMALL = 1e-12;
   private static final double EPS_SMALLER = 1e-20;
@@ -54,8 +58,6 @@ public class DenovoBayesNetTest extends DenovoTest {
   private static final double EPS_LARGE = 1;
 
   static {
-    dbn = new DenovoBayesNet(1e-2, 1e-8);
-
     conditionalProbabilityTable = new HashMap<>();
     int numGenotypes = Genotype.values().length;
     for (Genotype genotype : Genotype.values()) {
@@ -65,6 +67,11 @@ public class DenovoBayesNetTest extends DenovoTest {
 
     // makes sure conditionalProbabilityTable is set up properly
     assertSumsToOne(conditionalProbabilityTable.values(), EPS_SMALL);
+  }
+
+  @Before
+  public void setUp() {
+    dbn = new DenovoBayesNet(1e-2, 1e-8);
   }
   
   @Test
@@ -181,7 +188,6 @@ public class DenovoBayesNetTest extends DenovoTest {
     assertEquals("AA|AC,AC", 0.25, cpt.get(Arrays.asList(AC, AC, AA)), 1e-7);
     assertEquals("AC|AC,AC", 0.5, cpt.get(Arrays.asList(AC, AC, AC)), 1e-7);
     assertEquals("CC|AC,AC", 0.25, cpt.get(Arrays.asList(AC, AC, CC)), 1e-7);
-
   }
 
   @Test
@@ -317,7 +323,75 @@ public class DenovoBayesNetTest extends DenovoTest {
     assertEquals("CC|AC,AC", Math.log(0.25), 
         dbn.getLogLikelihoodFromCPT(CHILD, AC, AC, CC), EPS_MEDIUM);
   }
+  
+  @Test
+  public void getTrioGenotypeLogLikelihood_AllSame() {
+    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    Map<TrioIndividual, ReadSummary> summaryMap = 
+        BayesInferTest.createMapReadSummary(summary, summary, summary);
+    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = 
+        dbn.getIndividualLogLikelihood(summaryMap);
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(summary);
 
+    assertEquals(llMap.get(AA) * 3, 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, AA, AA, AA), EPS_MEDIUM);
+    assertEquals(llMap.get(AA) * 2 + llMap.get(AT), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, AA, AT, AA), EPS_MEDIUM);
+    assertEquals(llMap.get(AA) + llMap.get(AT) + llMap.get(CG), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, AA, AT, CG), EPS_MEDIUM);
+    assertEquals(llMap.get(AA) + llMap.get(AT) + llMap.get(CG), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, CG, AT, AA), EPS_MEDIUM);
+  }
+
+  @Test
+  public void getTrioGenotypeLogLikelihood_AlmostSame() {
+    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    ReadSummary summary2 = BayesInferTest.createAlmostSameReadSummary();
+    Map<TrioIndividual, ReadSummary> summaryMap = 
+        BayesInferTest.createMapReadSummary(summary, summary2, summary);
+    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = 
+        dbn.getIndividualLogLikelihood(summaryMap);
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(summary);
+    Map<Genotype, Double> llMap2 = 
+        dbn.getReadSummaryLogLikelihood(summary2);
+
+    assertEquals(llMap.get(AA) * 2 + llMap2.get(AA), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, AA, AA, AA), EPS_MEDIUM);
+    assertEquals(llMap.get(AA) * 2 + llMap2.get(AT), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, AA, AT, AA), EPS_MEDIUM);
+    assertEquals(llMap.get(AA) + llMap2.get(AT) + llMap.get(CG), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, AA, AT, CG), EPS_MEDIUM);
+    assertEquals(llMap.get(AT) + llMap2.get(AA) + llMap.get(CG), 
+        dbn.getTrioGenotypeLogLikelihood(individualLogLikelihood, CG, AA, AT), EPS_MEDIUM);
+  }
+
+  @Test
+  public void getTrioGenotypeLogLikelihood() {
+    assertEquals(dbn.getLogLikelihoodFromCPT(DAD, AA) + 
+        dbn.getLogLikelihoodFromCPT(MOM, AA) + 
+        dbn.getLogLikelihoodFromCPT(CHILD, AA, AA, AA), 
+        dbn.getRelationshipLogLikelihood(AA, AA, AA), EPS_MEDIUM);
+
+    assertEquals(dbn.getLogLikelihoodFromCPT(DAD, AA) + 
+        dbn.getLogLikelihoodFromCPT(MOM, AT) + 
+        dbn.getLogLikelihoodFromCPT(CHILD, AA, AT, AA), 
+        dbn.getRelationshipLogLikelihood(AA, AT, AA), EPS_MEDIUM);
+    
+    assertEquals(dbn.getLogLikelihoodFromCPT(DAD, AA) + 
+        dbn.getLogLikelihoodFromCPT(MOM, AT) + 
+        dbn.getLogLikelihoodFromCPT(CHILD, AA, AT, CG), 
+        dbn.getRelationshipLogLikelihood(AA, AT, CG), EPS_MEDIUM);
+
+
+    assertEquals(dbn.getLogLikelihoodFromCPT(DAD, CG) + 
+        dbn.getLogLikelihoodFromCPT(MOM, AT) + 
+        dbn.getLogLikelihoodFromCPT(CHILD, CG, AT, AA), 
+        dbn.getRelationshipLogLikelihood(CG, AT, AA), EPS_MEDIUM);
+  }
+  
+  
   @Test(expected = IllegalArgumentException.class)
   public void testgetLogLikelihoodFromCPT_IncorrectArgs1() {
     dbn.getLogLikelihoodFromCPT(CHILD, AA);
@@ -336,5 +410,35 @@ public class DenovoBayesNetTest extends DenovoTest {
   @Test(expected = IllegalArgumentException.class)
   public void testgetLogLikelihoodFromCPT_IncorrectArgs4() {
     dbn.getLogLikelihoodFromCPT(MOM, AA, AC, AG);
+  }
+  
+  @Test
+  public void testPeformInference_AllSame() {
+    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(summary);
+    Map<TrioIndividual, ReadSummary> summaryMap = 
+        BayesInferTest.createMapReadSummary(summary, summary, summary);
+    InferenceResult result = dbn.performInference(summaryMap);
+    
+    double answer = llMap.get(AA) * 3 + dbn.getLogLikelihoodFromCPT(CHILD, AA,AA,AA) 
+        + dbn.getLogLikelihoodFromCPT(DAD, AA) + dbn.getLogLikelihoodFromCPT(MOM, AA);
+    
+    assertEquals("ll(AA,AA,AA)", answer, result.maxLikelihood, EPS_SMALL);
+  }
+
+  @Test
+  public void testPeformInference_AlmostSame() {
+    ReadSummary summary = BayesInferTest.createAlmostSameReadSummary();
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(summary);
+    Map<TrioIndividual, ReadSummary> summaryMap = 
+        BayesInferTest.createMapReadSummary(summary, summary, summary);
+    InferenceResult result = dbn.performInference(summaryMap);
+    
+    double answer = llMap.get(AA) * 3 + dbn.getLogLikelihoodFromCPT(CHILD, AA,AA,AA) 
+        + dbn.getLogLikelihoodFromCPT(DAD, AA) + dbn.getLogLikelihoodFromCPT(MOM, AA);
+    
+    assertEquals("ll(AA,AA,AA)", answer, result.maxLikelihood, EPS_SMALL);
   }
 }
