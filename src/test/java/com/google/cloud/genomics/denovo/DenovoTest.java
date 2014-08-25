@@ -15,9 +15,14 @@ limitations under the License.
 */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 import static org.junit.Assert.assertEquals;
 
 import com.google.api.services.genomics.Genomics;
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
 import org.junit.After;
 import org.junit.Before;
@@ -28,6 +33,8 @@ import org.mockito.MockitoAnnotations;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class DenovoTest {
   @Mock Genomics genomics;
@@ -78,5 +85,29 @@ public abstract class DenovoTest {
     }
     assertEquals(1.0, totProb, EPS);
   }
+  
+  ReadSummary createAlmostSameReadSummary() {
+    Map<Allele, Integer> baseCount = new HashMap<>();
+    baseCount.put(Allele.A,38);
+    baseCount.put(Allele.C,2);
+    baseCount.put(Allele.G,3);
+    return new ReadSummary().setCount(baseCount);
+  }
+
+  ReadSummary createSameReadSummary() {
+    Map<Allele, Integer> baseCount = new HashMap<>();
+    baseCount.put(Allele.A,40);
+    return new ReadSummary().setCount(baseCount);
+  }
+  
+  Map<TrioIndividual, ReadSummary> createMapReadSummary(ReadSummary dad, ReadSummary mom,
+      ReadSummary child) {
+    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+    readSummaryMap.put(DAD, dad);
+    readSummaryMap.put(MOM, mom);
+    readSummaryMap.put(CHILD, child);
+    return readSummaryMap;
+  }
+
 
 }

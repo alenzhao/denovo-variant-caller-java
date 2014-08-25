@@ -253,7 +253,7 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Test
   public void testGetReadSummaryLogLikelihood_AllSame() {
-    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    ReadSummary summary = createSameReadSummary();
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
     for (Genotype gt : Genotype.values()) {
@@ -263,7 +263,7 @@ public class DenovoBayesNetTest extends DenovoTest {
   
   @Test
   public void testGetReadSummaryLogLikelihood_AlmostSame() {
-    ReadSummary summary = BayesInferTest.createAlmostSameReadSummary();
+    ReadSummary summary = createAlmostSameReadSummary();
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
     for (Genotype gt : Genotype.values()) {
@@ -326,9 +326,9 @@ public class DenovoBayesNetTest extends DenovoTest {
   
   @Test
   public void getTrioGenotypeLogLikelihood_AllSame() {
-    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    ReadSummary summary = createSameReadSummary();
     Map<TrioIndividual, ReadSummary> summaryMap = 
-        BayesInferTest.createMapReadSummary(summary, summary, summary);
+        createMapReadSummary(summary, summary, summary);
     Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = 
         dbn.getIndividualLogLikelihood(summaryMap);
     Map<Genotype, Double> llMap = 
@@ -346,10 +346,10 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Test
   public void getTrioGenotypeLogLikelihood_AlmostSame() {
-    ReadSummary summary = BayesInferTest.createSameReadSummary();
-    ReadSummary summary2 = BayesInferTest.createAlmostSameReadSummary();
+    ReadSummary summary = createSameReadSummary();
+    ReadSummary summary2 = createAlmostSameReadSummary();
     Map<TrioIndividual, ReadSummary> summaryMap = 
-        BayesInferTest.createMapReadSummary(summary, summary2, summary);
+        createMapReadSummary(summary, summary2, summary);
     Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = 
         dbn.getIndividualLogLikelihood(summaryMap);
     Map<Genotype, Double> llMap = 
@@ -391,7 +391,6 @@ public class DenovoBayesNetTest extends DenovoTest {
         dbn.getRelationshipLogLikelihood(CG, AT, AA), EPS_MEDIUM);
   }
   
-  
   @Test(expected = IllegalArgumentException.class)
   public void testgetLogLikelihoodFromCPT_IncorrectArgs1() {
     dbn.getLogLikelihoodFromCPT(CHILD, AA);
@@ -414,11 +413,11 @@ public class DenovoBayesNetTest extends DenovoTest {
   
   @Test
   public void testPeformInference_AllSame() {
-    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    ReadSummary summary = createSameReadSummary();
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
     Map<TrioIndividual, ReadSummary> summaryMap = 
-        BayesInferTest.createMapReadSummary(summary, summary, summary);
+       createMapReadSummary(summary, summary, summary);
     InferenceResult result = dbn.performInference(summaryMap);
     
     double answer = llMap.get(AA) * 3 + dbn.getLogLikelihoodFromCPT(CHILD, AA,AA,AA) 
@@ -429,11 +428,11 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Test
   public void testPeformInference_AlmostSame() {
-    ReadSummary summary = BayesInferTest.createAlmostSameReadSummary();
+    ReadSummary summary = createAlmostSameReadSummary();
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
     Map<TrioIndividual, ReadSummary> summaryMap = 
-        BayesInferTest.createMapReadSummary(summary, summary, summary);
+        createMapReadSummary(summary, summary, summary);
     InferenceResult result = dbn.performInference(summaryMap);
     
     double answer = llMap.get(AA) * 3 + dbn.getLogLikelihoodFromCPT(CHILD, AA,AA,AA) 
