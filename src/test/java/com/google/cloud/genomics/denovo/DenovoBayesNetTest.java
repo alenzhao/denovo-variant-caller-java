@@ -48,6 +48,7 @@ public class DenovoBayesNetTest extends DenovoTest {
   private static final DenovoBayesNet dbn;
   private static final Map<List<Genotype>, Double> conditionalProbabilityTable;
   private static final double EPS = 1e-12;
+  private static final double EPS_SMALL = 1e-20;
 
   static {
     dbn = new DenovoBayesNet(1e-2, 1e-8);
@@ -241,19 +242,36 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Test
   public void testGetReadSummaryLogLikelihood_AllSame() {
-    Map<Allele, Integer> baseCount = new HashMap<>();
-    baseCount.put(Allele.A,40);
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for(TrioIndividual person : TrioIndividual.values()) {
-      readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
+    ReadSummary summary = BayesInferTest.createSameReadSummary();
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(summary);
+    for (Genotype gt : Genotype.values()) {
+      assertEquals(dbn.getBaseLogLikelihood(gt, Allele.A)*40, llMap.get(gt), EPS_SMALL);  
     }
-    
-    
+  }
+  
+  @Test
+  public void testGetReadSummaryLogLikelihood_AlmostSame() {
+    ReadSummary summary = BayesInferTest.createAlmostSameReadSummary();
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(summary);
+    for (Genotype gt : Genotype.values()) {
+      double ll = 0;
+      ll += dbn.getBaseLogLikelihood(gt, Allele.A) * 38;
+      ll += dbn.getBaseLogLikelihood(gt, Allele.C) * 2;
+      ll += dbn.getBaseLogLikelihood(gt, Allele.G) * 3;
+      assertEquals(ll, llMap.get(gt), EPS);  
+    }
   }
   
   @Test
   public void testGetReadSummaryLogLikelihood_AllGap() {
+    Map<Genotype, Double> llMap = 
+        dbn.getReadSummaryLogLikelihood(new ReadSummary(new HashMap<Allele, Integer>()));
     
+    for(Genotype gt : Genotype.values()) {
+      assertEquals(0.0, llMap.get(gt), EPS);  
+    }
   }
   
   
