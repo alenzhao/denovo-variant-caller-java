@@ -28,7 +28,6 @@ import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsResponse;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.Variant;
-import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.common.base.Optional;
 
 import org.javatuples.Triplet;
@@ -91,6 +90,8 @@ public class DenovoUtil {
   
   public enum TrioIndividual {
     DAD, MOM, CHILD;
+    
+    public static final EnumSet<TrioIndividual> PARENTS = EnumSet.of(DAD, MOM);
   }
 
   public enum Allele {

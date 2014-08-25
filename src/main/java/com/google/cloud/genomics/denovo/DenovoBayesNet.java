@@ -194,11 +194,11 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
   public Map<TrioIndividual, Map<Genotype, Double>> getIndividualLogLikelihood(
       Map<TrioIndividual, ReadSummary> readSummaryMap) {
     Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = new HashMap<>();
-    for (TrioIndividual trioIndividual : TrioIndividual.values()) {
+    for (TrioIndividual person : TrioIndividual.values()) {
 
-      ReadSummary readSummary = readSummaryMap.get(trioIndividual);
+      ReadSummary readSummary = readSummaryMap.get(person);
       Map<Genotype, Double> genoTypeLogLikelihood = getReadSummaryLogLikelihood(readSummary);
-      individualLogLikelihood.put(trioIndividual, genoTypeLogLikelihood);
+      individualLogLikelihood.put(person, genoTypeLogLikelihood);
     }
     return individualLogLikelihood;
   }
@@ -229,10 +229,17 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     return genotypeLogLikelihood;
   }
 
-  private double getLogLikelihoodFromCPT(TrioIndividual individual, Genotype... keyParts) {
+  double getLogLikelihoodFromCPT(TrioIndividual person, Genotype... keyParts) {
+    if (TrioIndividual.PARENTS.contains(person) && keyParts.length != 1) {
+      throw new IllegalArgumentException("Expected one Genotype argument : got " + keyParts.length);
+    }
+    if (person == CHILD && keyParts.length != 3) {
+      throw new IllegalArgumentException("Expected three Genotype argument : got " + keyParts.length);
+    }
+    
     List<Genotype> cptKey = Arrays.asList(keyParts);
     return Math.log(getNodeMap().
-        get(individual).
+        get(person).
         getConditionalProbabilityTable().
         get(cptKey));
   }

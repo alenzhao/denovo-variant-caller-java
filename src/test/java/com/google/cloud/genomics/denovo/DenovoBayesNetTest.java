@@ -23,6 +23,7 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -47,8 +48,10 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   private static final DenovoBayesNet dbn;
   private static final Map<List<Genotype>, Double> conditionalProbabilityTable;
-  private static final double EPS = 1e-12;
-  private static final double EPS_SMALL = 1e-20;
+  private static final double EPS_SMALL = 1e-12;
+  private static final double EPS_SMALLER = 1e-20;
+  private static final double EPS_MEDIUM = 1e-5;
+  private static final double EPS_LARGE = 1;
 
   static {
     dbn = new DenovoBayesNet(1e-2, 1e-8);
@@ -61,14 +64,14 @@ public class DenovoBayesNetTest extends DenovoTest {
     }
 
     // makes sure conditionalProbabilityTable is set up properly
-    assertSumsToOne(conditionalProbabilityTable.values(), EPS);
+    assertSumsToOne(conditionalProbabilityTable.values(), EPS_SMALL);
   }
   
   @Test
   public void testDenovoBayesNet() {
     assertNotNull(dbn);
-    assertEquals(1e-2, dbn.getSequenceErrorRate(), EPS);
-    assertEquals(1e-8, dbn.getDenovoMutationRate(), EPS);
+    assertEquals(1e-2, dbn.getSequenceErrorRate(), EPS_SMALL);
+    assertEquals(1e-8, dbn.getDenovoMutationRate(), EPS_SMALL);
   }
 
   /**
@@ -93,7 +96,8 @@ public class DenovoBayesNetTest extends DenovoTest {
     assertEquals(dbn.getNodeMap().get(TrioIndividual.MOM), momNode);
     assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD), childNode);
 
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD).getParents(), Arrays.asList(dadNode, momNode));
+    assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD).getParents(), 
+        Arrays.asList(dadNode, momNode));
     assertEquals(dbn.getNodeMap().get(TrioIndividual.DAD).getParents(), null);
     assertEquals(dbn.getNodeMap().get(TrioIndividual.MOM).getParents(), null);
   }
@@ -102,8 +106,8 @@ public class DenovoBayesNetTest extends DenovoTest {
    * Test method for {@link com.google.cloud.genomics.denovo.DenovoBayesNet#createConditionalProbabilityTable(com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual)}
    * .
    */
-  public void testParentCreateConditionalProbabilityTable(TrioIndividual individual) {
-    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(individual);
+  public void testParentCreateConditionalProbabilityTable(TrioIndividual person) {
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(person);
 
     // check keys
     assertEquals(
@@ -122,19 +126,19 @@ public class DenovoBayesNetTest extends DenovoTest {
         cpt.keySet());
 
     // check values
-    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.AA)), EPS);
-    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.AC)), EPS);
-    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.AT)), EPS);
-    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.AG)), EPS);
-    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.CC)), EPS);
-    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.CT)), EPS);
-    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.CG)), EPS);
-    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.TT)), EPS);
-    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.GT)), EPS);
-    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.GG)), EPS);
+    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.AA)), EPS_SMALL);
+    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.AC)), EPS_SMALL);
+    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.AT)), EPS_SMALL);
+    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.AG)), EPS_SMALL);
+    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.CC)), EPS_SMALL);
+    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.CT)), EPS_SMALL);
+    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.CG)), EPS_SMALL);
+    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.TT)), EPS_SMALL);
+    assertEquals(0.125, cpt.get(Collections.singletonList(Genotype.GT)), EPS_SMALL);
+    assertEquals(0.0625, cpt.get(Collections.singletonList(Genotype.GG)), EPS_SMALL);
     
     // check total probability Values
-    assertSumsToOne(cpt.values(), EPS);
+    assertSumsToOne(cpt.values(), EPS_SMALL);
   }
 
   @Test
@@ -191,7 +195,7 @@ public class DenovoBayesNetTest extends DenovoTest {
         for (Genotype genoTypeChild : Genotype.values()) {
           totProb += cpt.get(Arrays.asList(genoTypeDad, genoTypeMom, genoTypeChild));
         }
-        assertEquals(1.0, totProb, EPS);
+        assertEquals(1.0, totProb, EPS_SMALL);
       }
     }
   }
@@ -201,7 +205,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     for(Genotype genotype : Genotype.values()) {
       if (genotype.isHomozygous()) {
         for (Allele allele : genotype.getAlleleSet()) {
-          assertEquals(Math.log(0.99), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+          assertEquals(Math.log(0.99), dbn.getBaseLogLikelihood(genotype, allele), EPS_SMALL);
         }
       }
     }
@@ -212,7 +216,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     for(Genotype genotype : Genotype.values()) {
       if (genotype.isHomozygous()) {
         for (Allele allele : EnumSet.complementOf(genotype.getAlleleSet())) {
-          assertEquals(Math.log(1e-2 / 3), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+          assertEquals(Math.log(1e-2 / 3), dbn.getBaseLogLikelihood(genotype, allele), EPS_SMALL);
         }
       }
     }
@@ -223,7 +227,8 @@ public class DenovoBayesNetTest extends DenovoTest {
     for(Genotype genotype : Genotype.values()) {
       if (!genotype.isHomozygous()) {
         for (Allele allele : genotype.getAlleleSet()) {
-          assertEquals(Math.log(0.5 * (1 - 2 * 1e-2 / 3)), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+          assertEquals(Math.log(0.5 * (1 - 2 * 1e-2 / 3)), 
+              dbn.getBaseLogLikelihood(genotype, allele), EPS_SMALL);
         }
       }
     }
@@ -234,7 +239,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     for(Genotype genotype : Genotype.values()) {
       if (!genotype.isHomozygous()) {
         for (Allele allele : EnumSet.complementOf(genotype.getAlleleSet())) {
-          assertEquals(Math.log(1e-2 / 3), dbn.getBaseLogLikelihood(genotype, allele), EPS);
+          assertEquals(Math.log(1e-2 / 3), dbn.getBaseLogLikelihood(genotype, allele), EPS_SMALL);
         }
       }
     }
@@ -246,7 +251,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
     for (Genotype gt : Genotype.values()) {
-      assertEquals(dbn.getBaseLogLikelihood(gt, Allele.A)*40, llMap.get(gt), EPS_SMALL);  
+      assertEquals(dbn.getBaseLogLikelihood(gt, Allele.A)*40, llMap.get(gt), EPS_SMALLER);  
     }
   }
   
@@ -260,7 +265,7 @@ public class DenovoBayesNetTest extends DenovoTest {
       ll += dbn.getBaseLogLikelihood(gt, Allele.A) * 38;
       ll += dbn.getBaseLogLikelihood(gt, Allele.C) * 2;
       ll += dbn.getBaseLogLikelihood(gt, Allele.G) * 3;
-      assertEquals(ll, llMap.get(gt), EPS);  
+      assertEquals(ll, llMap.get(gt), EPS_SMALL);  
     }
   }
   
@@ -270,7 +275,7 @@ public class DenovoBayesNetTest extends DenovoTest {
         dbn.getReadSummaryLogLikelihood(new ReadSummary(new HashMap<Allele, Integer>()));
     
     for(Genotype gt : Genotype.values()) {
-      assertEquals(0.0, llMap.get(gt), EPS);  
+      assertEquals(0.0, llMap.get(gt), EPS_SMALL);  
     }
   }
   
@@ -285,4 +290,51 @@ public class DenovoBayesNetTest extends DenovoTest {
     dbn.getReadSummaryLogLikelihood(null);
   }
   
+  @Test
+  public void testgetLogLikelihoodFromCPT_Parents() {
+    // check values
+    assertEquals(Math.log(0.0625),dbn.getLogLikelihoodFromCPT(DAD, AA), EPS_SMALL); 
+    assertEquals(Math.log(0.125),dbn.getLogLikelihoodFromCPT(DAD, AC), EPS_SMALL);
+    assertEquals(Math.log(0.0625),dbn.getLogLikelihoodFromCPT(MOM, CC), EPS_SMALL); 
+    assertEquals(Math.log(0.125),dbn.getLogLikelihoodFromCPT(MOM, CG), EPS_SMALL);
+  }
+
+  @Test
+  public void testgetLogLikelihoodFromCPT_Child() {
+    // check values
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(CHILD);
+    assertEquals("CC|AA,AC", 1e-9, cpt.get(Arrays.asList(AA, AC, CC)), EPS_LARGE);
+    assertEquals("CC|AA,AC", Math.log(1e-9), 
+        dbn.getLogLikelihoodFromCPT(CHILD, AA, AC, CC), EPS_LARGE);
+    assertEquals("AT|AA,AC", Math.log(1e-9), 
+        dbn.getLogLikelihoodFromCPT(CHILD, AA, AC, AT), EPS_LARGE);
+    assertEquals("AA|AA,AC", Math.log(0.5), 
+        dbn.getLogLikelihoodFromCPT(CHILD, AA, AC, AA), EPS_MEDIUM);
+    assertEquals("AA|AC,AC", Math.log(0.25), 
+        dbn.getLogLikelihoodFromCPT(CHILD, AC, AC, AA), EPS_MEDIUM);
+    assertEquals("AC|AC,AC", Math.log(0.5), 
+        dbn.getLogLikelihoodFromCPT(CHILD, AC, AC, AC), EPS_MEDIUM);
+    assertEquals("CC|AC,AC", Math.log(0.25), 
+        dbn.getLogLikelihoodFromCPT(CHILD, AC, AC, CC), EPS_MEDIUM);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testgetLogLikelihoodFromCPT_IncorrectArgs1() {
+    dbn.getLogLikelihoodFromCPT(CHILD, AA);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testgetLogLikelihoodFromCPT_IncorrectArgs2() {
+    dbn.getLogLikelihoodFromCPT(CHILD, AA, AC);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testgetLogLikelihoodFromCPT_IncorrectArgs3() {
+    dbn.getLogLikelihoodFromCPT(DAD, AA, AC, AG);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testgetLogLikelihoodFromCPT_IncorrectArgs4() {
+    dbn.getLogLikelihoodFromCPT(MOM, AA, AC, AG);
+  }
 }

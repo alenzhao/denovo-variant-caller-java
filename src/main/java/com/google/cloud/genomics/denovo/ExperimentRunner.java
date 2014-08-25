@@ -256,9 +256,9 @@ public class ExperimentRunner {
     // Create a family person type to callset id map
     for (Callset callset : callsets) {
       String callsetName = callset.getName();
-      for (TrioIndividual individual : TrioIndividual.values()) {
-        if (callsetName.equals(personToCallsetNameMap.get(individual))) {
-          callsetIdMap.put(individual, callset.getId());
+      for (TrioIndividual person : TrioIndividual.values()) {
+        if (callsetName.equals(personToCallsetNameMap.get(person))) {
+          callsetIdMap.put(person, callset.getId());
           break;
         }
       }
@@ -278,13 +278,13 @@ public class ExperimentRunner {
 
     List<Readset> readsets = DenovoUtil.getReadsets(datasetId, genomics);
 
-    for (TrioIndividual individual : TrioIndividual.values()) {
+    for (TrioIndividual person : TrioIndividual.values()) {
       for (Readset readset : readsets) {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
 
-        if (sampleName.equals(callsetNameMap.get(individual))) {
-          readsetIdMap.put(individual, readsetId);
+        if (sampleName.equals(callsetNameMap.get(person))) {
+          readsetIdMap.put(person, readsetId);
         }
       }
     }
@@ -467,9 +467,9 @@ public class ExperimentRunner {
   public Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
       Map<TrioIndividual, List<Read>> readMap) {
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual trioIndividual : TrioIndividual.values()) {
-      readSummaryMap.put(trioIndividual,
-          new ReadSummary(readMap.get(trioIndividual), candidatePosition));
+    for (TrioIndividual person : TrioIndividual.values()) {
+      readSummaryMap.put(person,
+          new ReadSummary(readMap.get(person), candidatePosition));
     }
     return readSummaryMap;
   }
@@ -478,10 +478,10 @@ public class ExperimentRunner {
       throws IOException {
     /* Get reads for the current position */
     Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
-    for (TrioIndividual trioIndividual : TrioIndividual.values()) {
-      List<Read> reads = DenovoUtil.getReads(personToReadsetIdMap.get(trioIndividual), chromosome,
+    for (TrioIndividual person : TrioIndividual.values()) {
+      List<Read> reads = DenovoUtil.getReads(personToReadsetIdMap.get(person), chromosome,
           candidatePosition, candidatePosition, genomics);
-      readMap.put(trioIndividual, reads);
+      readMap.put(person, reads);
     }
     return readMap;
   }
