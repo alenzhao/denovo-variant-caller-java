@@ -13,86 +13,73 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CC;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.BAYES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.google.api.services.genomics.Genomics;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
-import com.google.cloud.genomics.utils.GenomicsFactory;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
-public class BayesInferBayesTest {
-
-  private static Genomics genomics;
-  private static ExperimentRunner expRunner;
-  private static BayesInfer bayesInferrer;
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-
-    String homeDir = System.getProperty("user.home");
-
-    String argsString = "stage1 " + "--job_name BayesInferTest "
-        + "--client_secrets_filename " + homeDir + "/Downloads/client_secrets.json "
-        + "--seq_err_rate 1e-2 " + "--denovo_mut_rate 1e-8";
-    String[] args = argsString.split(" ");
-
-    CommandLine cmdLine = new CommandLine();
-    cmdLine.setArgs(args);
-
-    genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
-        .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
-
-    expRunner = new ExperimentRunner(cmdLine, genomics);
-    
-    bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
-  }
+public class BayesInferBayesTest extends BayesInferTest {
 
   @Test
-  public void testTrioPos1298169BAYES() throws IOException {
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
-        expRunner.getReadSummaryMap(1298169L, expRunner.getReadMap("chr1", 1298169L));
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, BAYES);
+  public void testTrioChr1Pos1298169() {
+    /*{MOM={T=30}, CHILD={A=6, T=39}, DAD={A=2, T=41}}*/
+    Map<TrioMember, ReadSummary> readSummaryMap = createReadSummaryMapChr1Pos1298169();
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, BAYES);
 
     assertFalse(result.isDenovo());
     assertEquals("1298169 => [TT,TT,TT]", Arrays.asList(TT, TT, TT), result.getMaxTrioGenoType());
   }
   
   @Test
-  /*chr1,70041751,readCounts=DAD:{T=2, C=58};MOM:{T=2, C=51};
-   * CHILD:{T=8, C=28},maxGenoType=[CC, CC, CT],isDenovo=true
-   */
-  public void testTrioPos70041751BAYES() throws IOException {
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
-        expRunner.getReadSummaryMap(70041751L, expRunner.getReadMap("chr1", 70041751L));
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, BAYES);
+  public void testTrioPosChr170041751(){
+    /*{DAD={T=2, C=58}, CHILD={T=8, C=28}, MOM={T=2, C=51}}*/
+    Map<TrioMember, ReadSummary> readSummaryMap = createReadSummaryMapChr170041751();
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, BAYES);
 
     assertEquals("70041751 => [CC,CC,CC]", Arrays.asList(CC, CC, CT), result.getMaxTrioGenoType());
     assertTrue(result.isDenovo());
   }
 
   @Test
-  /*chr1,149035163,readCounts=DAD:{T=24, A=2, C=225, -=5};MOM:{T=22, G=3, A=6, C=223, -=2};
-   * CHILD:{T=34, G=1, A=2, C=218, -=1},maxGenoType=[CC, CC, CT],isDenovo=true
-   */
-  public void testTrioPos149035163BAYES() throws IOException {
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
-        expRunner.getReadSummaryMap(149035163L, expRunner.getReadMap("chr1", 149035163L));
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, BAYES);
+  public void testTrioChr1Pos149035163() {
+    
+    Map<TrioMember, ReadSummary> readSummaryMap = createReadSummaryMapChr1Pos149035163();
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, BAYES);
 
     assertEquals("149035163 => [CC,CC,CC]", Arrays.asList(CC, CC, CC), result.getMaxTrioGenoType());
     assertFalse(result.isDenovo());
+  }
+  
+  /* Begin testing positive gold stanfdards */
+  @Test
+  public void testTrioPosChr1pos75884343() {
+    Map<TrioMember, ReadSummary> readSummaryMap =
+        createReadSummaryMapChr1Pos75884343();
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, BAYES);
+
+    assertEquals("75884343 => [TT,TT,CT]", Arrays.asList(TT, TT, CT), result.getMaxTrioGenoType());
+    assertTrue(result.isDenovo());
+  }
+  
+  @Test
+  public void testTrioPosChr1pos110583335() {
+    Map<TrioMember, ReadSummary> readSummaryMap =
+        createReadSummaryMapChr1Pos110583335();
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, BAYES);
+
+    assertEquals("110583335 => [GG,GG,AG]", Arrays.asList(GG, GG, AG), result.getMaxTrioGenoType());
+    assertTrue(result.isDenovo());
   }
 }

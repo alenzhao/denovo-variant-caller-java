@@ -13,98 +13,65 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.api.services.genomics.Genomics;
-import com.google.api.services.genomics.Genomics.Variants.Search;
-import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel; 
-
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 
-/*
+/**
  * Creates a Stream of variants for a particular contig
  */
 public class VariantContigStream {
-  ContigBound contig;
   private int requestCount = 0;
-  private SearchVariantsRequest searchVariantsRequest;
-  private SearchVariantsResponse searchVariantsExecuted;
-  private Search searchVariantsRequestLoaded;
-  private String datasetId;
-  private Genomics genomics;
-  private long maxVariantResults;
-  
-  public VariantContigStream(Genomics genomics, ContigBound contig, String datasetId, 
-      long maxVariantResults) {
-    this.setGenomics(genomics);
-    this.contig = contig;
-    this.datasetId = datasetId;
-    this.maxVariantResults = maxVariantResults;
-    searchVariantsRequest = null;
-    searchVariantsRequestLoaded = null;
-    searchVariantsExecuted = null;
+  private String nextPageToken;
+  SearchVariantsRequest request;
+  private DenovoShared shared;
+
+  /**
+   * @param contig chromosome
+   * @param startPosition
+   * @param endPosition
+   * @param callsetIds list of callset ids which belong to trio
+   * @param shared shared project state
+   */
+  public VariantContigStream(String contig, long startPosition, long endPosition,
+      List<String> callsetIds, DenovoShared shared) {
+    this.request = new SearchVariantsRequest()
+        .setContig(contig)
+        .setCallsetIds(callsetIds)
+        .setStartPosition(startPosition)
+        .setEndPosition(endPosition)
+        .setDatasetId(shared.getDatasetId())
+        .setMaxResults(BigInteger.valueOf(shared.getMaxVariantResults()));
+    this.shared = shared;
   }
 
+  /**
+   * @return if Stream has more objects
+   */
   public boolean hasMore() {
-    if (searchVariantsRequest == null || searchVariantsExecuted.getNextPageToken() != null) {
-      return true;
-    } else {
-      return false;
-    }
+    return requestCount == 0 || nextPageToken != null;
   }
 
+  /**
+   * @return get variants
+   * @throws IOException API hangups
+   */
   public List<Variant> getVariants() throws IOException {
 
-    if (searchVariantsRequest == null) {
-      requestCount++;
-      searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(null,
-          contig,
-          DenovoUtil.DEFAULT_START_POS,
-          contig.getUpperBound(),
-          datasetId,
-          null,
-          maxVariantResults);
+    requestCount++;
+    request.setPageToken(nextPageToken);
 
-    } else if (searchVariantsExecuted.getNextPageToken() != null) {
-
-      requestCount++;
-      searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(searchVariantsRequest,
-          contig,
-          DenovoUtil.DEFAULT_START_POS,
-          contig.getUpperBound(),
-          datasetId,
-          searchVariantsExecuted.getNextPageToken(),
-          maxVariantResults);
-    } else {
-      return null;
+    if (shared.getDebugLevel() >= 1) {
+      System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
     }
 
-    if (debugLevel >= 1) {
-      System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));  
-    }
+    SearchVariantsResponse response = shared.getGenomics().variants().search(request).execute();
 
-    searchVariantsRequestLoaded =
-        getGenomics().variants().search(searchVariantsRequest);
-    searchVariantsExecuted = searchVariantsRequestLoaded.execute();
-    List<Variant> variants = searchVariantsExecuted.getVariants();
-    return variants;
-  }
-
-  /**
-   * @return the genomics
-   */
-  public Genomics getGenomics() {
-    return genomics;
-  }
-
-  /**
-   * @param genomics the genomics to set
-   */
-  public void setGenomics(Genomics genomics) {
-    this.genomics = genomics;
+    nextPageToken = response.getNextPageToken();
+    return response.getVariants();
   }
 }

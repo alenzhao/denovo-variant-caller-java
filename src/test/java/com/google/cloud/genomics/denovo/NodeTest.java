@@ -1,5 +1,5 @@
 /*
- *Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,7 +16,7 @@ package com.google.cloud.genomics.denovo;
 import static org.junit.Assert.assertEquals;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * Tests Node class
  */
-public class NodeTest {
+public class NodeTest extends DenovoTest {
 
   private Map<List<Genotype>, Double> conditionalProbabilityTable;
   private double EPS = 1e-12;
@@ -49,7 +49,7 @@ public class NodeTest {
     }
 
     // makes sure conditionalProbabilityTable is set up properly
-    AllTests.assertSumsToOne(conditionalProbabilityTable.values(), EPS);
+    assertSumsToOne(conditionalProbabilityTable.values(), EPS);
   }
 
   @After
@@ -60,9 +60,9 @@ public class NodeTest {
   @Test
   public void testSingleNode() {
 
-    Node<TrioIndividual, Genotype> dadNode =
-        new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
-    assertEquals(TrioIndividual.DAD, dadNode.getId());
+    Node<TrioMember, Genotype> dadNode =
+        new Node<>(TrioMember.DAD, null, conditionalProbabilityTable);
+    assertEquals(TrioMember.DAD, dadNode.getId());
     assertEquals(null, dadNode.getParents());
     assertEquals(conditionalProbabilityTable, dadNode.getConditionalProbabilityTable());
   }
@@ -70,10 +70,10 @@ public class NodeTest {
   @Test
   public void testLinkedNode() {
 
-    Node<TrioIndividual, Genotype> dadNode =
-        new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
+    Node<TrioMember, Genotype> dadNode =
+        new Node<>(TrioMember.DAD, null, conditionalProbabilityTable);
 
-    Node<TrioIndividual, Genotype> childNode = new Node<>(TrioIndividual.CHILD,
+    Node<TrioMember, Genotype> childNode = new Node<>(TrioMember.CHILD,
         Collections.singletonList(dadNode), conditionalProbabilityTable);
 
     assertEquals(null, dadNode.getParents());

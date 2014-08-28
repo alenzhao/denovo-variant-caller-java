@@ -25,43 +25,15 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 
-import com.google.api.services.genomics.model.Call;
-
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Some tests for the DenovoUtil class
  */
-public class DenovoUtilTest {
+public class DenovoUtilTest extends DenovoTest {
 
-  @Test
-  public void testGetGenotypeFrominfoFieldPhased() {
-    List<Integer> genotype = Arrays.asList(0, 0);
-    Call call =
-        new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("0|0")));
-    assertEquals(genotype, DenovoUtil.getGenotypeFromInfoField(call).get());
-  }
-
-  @Test
-  public void testGetGenotypeFrominfoFieldUnPhased() {
-    List<Integer> genotype = Arrays.asList(0, 1);
-    Call call =
-        new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("0/1")));
-    assertEquals(genotype, DenovoUtil.getGenotypeFromInfoField(call).get());
-  }
-  
-  @Test(expected = NumberFormatException.class)
-  public void testGetGenotypeFrominfoFieldNotInt() {
-    List<Integer> genotype = Arrays.asList(0, 1);
-    Call call =
-        new Call().setInfo(Collections.singletonMap("GT", Collections.singletonList("./1")));
-    assertEquals(genotype, DenovoUtil.getGenotypeFromInfoField(call).get());
-  }
-  
   /**
    * Test method for {@link com.google.cloud.genomics.denovo.DenovoUtil#checkTrioGenoTypeIsDenovo(java.util.List)}.
    */

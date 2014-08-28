@@ -13,7 +13,6 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -29,58 +28,97 @@ class CommandLine {
 
   CmdLineParser parser;
 
-  @Argument(usage = "The stage of the calling pipeline ; usually stage1 or stage2",
-      metaVar = "<stage id>", required = true)
-  public String stageId = null;
-
-  @Option(name = "--job_name", metaVar = "<job name>",
-      usage = "Name of your job", required = true)
-  public String jobName;
+  @Option(name = "--caller", metaVar = "<variant|read>",
+      usage = "The caller to use (variant or read) based", required = true)
+  public DenovoUtil.Caller caller;
   
   @Option(name = "--inference_method", metaVar = "<map|bayes|lrt>",
       usage = "Inference method (map | bayes | lrt)")
-  public String inferMethod = "map";
+  public DenovoUtil.InferenceMethod inferMethod;
 
   @Option(name = "--output_file", metaVar = "<file>",
-      usage = "File to write results")
-  public String outputFileName = null;
+      usage = "File to write results", required = true)
+  public String outputFileName;
   
-  @Option(name = "--input_file", metaVar = "<file>",
+  @Option(name = "--input_calls_file", metaVar = "<file>",
       usage = "File to read from")
-  public String inputFileName = null;
+  public String inputFileName;
   
-  @Option(name = "--client_secrets_filename", metaVar = "<client_secrets_filename>",
-      usage = "Path to client_secrets.json")
+  @Option(name = "--client_secrets_filename", metaVar = "<file>",
+      usage = "Path to client_secrets.json", required = true)
   public String clientSecretsFilename = "client_secrets.json";
 
-  @Option(name = "--seq_err_rate", metaVar = "<seq_err_rate>",
+  @Option(name = "--dad_callset_name", metaVar = "<name>",
+      usage = "Dad's callset name e.g. NA12877", required = true)
+  public String dadCallsetName;
+
+  @Option(name = "--mom_callset_name", metaVar = "<name>",
+      usage = "Mom's callset name e.g. NA12878", required = true)
+  public String momCallsetName;
+
+  @Option(name = "--child_callset_name", metaVar = "<name>",
+      usage = "Child's callset name e.g. NA12879")
+  public String childCallsetName;
+  
+  @Option(name = "--project_id", metaVar = "<id>",
+      usage = "Project id", required = true)
+  public long projectId = 1085016379660L;
+
+  @Option(name = "--dataset_id", metaVar = "<id>",
+      usage = "Dataset id", required = true)
+  public String datasetId = "14004469326575082626";
+  
+  @Option(name = "--seq_err_rate", metaVar = "<rate>",
       usage = "Specify the sequence error rate (default 1e-2)")
   public double sequenceErrorRate = 1e-2;
 
-  @Option(name = "--denovo_mut_rate", metaVar = "<denovo_mut_rate>",
+  @Option(name = "--denovo_mut_rate", metaVar = "<rate>",
       usage = "Specify the denovo mutation rate (default 1e-8)")
   public double denovoMutationRate = 1e-8;
 
-  @Option(name = "--lrt_threshold", metaVar = "<lrt_sig_level>",
+  @Option(name = "--lrt_threshold", metaVar = "<sig_level>",
       usage = "likelihood ratio test significance level (default 1. ;higher the stricter)")
   public double lrtThreshold = 1.0;
   
-  @Option(name = "--num_threads", metaVar = "<num_threads>",
+  @Option(name = "--num_threads", metaVar = "<num>",
       usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
   public int numThreads = 1;
 
-  @Option(name = "--debug_level", metaVar = "<debug_level>",
+  @Option(name = "--debug_level", metaVar = "<level>",
       usage = "specify the debug level (0 for no debug spew)")
   public int debugLevel = 0;
 
-  @Option(name = "--chromosome", metaVar = "<chromosome>",
+  @Option(name = "--chromosome", metaVar = "<name>",
       usage = "specify the chromosomes to search (specify multiple times for multiple chromsomes)")
-  public List<String> chromosomes;
+  public List<DenovoUtil.Chromosome> chromosomes;
 
+  @Option(name = "--start_position", metaVar = "<position>",
+      usage = "start position ( usually 1 )")
+  public Long startPosition; 
+  
+  @Option(name = "--end_position", metaVar = "<position>",
+      usage = "end position ( usually set automatically )")
+  public Long endPosition;
+
+  @Option(name = "--max_variant_results", metaVar = "<num>",
+      usage = "max variants returned per request (default 10000)")
+  public long maxVariantResults = 10000L;
+  
+
+  @Option(name = "--max_api_retries", metaVar = "<num>",
+      usage = "max api retry count (default 5)")
+  public int maxApiRetries = 5;
+
+  
   public CommandLine() {
     parser = new CmdLineParser(this);
   }
 
+  /**
+   * Sets the args in the CommandLine class
+   * @param args : args from system prompt
+   * @throws CmdLineException 
+   */
   public void setArgs(String[] args) throws CmdLineException {
     parser.parseArgument(args);
   }
@@ -91,7 +129,7 @@ class CommandLine {
 
   public String getUsage() {
     StringWriter sw = new StringWriter();
-    sw.append("Usage: GenomicsExperiment stage_id [flags...]\n");
+    sw.append("Usage: DenovoMain [flags...]\n");
     parser.printUsage(sw, null);
     return sw.toString();
   }

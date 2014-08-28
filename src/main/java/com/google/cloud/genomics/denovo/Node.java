@@ -16,59 +16,41 @@ package com.google.cloud.genomics.denovo;
 import java.util.List;
 import java.util.Map;
 
-/*
- * Individual Node in the Bayes Net
- */
-public class Node<T, V> {
-  private T id;
-  private List<Node<T, V>> parents;
-  private Map<List<V>, Double> conditionalProbabilityTable;
 
-  public Node(T individual, List<Node<T, V>> parents, Map<List<V>, Double> map) {
-    this.setId(individual);
-    this.setParents(parents);
-    this.setConditionalProbabilityTable(map);
+/**
+ * Node container in Bayes Net
+ * @param <K> type of id
+ * @param <V> type of value stored in nodes
+ */
+class Node<K, V> {
+  private final K id;
+  private final List<Node<K, V>> parents;
+  private final Map<List<V>, Double> conditionalProbabilityTable;
+
+  public Node(K individual, List<Node<K, V>> parents, Map<List<V>, Double> cpt) {
+    this.id = individual;
+    this.parents = parents;
+    this.conditionalProbabilityTable = cpt;
   }
 
   /**
    * @return the id
    */
-  public T getId() {
+  K getId() {
     return id;
-  }
-
-  /**
-   * @param id the id to set
-   */
-  public void setId(T id) {
-    this.id = id;
   }
 
   /**
    * @return the parents
    */
-  public List<Node<T, V>> getParents() {
+  List<Node<K, V>> getParents() {
     return parents;
-  }
-
-  /**
-   * @param parents the parents to set
-   */
-  public void setParents(List<Node<T, V>> parents) {
-    this.parents = parents;
   }
 
   /**
    * @return the conditionalProbabilityTable
    */
-  public Map<List<V>, Double> getConditionalProbabilityTable() {
+  Map<List<V>, Double> getConditionalProbabilityTable() {
     return conditionalProbabilityTable;
-  }
-
-  /**
-   * @param conditionalProbabilityTable the conditionalProbabilityTable to set
-   */
-  public void setConditionalProbabilityTable(Map<List<V>, Double> conditionalProbabilityTable) {
-    this.conditionalProbabilityTable = conditionalProbabilityTable;
   }
 }

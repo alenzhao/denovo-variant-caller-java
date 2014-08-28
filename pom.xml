@@ -73,7 +73,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-genomics</artifactId>
-      <version>v1beta-rev17-1.18.0-rc</version>
+      <version>v1beta-rev22-1.19.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.genomics</groupId>
@@ -94,6 +94,17 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
       <version>3.3</version>
+    </dependency>
+     <dependency>
+        <groupId>org.javatuples</groupId>
+        <artifactId>javatuples</artifactId>
+        <version>1.2</version>
+    </dependency>
+     <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>1.9.5</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -137,7 +148,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>com.google.cloud.genomics.denovo.GenomicsExperiment</mainClass>
+              <mainClass>com.google.cloud.genomics.denovo.DenovoMain</mainClass>
             </manifest>
           </archive>
         </configuration>

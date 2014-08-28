@@ -13,27 +13,48 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import java.util.HashMap;
+import com.google.api.services.genomics.model.Read;
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
+
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
-import com.google.api.services.genomics.model.Read;
-
+/**
+ * Summary counts of a reads at a particular position
+ */
 public class ReadSummary {
-  private Map<String, Integer> count = new HashMap<>();
+  private Map<Allele, Integer> count = new TreeMap<>();
 
-  public ReadSummary(Map<String, Integer> count) {
+  public ReadSummary() {
+  }
+  
+  /**
+   * Init from readymade counted reads
+   * @param count a count of bases
+   */
+  public ReadSummary(Map<Allele, Integer> count) {
     this.count = count;
   }
   
+  /**
+   * Init from list of reads at candidate position
+   * @param reads
+   * @param candidatePosition
+   */
   public ReadSummary(List<Read> reads, Long candidatePosition) {
     for (Read read : reads) {
-      // TODO : Figure out baseAtPos
       String alignedBases = read.getAlignedBases();
       Integer offset = (int) (candidatePosition - read.getPosition());
       String baseAtPos = alignedBases.substring(offset, offset + 1);
-      count.put(baseAtPos,
-          (count.containsKey(baseAtPos) ? count.get(baseAtPos) : 0) + 1);
+      
+      if (baseAtPos.equals("-")) {
+        continue;
+      }
+        
+      Allele alleleAtPos = Allele.valueOf(baseAtPos);
+      count.put(alleleAtPos,
+          (count.containsKey(alleleAtPos) ? count.get(alleleAtPos) : 0) + 1);
     }
   }
 
@@ -42,11 +63,12 @@ public class ReadSummary {
     return count.toString();
   }
   
-  public Map<String, Integer> getCount() {
+  public Map<Allele, Integer> getCount() {
     return count;
   }
 
-  public void setCount(Map<String, Integer> count) {
+  public ReadSummary setCount(Map<Allele, Integer> count) {
     this.count = count;
+    return this;
   }
 }

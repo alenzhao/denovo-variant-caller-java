@@ -12,40 +12,34 @@
  * the License.
  */
 package com.google.cloud.genomics.denovo;
-
-import com.google.api.services.genomics.Genomics;
-import com.google.cloud.genomics.utils.GenomicsFactory;
-
-import java.io.File;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.text.ParseException;
 
 /**
  * Placeholder for running all Genomics Experiments.
  */
-public class GenomicsExperiment {
+public class DenovoMain {
 
   private static CommandLine cmdLine;
 
   public static void main(String[] args) throws IOException {
-    System.out.println("-------- Starting Genomics Experiment ---------");
-
     cmdLine = new CommandLine();
-
     try {
-      // Parse the command line
       cmdLine.setArgs(args);
-      
-      Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
-          .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
-      
-      // Create a new experiment and run it
-      ExperimentRunner expRunner = new ExperimentRunner(cmdLine, genomics);
-      expRunner.execute();
       
     } catch (Exception e) {
       cmdLine.printHelp(e.getMessage() + "\n", System.err);
       e.printStackTrace();
+      System.exit(1);
+    }
+    
+    try {
+      DenovoRunner.initFromCommandLine(cmdLine).execute();
+    } catch (GeneralSecurityException | ParseException e) {
+      e.printStackTrace();
       return;
     }
+    
   }
 }

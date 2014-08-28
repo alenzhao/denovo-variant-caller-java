@@ -13,13 +13,9 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
-import java.util.Collection;
 
 @RunWith(Suite.class)
 @SuiteClasses({NodeTest.class,
@@ -27,16 +23,7 @@ import java.util.Collection;
   DenovoUtilTest.class,
   BayesInferMapTest.class,
   BayesInferBayesTest.class,
-  BayesInferLRTTest.class
+  BayesInferLRTTest.class,
+  VariantsBufferTest.class
   })
-public class AllTests {
-
-  public static void assertSumsToOne(Collection<Double> collection, double EPS) {
-    // makes sure conditionalProbabilityTable is set up properly
-    double totProb = 0.0;
-    for (Double prob : collection) {
-      totProb += prob;
-    }
-    assertEquals(1.0, totProb, EPS);
-  }
-}
+public class AllTests {}
