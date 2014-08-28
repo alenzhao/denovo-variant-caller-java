@@ -19,56 +19,35 @@ import java.util.Map;
 /*
  * Individual Node in the Bayes Net
  */
-public class Node<T, V> {
-  private T id;
-  private List<Node<T, V>> parents;
-  private Map<List<V>, Double> conditionalProbabilityTable;
+class Node<T, V> {
+  private final T id;
+  private final List<Node<T, V>> parents;
+  private final Map<List<V>, Double> conditionalProbabilityTable;
 
-  public Node(T individual, List<Node<T, V>> parents, Map<List<V>, Double> map) {
-    this.setId(individual);
-    this.setParents(parents);
-    this.setConditionalProbabilityTable(map);
+  public Node(T individual, List<Node<T, V>> parents, Map<List<V>, Double> cpt) {
+    this.id = individual;
+    this.parents = parents;
+    this.conditionalProbabilityTable = cpt;
   }
 
   /**
    * @return the id
    */
-  public T getId() {
+  T getId() {
     return id;
-  }
-
-  /**
-   * @param id the id to set
-   */
-  public void setId(T id) {
-    this.id = id;
   }
 
   /**
    * @return the parents
    */
-  public List<Node<T, V>> getParents() {
+  List<Node<T, V>> getParents() {
     return parents;
-  }
-
-  /**
-   * @param parents the parents to set
-   */
-  public void setParents(List<Node<T, V>> parents) {
-    this.parents = parents;
   }
 
   /**
    * @return the conditionalProbabilityTable
    */
-  public Map<List<V>, Double> getConditionalProbabilityTable() {
+  Map<List<V>, Double> getConditionalProbabilityTable() {
     return conditionalProbabilityTable;
-  }
-
-  /**
-   * @param conditionalProbabilityTable the conditionalProbabilityTable to set
-   */
-  public void setConditionalProbabilityTable(Map<List<V>, Double> conditionalProbabilityTable) {
-    this.conditionalProbabilityTable = conditionalProbabilityTable;
   }
 }

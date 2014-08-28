@@ -27,7 +27,6 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import com.google.cloud.genomics.denovo.DenovoBayesNet.InferenceResult;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
@@ -71,16 +70,9 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Before
   public void setUp() {
-    dbn = new DenovoBayesNet(1e-2, 1e-8);
+    dbn = new DenovoBayesNet(shared);
   }
   
-  @Test
-  public void testDenovoBayesNet() {
-    assertNotNull(dbn);
-    assertEquals(1e-2, dbn.getSequenceErrorRate(), EPS_SMALL);
-    assertEquals(1e-8, dbn.getDenovoMutationRate(), EPS_SMALL);
-  }
-
   /**
    * Test method for {@link com.google.cloud.genomics.denovo.DenovoBayesNet#addNode(com.google.cloud.genomics.denovo.Node)}
    */

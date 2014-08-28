@@ -32,53 +32,15 @@ import java.util.Map;
 /*
  * DenovoBayesNet implements abstract BayesNet
  */
-public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
+public class DenovoBayesNet {
 
-  public static class InferenceResult {
-    final List<Genotype> maxTrioGenotype;
-    final double maxLikelihood;
-    final double bayesDenovoProb;
-    final double likelihoodRatio;
-    final double mendelianLogLikelihood;
-    final double denovoLogLikelihood;
-    
-    public InferenceResult(List<Genotype> maxTrioGenotype, 
-        double maxLikelihood, 
-        double bayesDenovoProb,
-        double logOfLikelihoodRatio,
-        double mendelianLogLikelihood,
-        double denovoLogLikelihood) {
-      this.maxTrioGenotype = maxTrioGenotype;
-      this.maxLikelihood = maxLikelihood;
-      this.bayesDenovoProb = bayesDenovoProb;
-      this.likelihoodRatio = logOfLikelihoodRatio;
-      this.mendelianLogLikelihood = mendelianLogLikelihood;
-      this.denovoLogLikelihood = denovoLogLikelihood;
-    }
-    
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("<");
-      sb.append("maxGT : " + maxTrioGenotype.toString());
-      sb.append(", maxLL : " + String.valueOf(maxLikelihood));
-      sb.append(", mendelLL : " + String.valueOf(mendelianLogLikelihood));
-      sb.append(", denovoLL : " + String.valueOf(denovoLogLikelihood));
-      sb.append(", bayesProb : " + String.valueOf(bayesDenovoProb));
-      sb.append(", llRatio : " + String.valueOf(likelihoodRatio));
-      sb.append(">");
-      return sb.toString();
-    }
-  }
 
-  final double sequenceErrorRate;
-  final double denovoMutationRate;
+  private final DenovoShared shared;
   private Map<TrioIndividual, Node<TrioIndividual, Genotype>> nodeMap;
 
-  public DenovoBayesNet(double sequenceErrorRate, double denovoMutationRate) {
+  public DenovoBayesNet(DenovoShared shared) {
+    this.shared = shared;
     nodeMap = new HashMap<TrioIndividual, Node<TrioIndividual, Genotype>>();
-    this.sequenceErrorRate = sequenceErrorRate;
-    this.denovoMutationRate = denovoMutationRate; 
 
     // Initialize the conditional Probability table
     addNode(new Node<>(DAD, null, createConditionalProbabilityTable(DAD)));
@@ -89,7 +51,6 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     addNode(new Node<>(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
   }
 
-  @Override
   public void addNode(Node<TrioIndividual, Genotype> node) {
     getNodeMap().put(node.getId(), node);
   }
@@ -146,8 +107,8 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
             boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(cptKey);
           
             double value = isDenovo
-                ? getDenovoMutationRate() / numDenovoGenotypes
-                : (1.0 - getDenovoMutationRate()) / mendelianCount 
+                ? shared.getDenovoMutationRate() / numDenovoGenotypes
+                : (1.0 - shared.getDenovoMutationRate()) / mendelianCount 
                     * mendelianAlleles.get(genoTypeChild);
             conditionalProbabilityTable.put(
                 cptKey,
@@ -191,18 +152,18 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
    * @param base
    * @return logLikeliHood
    */
-  public double getBaseLogLikelihood(Genotype genotype, Allele base) {
+  double getBaseLogLikelihood(Genotype genotype, Allele base) {
     if (base == null || genotype == null) {
       throw new NullPointerException("Can't get base log likelihood of null members");
     }
 
     return genotype.isHomozygous()
         ? genotype.containsAllele(base)
-            ? Math.log(1 - getSequenceErrorRate())
-            : Math.log(getSequenceErrorRate()) - Math.log(3)
+            ? Math.log(1 - shared.getSequenceErrorRate())
+            : Math.log(shared.getSequenceErrorRate()) - Math.log(3)
         : genotype.containsAllele(base)
-            ? Math.log(1 - 2 * getSequenceErrorRate() / 3) - Math.log(2)
-            : Math.log(getSequenceErrorRate()) - Math.log(3);
+            ? Math.log(1 - 2 * shared.getSequenceErrorRate() / 3) - Math.log(2)
+            : Math.log(shared.getSequenceErrorRate()) - Math.log(3);
   }
 
   /**
@@ -212,7 +173,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
    * @param readSummaryMap
    * @return individualLogLikelihood
    */
-  public Map<TrioIndividual, Map<Genotype, Double>> getIndividualLogLikelihood(
+  Map<TrioIndividual, Map<Genotype, Double>> getIndividualLogLikelihood(
       Map<TrioIndividual, ReadSummary> readSummaryMap) {
     Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = new HashMap<>();
     for (TrioIndividual person : TrioIndividual.values()) {
@@ -230,7 +191,7 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
    * @param readSummary
    * @return genotypeLogLikelihood
    */
-  public Map<Genotype, Double> getReadSummaryLogLikelihood(ReadSummary readSummary) {
+  Map<Genotype, Double> getReadSummaryLogLikelihood(ReadSummary readSummary) {
     
     if (readSummary == null) {
       throw new NullPointerException("Did not expect ReadSummary to be null");
@@ -263,20 +224,6 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
         get(person).
         getConditionalProbabilityTable().
         get(cptKey));
-  }
-
-  /**
-   * @return the sequenceErrorRate
-   */
-  public double getSequenceErrorRate() {
-    return sequenceErrorRate;
-  }
-
-  /**
-   * @return the denovoMutationRate
-   */
-  public double getDenovoMutationRate() {
-    return denovoMutationRate;
   }
 
   /**
@@ -374,4 +321,42 @@ public class DenovoBayesNet implements BayesNet<TrioIndividual, Genotype> {
     logLikelihood += getLogLikelihoodFromCPT(CHILD, genoTypeDad, genoTypeMom, genoTypeChild);
     return logLikelihood;
   }
+  
+  static class InferenceResult {
+    final List<Genotype> maxTrioGenotype;
+    final double maxLikelihood;
+    final double bayesDenovoProb;
+    final double likelihoodRatio;
+    final double mendelianLogLikelihood;
+    final double denovoLogLikelihood;
+    
+    public InferenceResult(List<Genotype> maxTrioGenotype, 
+        double maxLikelihood, 
+        double bayesDenovoProb,
+        double logOfLikelihoodRatio,
+        double mendelianLogLikelihood,
+        double denovoLogLikelihood) {
+      this.maxTrioGenotype = maxTrioGenotype;
+      this.maxLikelihood = maxLikelihood;
+      this.bayesDenovoProb = bayesDenovoProb;
+      this.likelihoodRatio = logOfLikelihoodRatio;
+      this.mendelianLogLikelihood = mendelianLogLikelihood;
+      this.denovoLogLikelihood = denovoLogLikelihood;
+    }
+    
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("<");
+      sb.append("maxGT : " + maxTrioGenotype.toString());
+      sb.append(", maxLL : " + String.valueOf(maxLikelihood));
+      sb.append(", mendelLL : " + String.valueOf(mendelianLogLikelihood));
+      sb.append(", denovoLL : " + String.valueOf(denovoLogLikelihood));
+      sb.append(", bayesProb : " + String.valueOf(bayesDenovoProb));
+      sb.append(", llRatio : " + String.valueOf(likelihoodRatio));
+      sb.append(">");
+      return sb.toString();
+    }
+  }
+
 }

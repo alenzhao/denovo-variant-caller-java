@@ -44,8 +44,7 @@ class BayesInfer {
   BayesInfer(DenovoShared shared) {
 
     // Create a new Denovo BayesNet
-    double sequenceErrorRate = shared.getSequenceErrorRate();
-    dbn = new DenovoBayesNet(sequenceErrorRate, shared.getDenovoMutationRate());
+    dbn = new DenovoBayesNet(shared);
     this.shared = shared;
   }
 
