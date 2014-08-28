@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   @Test 
   public void testAllBasesSame() {
     ReadSummary summary = createSameReadSummary();
-    Map<TrioIndividual, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
+    Map<TrioMember, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
     
     BayesInfer.BayesCallResult result = bayesInferrer.infer(summaryMap, LRT);
     assertFalse(result.isDenovo());
@@ -47,7 +47,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   @Test
   public void testAlmostAllBasesSame() {
     ReadSummary summary = createAlmostSameReadSummary();
-    Map<TrioIndividual, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
+    Map<TrioMember, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
     
     BayesInfer.BayesCallResult result = bayesInferrer.infer(summaryMap, LRT);
     assertFalse(result.isDenovo());
@@ -60,7 +60,7 @@ public class BayesInferLRTTest extends BayesInferTest {
    * A very interesting edge case 
    */
   public void testChrXPos154226820() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = createReadSummaryMapChrXPos154226820();
+    Map<TrioMember, ReadSummary> readSummaryMap = createReadSummaryMapChrXPos154226820();
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
     assertFalse(result.isDenovo());
     assertEquals(readSummaryMap.toString()+" => [CT,TT,CT]", 
@@ -69,7 +69,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   
   @Test
   public void testTrioPos816785() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = createReadSummaryMapChr1Pos816785();
+    Map<TrioMember, ReadSummary> readSummaryMap = createReadSummaryMapChr1Pos816785();
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
     
     assertFalse(result.isDenovo());
@@ -78,7 +78,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   
   @Test
   public void testTrioPos846600(){
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
+    Map<TrioMember, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos846600L();        
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
     
@@ -88,7 +88,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   
   @Test
   public void testTrioPos149035163(){
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
+    Map<TrioMember, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos149035163L();
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
@@ -99,7 +99,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   /* Begin testing positive gold stanfdards */
   @Test
   public void testTrioPosChr1pos75884343() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
+    Map<TrioMember, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos75884343();
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
@@ -109,7 +109,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   
   @Test
   public void testTrioPosChr1pos110583335() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
+    Map<TrioMember, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos110583335();
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
 

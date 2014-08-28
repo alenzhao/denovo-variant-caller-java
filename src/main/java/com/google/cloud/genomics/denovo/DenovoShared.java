@@ -17,7 +17,7 @@ import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.Caller;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,10 +29,10 @@ public class DenovoShared {
 
   private final Genomics genomics;
   private final int numThreads;
-  private final Map<TrioIndividual, String> personToCallsetIdMap;
-  private final Map<TrioIndividual, String> personToReadsetIdMap;
-  private final Map<TrioIndividual, String> personToCallsetNameMap;
-  private final Map<String, TrioIndividual> callsetIdToPersonMap;
+  private final Map<TrioMember, String> personToCallsetIdMap;
+  private final Map<TrioMember, String> personToReadsetIdMap;
+  private final Map<TrioMember, String> personToCallsetNameMap;
+  private final Map<String, TrioMember> callsetIdToPersonMap;
   private final Set<Chromosome> chromosomes;
   private final InferenceMethod inferMethod;
   private final String datasetId;
@@ -82,28 +82,28 @@ public class DenovoShared {
   /**
    * @return the personToCallsetIdMap
    */
-  public Map<TrioIndividual, String> getPersonToCallsetIdMap() {
+  public Map<TrioMember, String> getPersonToCallsetIdMap() {
     return personToCallsetIdMap;
   }
 
   /**
    * @return the personToReadsetIdMap
    */
-  public Map<TrioIndividual, String> getPersonToReadsetIdMap() {
+  public Map<TrioMember, String> getPersonToReadsetIdMap() {
     return personToReadsetIdMap;
   }
 
   /**
    * @return the personToCallsetNameMap
    */
-  public Map<TrioIndividual, String> getPersonToCallsetNameMap() {
+  public Map<TrioMember, String> getPersonToCallsetNameMap() {
     return personToCallsetNameMap;
   }
 
   /**
    * @return the callsetIdToPersonMap
    */
-  public Map<String, TrioIndividual> getCallsetIdToPersonMap() {
+  public Map<String, TrioMember> getCallsetIdToPersonMap() {
     return callsetIdToPersonMap;
   }
 
@@ -216,10 +216,10 @@ public class DenovoShared {
 
     private Genomics genomics;
     private int numThreads = 1;
-    private Map<TrioIndividual, String> personToCallsetIdMap;
-    private Map<TrioIndividual, String> personToReadsetIdMap;
-    private Map<TrioIndividual, String> personToCallsetNameMap;
-    private Map<String, TrioIndividual> callsetIdToPersonMap;
+    private Map<TrioMember, String> personToCallsetIdMap;
+    private Map<TrioMember, String> personToReadsetIdMap;
+    private Map<TrioMember, String> personToCallsetNameMap;
+    private Map<String, TrioMember> callsetIdToPersonMap;
     private Set<Chromosome> chromosomes;
     private InferenceMethod inferMethod;
     private String datasetId;
@@ -292,22 +292,22 @@ public class DenovoShared {
       return this;
     }
 
-    public Builder personToCallsetIdMap(Map<TrioIndividual, String> personToCallsetIdMap) {
+    public Builder personToCallsetIdMap(Map<TrioMember, String> personToCallsetIdMap) {
       this.personToCallsetIdMap = personToCallsetIdMap;
       return this;
     }
 
-    public Builder personToReadsetIdMap(Map<TrioIndividual, String> personToReadsetIdMap) {
+    public Builder personToReadsetIdMap(Map<TrioMember, String> personToReadsetIdMap) {
       this.personToReadsetIdMap = personToReadsetIdMap;
       return this;
     }
 
-    public Builder personToCallsetNameMap(Map<TrioIndividual, String> personToCallsetNameMap) {
+    public Builder personToCallsetNameMap(Map<TrioMember, String> personToCallsetNameMap) {
       this.personToCallsetNameMap = personToCallsetNameMap;
       return this;
     }
 
-    public Builder callsetIdToPersonMap(Map<String, TrioIndividual> callsetIdToPersonMap) {
+    public Builder callsetIdToPersonMap(Map<String, TrioMember> callsetIdToPersonMap) {
       this.callsetIdToPersonMap = callsetIdToPersonMap;
       return this;
     }

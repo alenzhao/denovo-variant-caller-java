@@ -15,7 +15,7 @@ package com.google.cloud.genomics.denovo;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
@@ -47,7 +47,7 @@ class BayesInfer {
    * @param inferMethod the chosen bayesian inference method
    * @return result of the inference procedure for that position
    */
-  BayesCallResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap,
+  BayesCallResult infer(Map<TrioMember, ReadSummary> readSummaryMap,
       InferenceMethod inferMethod) {
 
     // Get the trio genotype with the max likelihood
@@ -55,9 +55,9 @@ class BayesInfer {
     boolean isDenovo = inferMethod.isDenovo(result, shared);
 
     String readCounts = Joiner.on(";").join(Iterables.transform(readSummaryMap.entrySet(),
-        new Function<Entry<TrioIndividual, ReadSummary>, String>() {
+        new Function<Entry<TrioMember, ReadSummary>, String>() {
           @Override
-          public String apply(Entry<TrioIndividual, ReadSummary> e) {
+          public String apply(Entry<TrioMember, ReadSummary> e) {
             return String.format("%s:%s", e.getKey().name(), e.getValue().getCount());
           }
         }));

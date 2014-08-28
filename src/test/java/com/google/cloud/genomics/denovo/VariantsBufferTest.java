@@ -13,8 +13,8 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
 import static org.junit.Assert.assertEquals;
 
 import com.google.api.services.genomics.model.Call;

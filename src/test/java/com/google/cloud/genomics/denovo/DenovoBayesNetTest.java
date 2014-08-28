@@ -23,14 +23,14 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
 import static org.junit.Assert.assertEquals;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -77,34 +77,34 @@ public class DenovoBayesNetTest extends DenovoTest {
    */
   @Test
   public void testAddNode_NodeOfTrioIndividualGenotypes() {
-    Node<TrioIndividual, Genotype> dadNode =
-        new Node<>(TrioIndividual.DAD, null, conditionalProbabilityTable);
+    Node<TrioMember, Genotype> dadNode =
+        new Node<>(TrioMember.DAD, null, conditionalProbabilityTable);
 
-    Node<TrioIndividual, Genotype> momNode =
-        new Node<>(TrioIndividual.MOM, null, conditionalProbabilityTable);
+    Node<TrioMember, Genotype> momNode =
+        new Node<>(TrioMember.MOM, null, conditionalProbabilityTable);
 
-    Node<TrioIndividual, Genotype> childNode = new Node<>(TrioIndividual.CHILD,
+    Node<TrioMember, Genotype> childNode = new Node<>(TrioMember.CHILD,
         Arrays.asList(dadNode, momNode), conditionalProbabilityTable);
 
     dbn.addNode(dadNode);
     dbn.addNode(momNode);
     dbn.addNode(childNode);
 
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.DAD), dadNode);
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.MOM), momNode);
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD), childNode);
+    assertEquals(dbn.getNodeMap().get(TrioMember.DAD), dadNode);
+    assertEquals(dbn.getNodeMap().get(TrioMember.MOM), momNode);
+    assertEquals(dbn.getNodeMap().get(TrioMember.CHILD), childNode);
 
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.CHILD).getParents(), 
+    assertEquals(dbn.getNodeMap().get(TrioMember.CHILD).getParents(), 
         Arrays.asList(dadNode, momNode));
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.DAD).getParents(), null);
-    assertEquals(dbn.getNodeMap().get(TrioIndividual.MOM).getParents(), null);
+    assertEquals(dbn.getNodeMap().get(TrioMember.DAD).getParents(), null);
+    assertEquals(dbn.getNodeMap().get(TrioMember.MOM).getParents(), null);
   }
 
   /**
-   * Test method for {@link com.google.cloud.genomics.denovo.DenovoBayesNet#createConditionalProbabilityTable(com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual)}
+   * Test method for {@link com.google.cloud.genomics.denovo.DenovoBayesNet#createConditionalProbabilityTable(com.google.cloud.genomics.denovo.DenovoUtil.TrioMember)}
    * .
    */
-  public void testParentCreateConditionalProbabilityTable(TrioIndividual person) {
+  public void testParentCreateConditionalProbabilityTable(TrioMember person) {
     Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(person);
 
     // check keys
@@ -141,17 +141,17 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Test
   public void testDadCreateConditionalProbabilityTable() {
-    testParentCreateConditionalProbabilityTable(TrioIndividual.DAD);
+    testParentCreateConditionalProbabilityTable(TrioMember.DAD);
   }
 
   @Test
   public void testMomCreateConditionalProbabilityTable() {
-    testParentCreateConditionalProbabilityTable(TrioIndividual.MOM);
+    testParentCreateConditionalProbabilityTable(TrioMember.MOM);
   }
 
   @Test
   public void testChildCreateConditionalProbabilityTableValues() {
-    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioMember.CHILD);
 
     // check some key values
     assertEquals("AA|AA,AA", 1.0, cpt.get(Arrays.asList(AA, AA, AA)), 1e-7);
@@ -183,7 +183,7 @@ public class DenovoBayesNetTest extends DenovoTest {
 
   @Test
   public void testChildCreateConditionalProbabilityTableTotalProbability() {
-    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioIndividual.CHILD);
+    Map<List<Genotype>, Double> cpt = dbn.createConditionalProbabilityTable(TrioMember.CHILD);
 
     // Sanity check - probabilities should add up to 1.0 (almost)
     for (Genotype genoTypeDad : Genotype.values()) {
@@ -318,9 +318,9 @@ public class DenovoBayesNetTest extends DenovoTest {
   @Test
   public void getTrioGenotypeLogLikelihood_AllSame() {
     ReadSummary summary = createSameReadSummary();
-    Map<TrioIndividual, ReadSummary> summaryMap = 
+    Map<TrioMember, ReadSummary> summaryMap = 
         createMapReadSummary(summary, summary, summary);
-    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = 
+    Map<TrioMember, Map<Genotype, Double>> individualLogLikelihood = 
         dbn.getIndividualLogLikelihood(summaryMap);
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
@@ -339,9 +339,9 @@ public class DenovoBayesNetTest extends DenovoTest {
   public void getTrioGenotypeLogLikelihood_AlmostSame() {
     ReadSummary summary = createSameReadSummary();
     ReadSummary summary2 = createAlmostSameReadSummary();
-    Map<TrioIndividual, ReadSummary> summaryMap = 
+    Map<TrioMember, ReadSummary> summaryMap = 
         createMapReadSummary(summary, summary2, summary);
-    Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood = 
+    Map<TrioMember, Map<Genotype, Double>> individualLogLikelihood = 
         dbn.getIndividualLogLikelihood(summaryMap);
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
@@ -407,7 +407,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     ReadSummary summary = createSameReadSummary();
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
-    Map<TrioIndividual, ReadSummary> summaryMap = 
+    Map<TrioMember, ReadSummary> summaryMap = 
        createMapReadSummary(summary, summary, summary);
     BayesInferenceResult result = dbn.performInference(summaryMap);
     
@@ -422,7 +422,7 @@ public class DenovoBayesNetTest extends DenovoTest {
     ReadSummary summary = createAlmostSameReadSummary();
     Map<Genotype, Double> llMap = 
         dbn.getReadSummaryLogLikelihood(summary);
-    Map<TrioIndividual, ReadSummary> summaryMap = 
+    Map<TrioMember, ReadSummary> summaryMap = 
         createMapReadSummary(summary, summary, summary);
     BayesInferenceResult result = dbn.performInference(summaryMap);
     

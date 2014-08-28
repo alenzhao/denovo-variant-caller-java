@@ -17,7 +17,7 @@ import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.SearchReadsRequest;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -102,11 +102,11 @@ public class ReadCaller extends DenovoCaller {
   void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer)
       throws IOException {
     // get reads for chromosome and position
-    Map<TrioIndividual, List<Read>> readMap =
+    Map<TrioMember, List<Read>> readMap =
         getReadMap(callHolder.chromosome, callHolder.position);
 
     // Extract the relevant bases for the currrent position
-    Map<TrioIndividual, ReadSummary> readSummaryMap =
+    Map<TrioMember, ReadSummary> readSummaryMap =
         getReadSummaryMap(callHolder.position, readMap);
 
     // Call the bayes inference algorithm to generate likelihood
@@ -126,21 +126,21 @@ public class ReadCaller extends DenovoCaller {
     }
   }
 
-  Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
-      Map<TrioIndividual, List<Read>> readMap) {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> getReadSummaryMap(Long candidatePosition,
+      Map<TrioMember, List<Read>> readMap) {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       readSummaryMap.put(person,
           new ReadSummary(readMap.get(person), candidatePosition));
     }
     return readSummaryMap;
   }
 
-  Map<TrioIndividual, List<Read>> getReadMap(String chromosome, Long candidatePosition)
+  Map<TrioMember, List<Read>> getReadMap(String chromosome, Long candidatePosition)
       throws IOException {
     /* Get reads for the current position */
-    Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+    Map<TrioMember, List<Read>> readMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       List<Read> reads = getReads(shared.getPersonToReadsetIdMap().get(person), chromosome,
           candidatePosition, candidatePosition, shared.getGenomics());
       readMap.put(person, reads);

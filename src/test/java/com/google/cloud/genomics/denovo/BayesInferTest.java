@@ -13,12 +13,12 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import org.junit.Before;
 
@@ -39,9 +39,9 @@ public abstract class BayesInferTest extends DenovoTest {
   }
   
  
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChrXPos154226820() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChrXPos154226820() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD ) baseCount.put(Allele.T,28);
       if (person == MOM ) baseCount.put(Allele.T,36);
@@ -54,9 +54,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
 
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos816785() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos816785() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD ) {
         baseCount.put(Allele.C, 245);
@@ -79,9 +79,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
 
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos846600L() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos846600L() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD ) {
         baseCount.put(Allele.C, 29);
@@ -99,9 +99,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
 
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos149035163L() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos149035163L() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD ) {
         baseCount.put(Allele.C, 225);
@@ -125,9 +125,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
   
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos1298169() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos1298169() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD ) {
         baseCount.put(Allele.A, 2);
@@ -146,9 +146,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
   
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr170041751() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr170041751() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD) {
         baseCount.put(Allele.C, 58);
@@ -167,9 +167,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
   
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos149035163() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos149035163() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD) {
         baseCount.put(Allele.C, 225);
@@ -193,9 +193,9 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
   
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos75884343() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos75884343() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD) {
         baseCount.put(Allele.G, 1);
@@ -214,9 +214,9 @@ public abstract class BayesInferTest extends DenovoTest {
   }
   
   
-  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos110583335() {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
-    for (TrioIndividual person : TrioIndividual.values()) {
+  Map<TrioMember, ReadSummary> createReadSummaryMapChr1Pos110583335() {
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioMember person : TrioMember.values()) {
       Map<Allele, Integer> baseCount = new HashMap<>();
       if (person == DAD) {
         baseCount.put(Allele.G, 36);

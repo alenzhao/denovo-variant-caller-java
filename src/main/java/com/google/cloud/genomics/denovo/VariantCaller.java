@@ -13,7 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
 
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.ContigBound;

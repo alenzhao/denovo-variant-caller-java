@@ -15,14 +15,14 @@ limitations under the License.
 */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
 import static org.junit.Assert.assertEquals;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import org.junit.After;
 import org.junit.Before;
@@ -106,9 +106,9 @@ public abstract class DenovoTest {
     return new ReadSummary().setCount(baseCount);
   }
   
-  Map<TrioIndividual, ReadSummary> createMapReadSummary(ReadSummary dad, ReadSummary mom,
+  Map<TrioMember, ReadSummary> createMapReadSummary(ReadSummary dad, ReadSummary mom,
       ReadSummary child) {
-    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
     readSummaryMap.put(DAD, dad);
     readSummaryMap.put(MOM, mom);
     readSummaryMap.put(CHILD, child);

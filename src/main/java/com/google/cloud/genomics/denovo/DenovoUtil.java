@@ -29,13 +29,9 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-  static public Map<String, Float> qualityThresholdMap = new HashMap<>();
-  static public Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = new HashMap<>();
+  public static Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = new HashMap<>();
 
   static {
-    // Constant Values Needed for stage 2 experiments
-    qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
-
     for (Genotype genotypeDad : Genotype.values()) {
       for (Genotype genotypeMom : Genotype.values()) {
         for (Genotype genotypeChild : Genotype.values()) {
@@ -52,6 +48,7 @@ public class DenovoUtil {
         }
       }
     }
+    isDenovoMap = Collections.unmodifiableMap(isDenovoMap);
   }
 
   public enum Caller { VARIANT, READ }
@@ -86,10 +83,10 @@ public class DenovoUtil {
     public static final EnumSet<Chromosome> ALL = EnumSet.allOf(Chromosome.class);
   }
 
-  public enum TrioIndividual {
+  public enum TrioMember {
     DAD, MOM, CHILD;
 
-    public static final EnumSet<TrioIndividual> PARENTS = EnumSet.of(DAD, MOM);
+    public static final EnumSet<TrioMember> PARENTS = EnumSet.of(DAD, MOM);
   }
 
   public enum Allele {

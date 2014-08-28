@@ -15,9 +15,9 @@ package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Callset;
@@ -25,7 +25,7 @@ import com.google.api.services.genomics.model.Readset;
 import com.google.api.services.genomics.model.SearchCallsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.cloud.genomics.utils.GenomicsFactory;
 
 import java.io.File;
@@ -61,8 +61,8 @@ public class DenovoRunner {
     Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
         .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
 
-    Map<TrioIndividual, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
-    Map<TrioIndividual, String> personToCallsetIdMap = createCallsetIdMap(
+    Map<TrioMember, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
+    Map<TrioMember, String> personToCallsetIdMap = createCallsetIdMap(
         getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
     this.cmdLine = cmdLine;
     
@@ -123,27 +123,27 @@ public class DenovoRunner {
         .search(new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
         .execute()
         .getCallsets(); 
-    return callsets;
+    return Collections.unmodifiableList(callsets);
   }
 
   /*
    * Creates a TrioType to callset ID map
    */
-  Map<TrioIndividual, String> createCallsetIdMap(List<Callset> callsets, 
-      Map<TrioIndividual, String> personToCallsetNameMap) {
+  Map<TrioMember, String> createCallsetIdMap(List<Callset> callsets, 
+      Map<TrioMember, String> personToCallsetNameMap) {
 
-    Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
+    Map<TrioMember, String> callsetIdMap = new HashMap<>();
     // Create a family person type to callset id map
     for (Callset callset : callsets) {
       String callsetName = callset.getName();
-      for (TrioIndividual person : TrioIndividual.values()) {
+      for (TrioMember person : TrioMember.values()) {
         if (callsetName.equals(personToCallsetNameMap.get(person))) {
           callsetIdMap.put(person, callset.getId());
           break;
         }
       }
     }
-    return callsetIdMap;
+    return Collections.unmodifiableMap(callsetIdMap);
   }
 
   /**
@@ -152,9 +152,9 @@ public class DenovoRunner {
    * @return Map<String, String>
    * @throws IOException
    */
-  Map<TrioIndividual, String> createReadsetIdMap(String datasetId,
-      Map<TrioIndividual, String> callsetNameMap, Genomics genomics) throws IOException {
-    Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
+  Map<TrioMember, String> createReadsetIdMap(String datasetId,
+      Map<TrioMember, String> callsetNameMap, Genomics genomics) throws IOException {
+    Map<TrioMember, String> readsetIdMap = new HashMap<>();
 
     List<Readset> readsets = genomics.readsets()
         .search(
@@ -162,7 +162,7 @@ public class DenovoRunner {
         .execute()
         .getReadsets();
 
-    for (TrioIndividual person : TrioIndividual.values()) {
+    for (TrioMember person : TrioMember.values()) {
       for (Readset readset : readsets) {
         String sampleName = readset.getName();
         String readsetId = readset.getId();
@@ -176,15 +176,15 @@ public class DenovoRunner {
     if (readsetIdMap.size() != 3) {
       throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap);
     }
-    return readsetIdMap;
+    return Collections.unmodifiableMap(readsetIdMap);
   }
 
-  Map<TrioIndividual, String> createCallsetNameMap(CommandLine cmdLine) {
-    Map<TrioIndividual, String> callsetNameMap = new HashMap<>();
+  Map<TrioMember, String> createCallsetNameMap(CommandLine cmdLine) {
+    Map<TrioMember, String> callsetNameMap = new HashMap<>();
     callsetNameMap.put(DAD, cmdLine.dadCallsetName);
     callsetNameMap.put(MOM, cmdLine.momCallsetName);
     callsetNameMap.put(CHILD, cmdLine.childCallsetName);
-    return callsetNameMap;
+    return Collections.unmodifiableMap(callsetNameMap);
   }
 
 }
