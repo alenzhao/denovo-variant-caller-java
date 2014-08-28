@@ -1,5 +1,12 @@
-denovo-variant-caller
+denovo-variant-caller |Build Status|_ |Build Coverage|_
 =====================
+
+.. |Build Status| image:: http://img.shields.io/travis/smoitra87/denovo-variant-caller.svg?style=flat
+.. _Build Status: https://travis-ci.org/smoitra87/denovo-variant-caller
+
+.. |Build Coverage| image:: http://img.shields.io/coveralls/smoitra87/denovo-variant-caller.svg?style=flat
+.. _Build Coverage: https://coveralls.io/r/smoitra87/denovo-variant-caller?branch=master
+
 
 Calls de novo variants using information from a mother, father and child trio.
 
