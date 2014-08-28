@@ -30,7 +30,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Map;
 
-class BayesInferBayesTest extends BayesInferTest {
+public class BayesInferBayesTest extends BayesInferTest {
 
   @Test
   public void testTrioChr1Pos1298169() {

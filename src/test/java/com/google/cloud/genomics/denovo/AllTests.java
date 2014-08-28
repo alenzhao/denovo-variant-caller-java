@@ -26,4 +26,4 @@ import org.junit.runners.Suite.SuiteClasses;
   BayesInferLRTTest.class,
   VariantsBufferTest.class
   })
-class AllTests {}
+public class AllTests {}

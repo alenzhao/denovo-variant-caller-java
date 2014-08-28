@@ -32,7 +32,7 @@ import java.util.Arrays;
 /**
  * Some tests for the DenovoUtil class
  */
-class DenovoUtilTest extends DenovoTest {
+public class DenovoUtilTest extends DenovoTest {
 
   /**
    * Test method for {@link com.google.cloud.genomics.denovo.DenovoUtil#checkTrioGenoTypeIsDenovo(java.util.List)}.

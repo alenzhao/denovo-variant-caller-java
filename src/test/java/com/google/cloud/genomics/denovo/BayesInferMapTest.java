@@ -31,7 +31,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Map;
 
-class BayesInferMapTest extends BayesInferTest {
+public class BayesInferMapTest extends BayesInferTest {
 
   @Test 
   public void testAllBasesSame() {
