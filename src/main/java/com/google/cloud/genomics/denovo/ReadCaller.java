@@ -55,7 +55,6 @@ public class ReadCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws ParseException, IOException, IOException {
-    // TODO(smoitra): Auto-generated method stub
     if (shared.getDebugLevel() >= 0) {
       System.out.println("---- Starting Bayesian Read Caller -----");
     }

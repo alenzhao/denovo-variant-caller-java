@@ -111,7 +111,6 @@ class VariantsBuffer {
     final Function<Pair<Variant,Call>, String> getStartAndEnd = new Function<Pair<Variant,Call>, String>() {
       @Override
       public String apply(Pair<Variant,Call> pair) {
-        // TODO(smoitra): Auto-generated method stub
         return pair.getValue0().getPosition().toString() + "-" 
             + pair.getValue0().getEnd().toString();
       }

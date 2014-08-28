@@ -30,7 +30,6 @@ public class DenovoCallers {
    * @return Caller that uses variants API
    */
   public static DenovoCaller getVariantCaller(DenovoShared shared) {
-    // TODO(smoitra): Auto-generated method stub
     return new VariantCaller(shared);
   }
 
@@ -42,7 +41,6 @@ public class DenovoCallers {
    * @return Caller that uses reads API
    */
   public static DenovoCaller getReadCaller(DenovoShared shared) {
-    // TODO(smoitra): Auto-generated method stub
     return new ReadCaller(shared);
   }
 }

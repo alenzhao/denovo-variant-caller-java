@@ -51,7 +51,6 @@ public class VariantCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws IOException {
-    // TODO(smoitra): Auto-generated method stub
     if (shared.getDebugLevel() >= 0) {
       System.out.println("---------Starting Variant Caller -----------");
     }

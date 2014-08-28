@@ -18,7 +18,7 @@ import java.util.Map;
 
 
 /**
- * TODO: Node container in Bayes Net
+ * Node container in Bayes Net
  * @param <K> type of id
  * @param <V> type of value stored in nodes
  */
