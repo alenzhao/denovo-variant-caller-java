@@ -224,12 +224,7 @@ public class ExperimentRunner {
         callSimpleDenovo(writer, contig, startPos, endPos);
       } catch (IOException e) {
         e.printStackTrace();
-        if (numTries < DenovoUtil.MAX_API_RETRIES) {
-          try {
-            Thread.sleep(DenovoUtil.API_WAIT_MILLISEC);
-          } catch (InterruptedException e1) {
-            e1.printStackTrace();
-          }
+        if (numTries < cmdLine.max_api_retries) {
           System.err.printf("Attempt #%d : contig %s%n", numTries + 1, contig);
           run();
         } else {
@@ -316,7 +311,7 @@ public class ExperimentRunner {
     VariantContigStream variantContigStream = new VariantContigStream(genomics, 
         contig,
         datasetId, 
-        DenovoUtil.MAX_VARIANT_RESULTS, 
+        cmdLine.max_variant_results, 
         startPosition, 
         endPosition,
         Lists.newArrayList(personToCallsetIdMap.values()));
@@ -558,12 +553,7 @@ public class ExperimentRunner {
         runBayesDenovoInference(callHolder, writer);
       } catch (IOException e) {
         e.printStackTrace();
-        if (numTries < DenovoUtil.MAX_API_RETRIES) {
-          try {
-            Thread.sleep(DenovoUtil.API_WAIT_MILLISEC);
-          } catch (InterruptedException e1) {
-            e1.printStackTrace();
-          }
+        if (numTries < cmdLine.max_api_retries) {
           System.err.printf("Attempt #%d : call %s%n", numTries + 1, callHolder);
           run(callHolder, writer);
         } else {

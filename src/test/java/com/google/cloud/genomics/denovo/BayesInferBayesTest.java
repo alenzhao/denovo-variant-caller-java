@@ -19,7 +19,6 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.BAYES;
-import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.MAP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

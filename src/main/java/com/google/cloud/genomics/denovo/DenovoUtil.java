@@ -48,14 +48,6 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-  static public final int TOT_CHROMOSOMES = 24;
-  static public final long MAX_VARIANT_RESULTS = 10000L;
-  static public final Float GQX_THRESH = Float.valueOf((float) 30.0);
-  static public final Float QD_THRESH = Float.valueOf((float) 2.0);
-  static public final Float MQ_THRESH = Float.valueOf((float) 20.0);
-  public static final int MAX_API_RETRIES = 5;
-  public static final long API_WAIT_MILLISEC = 5000;
-
   public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
   static public Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
@@ -65,9 +57,6 @@ public class DenovoUtil {
   
   static {
     // Constant Values Needed for stage 2 experiments
-    qualityThresholdMap.put("GQX", GQX_THRESH);
-    qualityThresholdMap.put("QD", QD_THRESH);
-    qualityThresholdMap.put("MQ", MQ_THRESH);
     qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
 
     for (Genotype genotypeDad : Genotype.values()) {
@@ -308,9 +297,6 @@ public class DenovoUtil {
     variantsSummaryRequest.setDisableGZipContent(true);
 
     GetVariantsSummaryResponse execute = variantsSummaryRequest.execute();
-    if (debugLevel >= 2) {
-      System.out.println("Variants : " + execute.toPrettyString());
-    }
 
     List<ContigBound> contigBounds = execute.getContigBounds();
     BigInteger totBases = BigInteger.valueOf(0);
