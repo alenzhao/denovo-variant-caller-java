@@ -90,7 +90,7 @@ class CommandLine {
 
   @Option(name = "--chromosome", metaVar = "<name>",
       usage = "specify the chromosomes to search (specify multiple times for multiple chromsomes)")
-  public List<String> chromosomes;
+  public List<DenovoUtil.Chromosome> chromosomes;
 
   @Option(name = "--start_position", metaVar = "<position>",
       usage = "start position ( usually 1 )")

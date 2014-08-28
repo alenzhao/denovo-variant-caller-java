@@ -29,10 +29,10 @@ import com.google.api.services.genomics.model.SearchCallsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.Variant;
+import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.denovo.VariantsBuffer.PositionCall;
 import com.google.cloud.genomics.utils.GenomicsFactory;
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -49,6 +49,7 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,15 +96,6 @@ public class DenovoRunner {
         .execute()
         .getContigBounds();
     
-    List<String> allChromosomes =
-        FluentIterable.from(allContigBounds)
-        .transform(new Function<ContigBound, String>() {
-          @Override
-          public String apply(ContigBound cb) {
-            return cb.getContig();
-          }
-        }).toList();
-        
     shared = new DenovoShared.Builder()
       .datasetId(cmdLine.datasetId)
       .numThreads(cmdLine.numThreads)
@@ -116,8 +108,8 @@ public class DenovoRunner {
       .callsetIdToPersonMap(DenovoUtil.getReversedMap(personToCallsetIdMap))
       .startPosition(cmdLine.startPosition)
       .endPosition(cmdLine.endPosition)
-      .allChromosomes(allChromosomes)
-      .chromosomes(verifyAndSetChromsomes(cmdLine.chromosomes, allChromosomes))
+      .chromosomes(cmdLine.chromosomes == null 
+          ? Chromosome.ALL : EnumSet.copyOf(cmdLine.chromosomes))
       .inferMethod(cmdLine.inferMethod)
       .caller(cmdLine.caller)
       .inputFileName(cmdLine.inputFileName)
@@ -163,6 +155,11 @@ public class DenovoRunner {
   }
 
   public void execute() throws IOException, ParseException {
+    
+    
+    
+    
+    
     if (shared.getCaller() == VARIANT) {
       stage1();
     } else if (shared.getCaller() == READ) {
@@ -172,9 +169,6 @@ public class DenovoRunner {
     }
   }
 
-  /*
-   * Stage 1 : Get a list of the candidates from VCF file
-   */
   void stage1() throws IOException {
     if (shared.getDebugLevel() >= 0) {
       System.out.println("---------Starting Stage 1 VCF Filter -----------");
@@ -196,7 +190,8 @@ public class DenovoRunner {
 
             @Override
             public boolean apply(ContigBound cb) {
-              return shared.getChromosomes().contains(cb.getContig());
+              return shared.getChromosomes().contains(
+                  Chromosome.valueOf(cb.getContig().toUpperCase()));
             }
           }).toList();
 
@@ -460,7 +455,8 @@ public class DenovoRunner {
         CallHolder callHolder = parseLine(line);
 
         /* Skip variant if chromosome does not match */
-        if (!shared.getChromosomes().contains(callHolder.chromosome)) {
+        if (!shared.getChromosomes().contains(
+            Chromosome.valueOf(callHolder.chromosome.toUpperCase()))) {
           continue;
         }
 
