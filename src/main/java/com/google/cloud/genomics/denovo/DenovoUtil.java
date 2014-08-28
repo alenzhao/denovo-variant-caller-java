@@ -51,6 +51,9 @@ public class DenovoUtil {
     isDenovoMap = Collections.unmodifiableMap(isDenovoMap);
   }
 
+  /**
+   * Type of Caller. Variant bases or read based (more expensive)
+   */
   public enum Caller { VARIANT, READ }
   
   public enum Chromosome {
@@ -83,6 +86,9 @@ public class DenovoUtil {
     public static final EnumSet<Chromosome> ALL = EnumSet.allOf(Chromosome.class);
   }
 
+  /**
+   * Mebers in the trio
+   */
   public enum TrioMember {
     DAD, MOM, CHILD;
 
@@ -94,14 +100,21 @@ public class DenovoUtil {
 
     public static final EnumSet<Allele> allHaplotypes = EnumSet.allOf(Allele.class);
 
+    /**
+     * @return set of alleles that are different from this allele
+     */
     public EnumSet<Allele> getMutants() {
       EnumSet<Allele> difference = allHaplotypes.clone();
       difference.remove(this);
       return difference;
     }
 
-    public Allele getTransversion(Allele all) {
-      switch (all) {
+    /**
+     * @param allele 
+     * @return transverse allele
+     */
+    public Allele getTransversion(Allele allele) {
+      switch (allele) {
         case A:
           return G;
         case G:
@@ -111,12 +124,16 @@ public class DenovoUtil {
         case T:
           return C;
         default:
-          throw new IllegalArgumentException("Unknown haplotype " + all);
+          throw new IllegalArgumentException("Unknown haplotype " + allele);
       }
     }
 
-    public EnumSet<Allele> getTransition(Allele all) {
-      switch (all) {
+    /**
+     * @param allele
+     * @return transition allele
+     */
+    public EnumSet<Allele> getTransition(Allele allele) {
+      switch (allele) {
         case A:
           return EnumSet.of(C, T);
         case G:
@@ -126,11 +143,14 @@ public class DenovoUtil {
         case T:
           return EnumSet.of(A, G);
         default:
-          throw new IllegalArgumentException("Unknown haplotype " + all);
+          throw new IllegalArgumentException("Unknown haplotype " + allele);
       }
     }
   }
 
+  /**
+   * All genotypes present by combining pairs of alleles
+   */
   public enum Genotype {
     AA(Zygosity.HOMOZYGOUS, Allele.A),
     AC(Zygosity.HETEROZYGOUS, Allele.A, Allele.C),
@@ -160,8 +180,10 @@ public class DenovoUtil {
       alleles = EnumSet.of(a, b);
     }
 
-    /*
-     * Return a genotype from a pair of allele objects
+    /**
+     * @param a
+     * @param b
+     * @return a genotype from a pair of allele objects
      */
     public static Genotype valueOfPairAlleles(Allele a, Allele b) {
       Allele[] allelePair = new Allele[] {a, b};
@@ -169,10 +191,16 @@ public class DenovoUtil {
       return valueOf(allelePair[0].toString() + allelePair[1].toString());
     }
 
+    /**
+     * @return associated alleles with genotype
+     */
     public EnumSet<Allele> getAlleleSet() {
       return alleles;
     }
 
+    /**
+     * @return zygosity of genotype
+     */
     public boolean isHomozygous() {
       return zygosity == Zygosity.HOMOZYGOUS;
     }
@@ -186,6 +214,9 @@ public class DenovoUtil {
     }
   }
 
+  /**
+   * Different Bayesian Inference Methods
+   */
   public enum InferenceMethod {
     MAP {
       @Override
@@ -206,11 +237,19 @@ public class DenovoUtil {
       }
     };
 
+    /**
+     * Is the call denovo based on evidence from inference
+     * @param result the result from bayes inference step
+     * @param shared shared state in project
+     * @return is the call denovo
+     */
     abstract boolean isDenovo(BayesInferenceResult result, DenovoShared shared);
   }
 
-  /*
+  /**
    * Reverse a dictionary
+   * @param map
+   * @return revered map
    */
   static <K, V> Map<V, K> getReversedMap(Map<K, V> map) {
     Map<V, K> reversed = new HashMap<>();
@@ -220,6 +259,10 @@ public class DenovoUtil {
     return reversed;
   }
 
+  /**
+   * Create a directory
+   * @param theDir
+   */
   static void helperCreateDirectory(File theDir) {
     // if the directory does not exist, create it
     if (!theDir.exists()) {
@@ -228,8 +271,12 @@ public class DenovoUtil {
     }
   }
 
-  /*
-   * overloads and forwards to function
+  /**
+   * Check if the particular genotype is denovo i.e. present in kids but not in parents
+   * @param genotypeDad
+   * @param genotypeMom
+   * @param genotypeChild
+   * @return is it denovo
    */
   public static boolean checkTrioGenoTypeIsDenovo(Genotype genotypeDad, Genotype genotypeMom,
       Genotype genotypeChild) {
@@ -237,10 +284,9 @@ public class DenovoUtil {
   }
 
   /**
-   * Check if the particular genotype is denovo i.e. present in kids but not in parents
-   *
+   * Overloads and forwards to {@link #checkTrioGenoTypeIsDenovo(Genotype, Genotype, Genotype) checkTrioTypeIsDenovo}
    * @param trioGenotypeList
-   * @return isDenovo
+   * @return is teh trio of genotypes denovo
    */
   static boolean checkTrioGenoTypeIsDenovo(List<Genotype> trioGenotypeList) {
     Genotype genotypeDad = trioGenotypeList.get(0);

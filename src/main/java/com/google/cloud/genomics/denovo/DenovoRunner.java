@@ -39,12 +39,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Holds all the experiments in the project
- *
- *  The two stages :
- *
- *  stage1 : Filter to get candidate denovo mutation sites using variantStore variants stage2 :
- * Bayesian Inference engine to select mutation sites from candidate sites
+ * Wrappper for caller objects
+ * 
+ * <ul>
+ * <li>Initializes Shared state object from commandline options</li>
+ * <li>Sets up calling pipeline and the caller objects</li>
+ * </ul>
  */
 public class DenovoRunner {
 
@@ -56,6 +56,13 @@ public class DenovoRunner {
     return new DenovoRunner(cmdLine);
   }
   
+  /**
+   * Initializes Engine params from command line args
+   * 
+   * @param cmdLine Commandline arguments
+   * @throws IOException thrown when Maps cannot be created upon failure on querying APIs  
+   * @throws GeneralSecurityException API security authorization failure
+   */
   private DenovoRunner(CommandLine cmdLine) throws IOException, GeneralSecurityException {
 
     Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
@@ -93,6 +100,11 @@ public class DenovoRunner {
       .build();
   }
 
+  /**
+   * @throws IOException Various API related querying troubles
+   * @throws ParseException Input file could not be properly parsed
+   * @throws GeneralSecurityException API security authorization failure
+   */
   public void execute() throws IOException, ParseException, GeneralSecurityException {
     
     if (shared.getCaller() == VARIANT) {
@@ -115,7 +127,11 @@ public class DenovoRunner {
   }
 
   /**
-   * @return List<Callset>
+   * Get all the callsets in dataset
+   * 
+   * @param datasetId dataset under consideration
+   * @param genomics genomics querying object 
+   * @return list of all callsets
    * @throws IOException
    */
   List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
@@ -126,8 +142,12 @@ public class DenovoRunner {
     return Collections.unmodifiableList(callsets);
   }
 
-  /*
-   * Creates a TrioType to callset ID map
+  /**
+   * Map callset trio members to callset ids
+   * 
+   * @param callsets a list of all the callsets
+   * @param personToCallsetNameMap a mapping from a tripo member to a callset name
+   * @return a mapping from callset trio members to callset ids
    */
   Map<TrioMember, String> createCallsetIdMap(List<Callset> callsets, 
       Map<TrioMember, String> personToCallsetNameMap) {
@@ -147,9 +167,12 @@ public class DenovoRunner {
   }
 
   /**
-   * @param datasetId
-   * @param callsetNameMap
-   * @return Map<String, String>
+   * Create a mapping from trio members to readset ids
+   * 
+   * @param datasetId The dataset under consideration
+   * @param callsetNameMap A mapping from trio members to callset names
+   * @param genomics The genomics querying object
+   * @return A mapping from trio members to readset ids
    * @throws IOException
    */
   Map<TrioMember, String> createReadsetIdMap(String datasetId,
@@ -179,6 +202,12 @@ public class DenovoRunner {
     return Collections.unmodifiableMap(readsetIdMap);
   }
 
+  /**
+   * Extract callset names from cmdline and associate with trio members
+   * 
+   * @param cmdLine
+   * @return a mapping from trio members to callset names
+   */
   Map<TrioMember, String> createCallsetNameMap(CommandLine cmdLine) {
     Map<TrioMember, String> callsetNameMap = new HashMap<>();
     callsetNameMap.put(DAD, cmdLine.dadCallsetName);

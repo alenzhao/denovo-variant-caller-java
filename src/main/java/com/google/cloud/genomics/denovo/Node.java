@@ -16,15 +16,18 @@ package com.google.cloud.genomics.denovo;
 import java.util.List;
 import java.util.Map;
 
-/*
- * Individual Node in the Bayes Net
+
+/**
+ * TODO: Node container in Bayes Net
+ * @param <K> type of id
+ * @param <V> type of value stored in nodes
  */
-class Node<T, V> {
-  private final T id;
-  private final List<Node<T, V>> parents;
+class Node<K, V> {
+  private final K id;
+  private final List<Node<K, V>> parents;
   private final Map<List<V>, Double> conditionalProbabilityTable;
 
-  public Node(T individual, List<Node<T, V>> parents, Map<List<V>, Double> cpt) {
+  public Node(K individual, List<Node<K, V>> parents, Map<List<V>, Double> cpt) {
     this.id = individual;
     this.parents = parents;
     this.conditionalProbabilityTable = cpt;
@@ -33,14 +36,14 @@ class Node<T, V> {
   /**
    * @return the id
    */
-  T getId() {
+  K getId() {
     return id;
   }
 
   /**
    * @return the parents
    */
-  List<Node<T, V>> getParents() {
+  List<Node<K, V>> getParents() {
     return parents;
   }
 
