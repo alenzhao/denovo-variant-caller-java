@@ -38,7 +38,7 @@ public class BayesInferLRTTest extends BayesInferTest {
     ReadSummary summary = createSameReadSummary();
     Map<TrioIndividual, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
     
-    BayesInfer.InferenceResult result = bayesInferrer.infer(summaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(summaryMap, LRT);
     assertFalse(result.isDenovo());
     assertEquals(summaryMap.toString()+" => [AA,AA,AA]", 
         Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
@@ -49,7 +49,7 @@ public class BayesInferLRTTest extends BayesInferTest {
     ReadSummary summary = createAlmostSameReadSummary();
     Map<TrioIndividual, ReadSummary> summaryMap = createMapReadSummary(summary, summary, summary);
     
-    BayesInfer.InferenceResult result = bayesInferrer.infer(summaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(summaryMap, LRT);
     assertFalse(result.isDenovo());
     assertEquals(summaryMap.toString()+" => [AA,AA,AA]", 
         Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
@@ -61,7 +61,7 @@ public class BayesInferLRTTest extends BayesInferTest {
    */
   public void testChrXPos154226820() {
     Map<TrioIndividual, ReadSummary> readSummaryMap = createReadSummaryMapChrXPos154226820();
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
     assertFalse(result.isDenovo());
     assertEquals(readSummaryMap.toString()+" => [CT,TT,CT]", 
         Arrays.asList(CT,TT,CT), result.getMaxTrioGenoType());
@@ -70,7 +70,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   @Test
   public void testTrioPos816785() {
     Map<TrioIndividual, ReadSummary> readSummaryMap = createReadSummaryMapChr1Pos816785();
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
     
     assertFalse(result.isDenovo());
     assertEquals("816785 => [CC,CC,CC]", Arrays.asList(CC,CC,CC), result.getMaxTrioGenoType());
@@ -80,7 +80,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   public void testTrioPos846600(){
     Map<TrioIndividual, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos846600L();        
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
     
     assertFalse(result.isDenovo());
     assertEquals("846600 => [CC,CC,CC]", Arrays.asList(CC,CC,CC), result.getMaxTrioGenoType());
@@ -90,7 +90,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   public void testTrioPos149035163(){
     Map<TrioIndividual, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos149035163L();
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
     assertEquals("149035163 => [CC,CC,CC]", Arrays.asList(CC, CC, CC), result.getMaxTrioGenoType());
     assertFalse(result.isDenovo());
@@ -101,7 +101,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   public void testTrioPosChr1pos75884343() {
     Map<TrioIndividual, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos75884343();
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
     assertEquals("75884343 => [TT,TT,CT]", Arrays.asList(TT, TT, CT), result.getMaxTrioGenoType());
     assertTrue(result.isDenovo());
@@ -111,7 +111,7 @@ public class BayesInferLRTTest extends BayesInferTest {
   public void testTrioPosChr1pos110583335() {
     Map<TrioIndividual, ReadSummary> readSummaryMap =
         createReadSummaryMapChr1Pos110583335();
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, LRT);
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, LRT);
 
     assertEquals("110583335 => [GG,GG,AG]", Arrays.asList(GG, GG, AG), result.getMaxTrioGenoType());
     assertTrue(result.isDenovo());

@@ -190,16 +190,26 @@ public class DenovoUtil {
   }
 
   public enum InferenceMethod {
-    MAP, BAYES, LRT;
-
-    public static InferenceMethod selectMethodfromString(String method) {
-      for (InferenceMethod inferMethod : InferenceMethod.values()) {
-        if (inferMethod.name().toLowerCase().equals(method.toLowerCase())) {
-          return inferMethod;
+    MAP {
+      @Override
+      boolean isDenovo(BayesInferenceResult result, DenovoShared shared) {
+        return checkTrioGenoTypeIsDenovo(result.getMaxTrioGenotype());
         }
+    }, 
+    BAYES {
+      @Override
+      boolean isDenovo(BayesInferenceResult result, DenovoShared shared) {
+        return result.getBayesDenovoProb() > 0.5;
       }
-      throw new IllegalArgumentException("Unknown method " + method);
-    }
+    }, 
+    LRT {
+      @Override
+      boolean isDenovo(BayesInferenceResult result, DenovoShared shared) {
+        return result.getLikelihoodRatio() > shared.getLrtThreshold();
+      }
+    };
+
+    abstract boolean isDenovo(BayesInferenceResult result, DenovoShared shared);
   }
 
   /*

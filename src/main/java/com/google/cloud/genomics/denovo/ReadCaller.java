@@ -97,7 +97,7 @@ public class ReadCaller extends DenovoCaller {
         getReadSummaryMap(callHolder.position, readMap);
 
     // Call the bayes inference algorithm to generate likelihood
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, 
+    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, 
         shared.getInferMethod());
 
     if (shared.getDebugLevel() >= 1) {
