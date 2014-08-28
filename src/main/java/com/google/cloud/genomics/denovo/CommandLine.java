@@ -114,6 +114,11 @@ class CommandLine {
     parser = new CmdLineParser(this);
   }
 
+  /**
+   * Sets the args in the CommandLine class
+   * @param args : args from system prompt
+   * @throws CmdLineException 
+   */
   public void setArgs(String[] args) throws CmdLineException {
     parser.parseArgument(args);
   }
