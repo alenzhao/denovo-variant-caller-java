@@ -28,6 +28,7 @@ import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.denovo.VariantsBuffer.PositionCall;
+import com.google.cloud.genomics.utils.GenomicsFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -42,6 +43,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,12 +68,21 @@ public class ExperimentRunner {
   private final DenovoShared shared;
   private final BayesInfer bayesInferrer;
   
-  public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
+  
+  public static ExperimentRunner initFromCommandLine(CommandLine cmdLine) 
+      throws IOException, GeneralSecurityException {
+    return new ExperimentRunner(cmdLine);
+  }
+  
+  private ExperimentRunner(CommandLine cmdLine) throws IOException, GeneralSecurityException {
+
+    Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
+        .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
+
     Map<TrioIndividual, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
     Map<TrioIndividual, String> personToCallsetIdMap = createCallsetIdMap(
         getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
     List<String> allChromosomes = fetchAllChromosomes(cmdLine.datasetId, genomics);
-
 
     shared = new DenovoShared.Builder()
       .datasetId(cmdLine.datasetId)

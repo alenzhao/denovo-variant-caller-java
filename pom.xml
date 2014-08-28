@@ -148,7 +148,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>com.google.cloud.genomics.denovo.GenomicsExperiment</mainClass>
+              <mainClass>com.google.cloud.genomics.denovo.DenovoMain</mainClass>
             </manifest>
           </archive>
         </configuration>
