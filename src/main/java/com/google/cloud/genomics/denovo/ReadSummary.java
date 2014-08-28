@@ -29,10 +29,19 @@ public class ReadSummary {
   public ReadSummary() {
   }
   
+  /**
+   * Init from readymade counted reads
+   * @param count a count of bases
+   */
   public ReadSummary(Map<Allele, Integer> count) {
     this.count = count;
   }
   
+  /**
+   * Init from list of reads at candidate position
+   * @param reads
+   * @param candidatePosition
+   */
   public ReadSummary(List<Read> reads, Long candidatePosition) {
     for (Read read : reads) {
       // TODO : Figure out baseAtPos

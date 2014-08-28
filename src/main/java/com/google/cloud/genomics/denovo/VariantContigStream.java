@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 
-/*
+/**
  * Creates a Stream of variants for a particular contig
  */
 public class VariantContigStream {
@@ -30,6 +30,13 @@ public class VariantContigStream {
   SearchVariantsRequest request;
   private DenovoShared shared;
 
+  /**
+   * @param contig chromosome
+   * @param startPosition
+   * @param endPosition
+   * @param callsetIds list of callset ids which belong to trio
+   * @param shared shared project state
+   */
   public VariantContigStream(String contig, long startPosition, long endPosition,
       List<String> callsetIds, DenovoShared shared) {
     this.request = new SearchVariantsRequest()
@@ -42,10 +49,17 @@ public class VariantContigStream {
     this.shared = shared;
   }
 
+  /**
+   * @return if Stream has more objects
+   */
   public boolean hasMore() {
     return requestCount == 0 || nextPageToken != null;
   }
 
+  /**
+   * @return get variants
+   * @throws IOException API hangups
+   */
   public List<Variant> getVariants() throws IOException {
 
     requestCount++;

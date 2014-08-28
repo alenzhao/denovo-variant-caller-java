@@ -36,11 +36,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-/**
- * A Map consisting of queues which hold variant calls from a trio
+/** Provide Buffering for fetching variants
  */
 class VariantsBuffer {
-
   private Map<TrioMember, Deque<Pair<Variant,Call>>> bufferMap = new HashMap<>();
   private Map<TrioMember, Long> mostRecentStartPosition = new HashMap<>();
 
@@ -51,11 +49,19 @@ class VariantsBuffer {
     }
   }
 
+  /** Enqueue element
+   * @param person trio member
+   * @param pair pair of variant and call
+   */
   void push(TrioMember person, Pair<Variant,Call> pair) {
     getQueue(person).addLast(pair);
     mostRecentStartPosition.put(person, pair.getValue0().getPosition());
   }
 
+  /** Pop first element from queue
+   * @param person
+   * @return first element in queue
+   */
   Pair<Variant,Call> pop(TrioMember person) {
     if (isEmpty(person)) {
       throw new IllegalStateException("Trying to pop from empty queue");
@@ -63,8 +69,7 @@ class VariantsBuffer {
     return getQueue(person).removeFirst();
   }
 
-  /*
-   * Checks if first variant in CHILD buffer can be processed
+  /** Checks if first variant in CHILD buffer can be processed
    */
   boolean canProcess() {
     return (!isEmpty(CHILD) 
@@ -72,19 +77,25 @@ class VariantsBuffer {
         && getMostRecentStartPosition(DAD) >= getStartPosition(CHILD));
   }
 
+  /**
+   * @param person trio member
+   * @return the start position of the most recently retrived variant
+   */
   private Long getMostRecentStartPosition(TrioMember person) {
     return mostRecentStartPosition.get(person);
   }
 
-  /*
-   * Returns 0 if the buffer is empty for that person otherwise coord position
+  /** start position of first elememt in queue
+   * @param person
+   * @return 0 if the buffer is empty for that person otherwise coord position
    */
   Long getStartPosition(TrioMember person) {
     return isEmpty(person) ? 0 : getQueue(person).getFirst().getValue0().getPosition();
   }
 
-  /*
-   * Returns 0 if the buffer is empty for that person otherwise coord position
+  /** end position of last element in queue
+   * @param person
+   * @return 0 if the buffer is empty for that person otherwise coord position
    */
   Long getEndPosition(TrioMember person) {
     return isEmpty(person) ? 0 : getQueue(person).getLast().getValue0().getEnd();
@@ -124,12 +135,15 @@ class VariantsBuffer {
     return bufferMap.get(person);
   }
 
+  /**
+   * @param person trio member
+   * @return are all varaints exhausted
+   */
   boolean isEmpty(TrioMember person) {
     return getQueue(person).isEmpty();
   }
 
-  /**
-   * Evicts parent variants that are no longer needed
+  /** Evicts parent variants that are no longer needed
    */
   private void evictParents() {
     if (isEmpty(CHILD)) {
@@ -143,12 +157,18 @@ class VariantsBuffer {
     }
   }
 
+  /**
+   * @param person
+   * @return first element in queue without removing
+   */
   Pair<Variant,Call> getFirst(TrioMember person) {
     return getQueue(person).getFirst();
   }
 
-  /*
-   * Check if a call passes filters for queue and then add it
+  /** Check if a call passes filters for queue and then add it
+   * @param person
+   * @param pair
+   * @return success
    */
   boolean checkAndAdd(TrioMember person, Pair<Variant, Call> pair) {
     
@@ -165,14 +185,13 @@ class VariantsBuffer {
     return true;
   }
 
-  /**
-   * Does the call contain two calls
+  /** Does the call contain two alleles
    */
   private boolean callIsBiAllelic(Call call) {
     return call.getGenotype().size() == 2;
   }
 
-  /*
+  /**
    * Returns the next available PositionCall
    */
   PositionCall retrieveNextCall() {
@@ -203,8 +222,9 @@ class VariantsBuffer {
     return new PositionCall(snpPosition, genotypeMap);
   }
 
-  /**
-   * Return the genotype corresponding to the SNP
+  /** Return the genotype corresponding to the SNP
+   * @param pair of variant,call corresponding to snp
+   * @return genotype corresponding to the SNP
    */
   private Genotype getGenotypeFromSNP(Pair<Variant, Call> pair) {
     Variant variant = pair.getValue0();
@@ -219,8 +239,9 @@ class VariantsBuffer {
     return Genotype.valueOfPairAlleles(allelePair[0], allelePair[1]);
   }
 
-  /*
-   * Check if a call has PASS filter annotation
+  /** Check if a call has PASS filter annotation
+   * @param call
+   * @return success
    */
   private boolean passesFilter(Call call) {
     return call.getInfo().containsKey("FILTER") && 
@@ -228,11 +249,19 @@ class VariantsBuffer {
         call.getInfo().get("FILTER").get(0).equals("PASS");
   }
 
+  /** Call contains '.' character 
+   * @param call
+   * @return succcess
+   */
   private boolean callContainsDot(Call call) {
     // Check if call is unknown
     return call.getGenotype().contains(-1);
   }
   
+  /** Is variant, call pair a snp
+   * @param pair
+   * @return success
+   */
   private boolean isSnp(Pair<Variant, Call> pair) {
     Variant variant = pair.getValue0();
     Call call = pair.getValue1();
@@ -253,11 +282,19 @@ class VariantsBuffer {
     return true;
   }
   
+  /** Is variant, call a deletion
+   * @param pair
+   * @return match
+   */
   private boolean isDeletion(Pair<Variant, Call> pair) {
     Variant variant = pair.getValue0();
     return variant.getReferenceBases().length() != 1 ;
   }
 
+  /** is variant , call an insertion
+   * @param pair
+   * @return match
+   */
   private boolean isInsertion(Pair<Variant, Call> pair) {
     Variant variant = pair.getValue0();
     Call call = pair.getValue1();
@@ -270,8 +307,10 @@ class VariantsBuffer {
   }
 
 
-  /**
-   * Get Matching variant from the queue
+  /** Get Matching variant from the queue
+   * @param person trio member
+   * @param snpPosition
+   * @return Get matching variant call pairs at matching position
    */
   private Pair<Variant, Call> getMatchingPair(TrioMember person, Long snpPosition) {
     for (Pair<Variant, Call> pair : getQueue(person)) {
@@ -284,8 +323,9 @@ class VariantsBuffer {
     return null;
   }
 
-  /**
-   * Get next available SNP
+  /** Get next available SNP
+   * @param person trio member
+   * @return next pair of variant, call corresponding to snp for person
    */
   private Pair<Variant, Call> getNextSNP(TrioMember person) {
     Pair<Variant, Call> pair = getFirst(person);
@@ -296,8 +336,7 @@ class VariantsBuffer {
     return pair;
   }
 
-  /*
-   * A data class for storing position
+  /** A data class for storing position
    */
   static class PositionCall {
     private final Long position;
