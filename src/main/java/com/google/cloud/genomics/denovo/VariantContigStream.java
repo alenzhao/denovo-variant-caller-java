@@ -13,83 +13,51 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.api.services.genomics.Genomics.Variants.Search;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 
 /*
  * Creates a Stream of variants for a particular contig
  */
 public class VariantContigStream {
-  private String contig;
   private int requestCount = 0;
-  private SearchVariantsRequest searchVariantsRequest;
-  private SearchVariantsResponse searchVariantsExecuted;
-  private Search searchVariantsRequestLoaded;
-  private long startPosition;
-  private long endPosition;
-  private List<String> callsetIds;
+  private String nextPageToken;
+  SearchVariantsRequest request;
   private DenovoShared shared;
-  
-  
+
   public VariantContigStream(String contig, long startPosition, long endPosition,
       List<String> callsetIds, DenovoShared shared) {
-    this.contig = contig;
-    this.callsetIds = callsetIds;
-    this.startPosition = startPosition;
-    this.endPosition = endPosition;
+    this.request = new SearchVariantsRequest()
+        .setContig(contig)
+        .setCallsetIds(callsetIds)
+        .setStartPosition(startPosition)
+        .setEndPosition(endPosition)
+        .setDatasetId(shared.getDatasetId())
+        .setMaxResults(BigInteger.valueOf(shared.getMaxVariantResults()));
     this.shared = shared;
   }
 
   public boolean hasMore() {
-    if (searchVariantsRequest == null || searchVariantsExecuted.getNextPageToken() != null) {
-      return true;
-    } else {
-      return false;
-    }
+    return requestCount == 0 || nextPageToken != null;
   }
 
   public List<Variant> getVariants() throws IOException {
 
-    if (searchVariantsRequest == null) {
-      requestCount++;
-      searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(null,
-          contig,
-          startPosition,
-          endPosition,
-          shared.getDatasetId(),
-          null,
-          shared.getMaxVariantResults(),
-          callsetIds);
-
-    } else if (searchVariantsExecuted.getNextPageToken() != null) {
-
-      requestCount++;
-      searchVariantsRequest = DenovoUtil.createSearchVariantsRequest(searchVariantsRequest,
-          contig,
-          startPosition,
-          endPosition,
-          shared.getDatasetId(),
-          searchVariantsExecuted.getNextPageToken(),
-          shared.getMaxVariantResults(),
-          callsetIds);
-    } else {
-      return null;
-    }
+    requestCount++;
+    request.setPageToken(nextPageToken);
 
     if (shared.getDebugLevel() >= 1) {
-      System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));  
+      System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
     }
 
-    searchVariantsRequestLoaded =
-        shared.genomics.variants().search(searchVariantsRequest);
-    searchVariantsExecuted = searchVariantsRequestLoaded.execute();
-    List<Variant> variants = searchVariantsExecuted.getVariants();
-    
-    return variants;
+    SearchVariantsResponse response = shared.genomics.variants().search(request).execute();
+
+    nextPageToken = response.getNextPageToken();
+    return response.getVariants();
   }
 }

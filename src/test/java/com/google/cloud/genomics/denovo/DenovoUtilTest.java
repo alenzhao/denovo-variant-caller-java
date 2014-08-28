@@ -25,32 +25,15 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 
-import com.google.api.services.genomics.model.Call;
-import com.google.common.base.Optional;
-
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Some tests for the DenovoUtil class
  */
 public class DenovoUtilTest extends DenovoTest {
 
-  @Test
-  public void testGetGenotypeValid() {
-    List<Integer> genotype = Arrays.asList(0, 0);
-    Call call = new Call().setGenotype(genotype);
-    assertEquals(genotype, DenovoUtil.getGenotype(call).get());
-  }
-
-  public void testGetGenotypeInvalid() {
-    List<Integer> genotype = Arrays.asList(-1);
-    Call call = new Call().setGenotype(genotype);
-    assertEquals(Optional.absent(), DenovoUtil.getGenotype(call).get());
-  }
-  
   /**
    * Test method for {@link com.google.cloud.genomics.denovo.DenovoUtil#checkTrioGenoTypeIsDenovo(java.util.List)}.
    */

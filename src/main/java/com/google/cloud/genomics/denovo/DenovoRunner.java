@@ -24,6 +24,8 @@ import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Readset;
 import com.google.api.services.genomics.model.SearchCallsetsRequest;
+import com.google.api.services.genomics.model.SearchReadsRequest;
+import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
@@ -33,7 +35,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.javatuples.Pair;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.Collections;
@@ -67,6 +69,7 @@ public class DenovoRunner {
 
   private final DenovoShared shared;
   private final BayesInfer bayesInferrer;
+  private final List<ContigBound> allContigBounds;
   
   
   public static DenovoRunner initFromCommandLine(CommandLine cmdLine) 
@@ -82,8 +85,24 @@ public class DenovoRunner {
     Map<TrioIndividual, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
     Map<TrioIndividual, String> personToCallsetIdMap = createCallsetIdMap(
         getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
-    List<String> allChromosomes = fetchAllChromosomes(cmdLine.datasetId, genomics);
-
+    
+    // Get a list of all the contigBounds and the chromosomes
+    allContigBounds =
+        genomics.variants().getSummary()
+        .setDatasetId(cmdLine.datasetId)
+        .setDisableGZipContent(true)
+        .execute()
+        .getContigBounds();
+    
+    List<String> allChromosomes =
+        FluentIterable.from(allContigBounds)
+        .transform(new Function<ContigBound, String>() {
+          @Override
+          public String apply(ContigBound cb) {
+            return cb.getContig();
+          }
+        }).toList();
+        
     shared = new DenovoShared.Builder()
       .datasetId(cmdLine.datasetId)
       .numThreads(cmdLine.numThreads)
@@ -115,7 +134,7 @@ public class DenovoRunner {
    * @return List<Callset>
    * @throws IOException
    */
-  public static List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
+  List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
     List<Callset> callsets = genomics.callsets()
         .search(new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
         .execute()
@@ -127,7 +146,7 @@ public class DenovoRunner {
   /*
    * Verify that the chromosomes supplied from the commandline are legal
    */
-  private List<String> verifyAndSetChromsomes(List<String> chromosomes, 
+  List<String> verifyAndSetChromsomes(List<String> chromosomes, 
       List<String> allChromosomes) {
 
     if (chromosomes == null || chromosomes.size() == 1 && chromosomes.get(0).equals("all")) {
@@ -140,20 +159,6 @@ public class DenovoRunner {
       }
     }
     return chromosomes;
-  }
-
-  private List<String> fetchAllChromosomes(String datasetId, Genomics genomics) throws IOException {
-    // verify the commandline chromosomes
-    List<ContigBound> contigBounds = DenovoUtil.getVariantsSummary(datasetId, genomics);
-
-    ImmutableList<String> allChromosomes =
-        FluentIterable.from(contigBounds).transform(new Function<ContigBound, String>() {
-          @Override
-          public String apply(ContigBound cb) {
-            return cb.getContig();
-          }
-        }).toList();
-    return allChromosomes;
   }
 
   public void execute() throws IOException, ParseException {
@@ -169,7 +174,7 @@ public class DenovoRunner {
   /*
    * Stage 1 : Get a list of the candidates from VCF file
    */
-  public void stage1() throws IOException {
+  void stage1() throws IOException {
     if (shared.getDebugLevel() >= 0) {
       System.out.println("---------Starting Stage 1 VCF Filter -----------");
     }
@@ -185,7 +190,7 @@ public class DenovoRunner {
 
       /* Get a list of all the contigs */
       List<ContigBound> contigBounds = FluentIterable
-          .from(DenovoUtil.getVariantsSummary(shared.getDatasetId(), shared.genomics))
+          .from(allContigBounds)
           .filter(new Predicate<ContigBound>() {
 
             @Override
@@ -256,7 +261,7 @@ public class DenovoRunner {
   /*
    * Writes calls to print stream
    */
-  public synchronized void writeCalls(PrintWriter writer, String calls) {
+  synchronized void writeCalls(PrintWriter writer, String calls) {
     writer.print(calls);
     writer.flush();
   }
@@ -264,7 +269,7 @@ public class DenovoRunner {
   /*
    * Creates a TrioType to callset ID map
    */
-  private Map<TrioIndividual, String> createCallsetIdMap(List<Callset> callsets, 
+  Map<TrioIndividual, String> createCallsetIdMap(List<Callset> callsets, 
       Map<TrioIndividual, String> personToCallsetNameMap) {
 
     Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
@@ -287,11 +292,15 @@ public class DenovoRunner {
    * @return Map<String, String>
    * @throws IOException
    */
-  public Map<TrioIndividual, String> createReadsetIdMap(String datasetId,
+  Map<TrioIndividual, String> createReadsetIdMap(String datasetId,
       Map<TrioIndividual, String> callsetNameMap, Genomics genomics) throws IOException {
     Map<TrioIndividual, String> readsetIdMap = new HashMap<>();
 
-    List<Readset> readsets = DenovoUtil.getReadsets(datasetId, genomics);
+    List<Readset> readsets = genomics.readsets()
+        .search(
+            new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
+        .execute()
+        .getReadsets();
 
     for (TrioIndividual person : TrioIndividual.values()) {
       for (Readset readset : readsets) {
@@ -310,7 +319,7 @@ public class DenovoRunner {
     return readsetIdMap;
   }
 
-  public Map<TrioIndividual, String> createCallsetNameMap(CommandLine cmdLine) {
+  Map<TrioIndividual, String> createCallsetNameMap(CommandLine cmdLine) {
     Map<TrioIndividual, String> callsetNameMap = new HashMap<>();
     callsetNameMap.put(DAD, cmdLine.dadCallsetName);
     callsetNameMap.put(MOM, cmdLine.momCallsetName);
@@ -321,7 +330,7 @@ public class DenovoRunner {
   /*
    * Check all the variants in the contig using a simple denovo caller
    */
-  private void callSimpleDenovo(PrintWriter callWriter, String contig, 
+  void callSimpleDenovo(PrintWriter callWriter, String contig, 
       Long startPosition, Long endPosition)
       throws IOException {
     // Create the caller object
@@ -425,7 +434,7 @@ public class DenovoRunner {
   /*
    * Stage 2 : Reads in candidate calls from stage 1 output file and then refines the candidates
    */
-  public void stage2() throws ParseException, IOException {
+  void stage2() throws ParseException, IOException {
 
     if (shared.getDebugLevel() >= 0) {
       System.out.println("---- Starting Stage2 Bayesian Caller -----");
@@ -467,7 +476,7 @@ public class DenovoRunner {
     }
   }
 
-  private CallHolder parseLine(String line) throws ParseException {
+  CallHolder parseLine(String line) throws ParseException {
     String[] splitLine = line.split(",");
     if (splitLine.length != 2) {
       throw new ParseException("Could not parse line : " + line, 0);
@@ -478,7 +487,7 @@ public class DenovoRunner {
     return callHolder;
   }
 
-  public Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
+  Map<TrioIndividual, ReadSummary> getReadSummaryMap(Long candidatePosition,
       Map<TrioIndividual, List<Read>> readMap) {
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
     for (TrioIndividual person : TrioIndividual.values()) {
@@ -488,22 +497,34 @@ public class DenovoRunner {
     return readSummaryMap;
   }
 
-  public Map<TrioIndividual, List<Read>> getReadMap(String chromosome, Long candidatePosition)
+  Map<TrioIndividual, List<Read>> getReadMap(String chromosome, Long candidatePosition)
       throws IOException {
     /* Get reads for the current position */
     Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
     for (TrioIndividual person : TrioIndividual.values()) {
-      List<Read> reads = DenovoUtil.getReads(shared.getPersonToReadsetIdMap().get(person), chromosome,
+      List<Read> reads = getReads(shared.getPersonToReadsetIdMap().get(person), chromosome,
           candidatePosition, candidatePosition, shared.genomics);
       readMap.put(person, reads);
     }
     return readMap;
   }
 
+  
+  List<Read> getReads(String readsetId, String chromosomeName, long startPos,
+      long endPos, Genomics genomics) throws IOException {
+    SearchReadsRequest request = new SearchReadsRequest()
+        .setReadsetIds(Collections.singletonList(readsetId))
+        .setSequenceName(chromosomeName)
+        .setSequenceStart(BigInteger.valueOf(startPos))
+        .setSequenceEnd(BigInteger.valueOf(endPos));
+
+    return genomics.reads().search(request).execute().getReads();
+  }
+
   /*
    * Runs the Bayesian Denovo inference on a trio call
    */
-  private void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer)
+  void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer)
       throws IOException {
     // get reads for chromosome and position
     Map<TrioIndividual, List<Read>> readMap =
@@ -531,10 +552,10 @@ public class DenovoRunner {
   }
 
   private class CallHolder {
-    public final String chromosome;
-    public final Long position;
+    final String chromosome;
+    final Long position;
 
-    public CallHolder(String chromosome, Long position) {
+    CallHolder(String chromosome, Long position) {
       this.chromosome = chromosome;
       this.position = position;
     }
@@ -575,7 +596,7 @@ public class DenovoRunner {
     private final CallHolder callHolder;
     private final PrintWriter writer;
 
-    public BayesDenovoRunnable(CallHolder callHolder, PrintWriter writer) {
+    BayesDenovoRunnable(CallHolder callHolder, PrintWriter writer) {
       this.callHolder = callHolder;
       this.writer = writer;
     }

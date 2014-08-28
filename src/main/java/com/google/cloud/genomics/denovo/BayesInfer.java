@@ -37,11 +37,11 @@ import java.util.TreeMap;
  * likelihoods, performing Maximum A (MAP) inference and checking whether MAP candidate is indeed a
  * denovo variant
  */
-public class BayesInfer {
+class BayesInfer {
   private DenovoBayesNet dbn;
   private DenovoShared shared;
   
-  public BayesInfer(DenovoShared shared) {
+  BayesInfer(DenovoShared shared) {
 
     // Create a new Denovo BayesNet
     double sequenceErrorRate = shared.getSequenceErrorRate();
@@ -53,7 +53,7 @@ public class BayesInfer {
    * Performs inference given a set of mom, dad and child reads to determine the most likely
    * genotype for the trio
    */
-  public InferenceResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap,
+  InferenceResult infer(Map<TrioIndividual, ReadSummary> readSummaryMap,
       InferenceMethod inferMethod) {
 
     if (inferMethod == MAP) { return performMAPInference(readSummaryMap); }
