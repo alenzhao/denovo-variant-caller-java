@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * Tests Node class
  */
-public class NodeTest extends DenovoTest {
+class NodeTest extends DenovoTest {
 
   private Map<List<Genotype>, Double> conditionalProbabilityTable;
   private double EPS = 1e-12;

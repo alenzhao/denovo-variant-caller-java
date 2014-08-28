@@ -46,7 +46,7 @@ import java.util.Map;
 /**
  * Tests DenovoBayesNet
  */
-public class DenovoBayesNetTest extends DenovoTest {
+class DenovoBayesNetTest extends DenovoTest {
 
   private DenovoBayesNet dbn;
   private static final Map<List<Genotype>, Double> conditionalProbabilityTable;

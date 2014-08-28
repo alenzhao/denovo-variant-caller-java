@@ -36,7 +36,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class DenovoTest {
+abstract class DenovoTest {
   @Mock Genomics genomics;
   @Mock DenovoRunner expRunner;
   
