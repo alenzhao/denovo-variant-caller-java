@@ -185,4 +185,43 @@ public abstract class BayesInferTest extends DenovoTest {
     return readSummaryMap;
   }
   
+  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos75884343() {
+    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioIndividual person : TrioIndividual.values()) {
+      Map<Allele, Integer> baseCount = new HashMap<>();
+      if (person == DAD) {
+        baseCount.put(Allele.G, 1);
+        baseCount.put(Allele.T, 53);
+      }
+      if (person == MOM) {
+        baseCount.put(Allele.T, 51);
+      }
+      if (person == CHILD) {
+        baseCount.put(Allele.C, 27);
+        baseCount.put(Allele.T, 26);
+      }
+      readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
+    }
+    return readSummaryMap;
+  }
+  
+  
+  Map<TrioIndividual, ReadSummary> createReadSummaryMapChr1Pos110583335() {
+    Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();
+    for (TrioIndividual person : TrioIndividual.values()) {
+      Map<Allele, Integer> baseCount = new HashMap<>();
+      if (person == DAD) {
+        baseCount.put(Allele.G, 36);
+      }
+      if (person == MOM) {
+        baseCount.put(Allele.G, 50);
+      }
+      if (person == CHILD) {
+        baseCount.put(Allele.G, 21);
+        baseCount.put(Allele.A, 23);
+      }
+      readSummaryMap.put(person, new ReadSummary().setCount(baseCount));
+    }
+    return readSummaryMap;
+  }
 }

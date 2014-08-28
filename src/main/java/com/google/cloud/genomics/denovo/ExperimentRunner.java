@@ -520,13 +520,13 @@ public class ExperimentRunner {
 
     if (debugLevel >= 1) {
       synchronized (this) {
-        System.out.printf("%s,%d,%s", callHolder.chromosome, callHolder.position,
+        System.out.printf("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
             result.getDetails());
       }
     }
 
     if (result.isDenovo()) {
-      writeCalls(writer, String.format("%s,%d,%s", callHolder.chromosome, callHolder.position,
+      writeCalls(writer, String.format("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
           result.getDetails()));
     }
   }

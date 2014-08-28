@@ -14,12 +14,15 @@
 package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AA;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.AG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CC;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.CT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GG;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod.MAP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
@@ -92,5 +95,26 @@ public class BayesInferMapTest extends BayesInferTest {
 
     assertEquals("149035163 => [CC,CC,CC]", Arrays.asList(CC, CC, CC), result.getMaxTrioGenoType());
     assertFalse(result.isDenovo());
+  }
+  
+  /* Begin testing positive gold stanfdards */
+  @Test
+  public void testTrioPosChr1pos75884343() {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        createReadSummaryMapChr1Pos75884343();
+    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, MAP);
+
+    assertEquals("75884343 => [TT,TT,CT]", Arrays.asList(TT, TT, CT), result.getMaxTrioGenoType());
+    assertTrue(result.isDenovo());
+  }
+  
+  @Test
+  public void testTrioPosChr1pos110583335() {
+    Map<TrioIndividual, ReadSummary> readSummaryMap =
+        createReadSummaryMapChr1Pos110583335();
+    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, MAP);
+
+    assertEquals("110583335 => [GG,GG,AG]", Arrays.asList(GG, GG, AG), result.getMaxTrioGenoType());
+    assertTrue(result.isDenovo());
   }
 }
