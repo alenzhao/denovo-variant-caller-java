@@ -3,6 +3,7 @@ package com.google.cloud.genomics.denovo;
 import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
+import com.google.cloud.genomics.denovo.DenovoUtil.Caller;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class DenovoShared {
   private final Long endPosition;
   private final int debugLevel;
   private final double lrtThreshold;
-  private final String stageId;
+  private final Caller caller;
   private final String outputFileName;
   private final String inputFileName;
   private final int maxApiRetries;
@@ -50,13 +51,13 @@ public class DenovoShared {
     endPosition = builder.endPosition;
     debugLevel = builder.debugLevel;
     lrtThreshold = builder.lrtThreshold;
-    stageId = builder.stageId;
     outputFileName = builder.outputFileName;
     maxApiRetries = builder.maxApiRetries;
     maxVariantResults = builder.maxVariantResults;
     inputFileName = builder.inputFileName;
     sequenceErrorRate = builder.sequenceErrorRate;
     denovoMutationRate = builder.denovoMutationRate;
+    caller = builder.caller;
   }
 
   /**
@@ -153,8 +154,8 @@ public class DenovoShared {
   /**
    * @return the stageId
    */
-  public String getStageId() {
-    return stageId;
+  public Caller getCaller() {
+    return caller;
   }
 
   /**
@@ -215,7 +216,7 @@ public class DenovoShared {
     private Long endPosition;
     private int debugLevel;
     private double lrtThreshold;
-    private String stageId;
+    private Caller caller;
     private String outputFileName;
     private int maxApiRetries;
     private long maxVariantResults;
@@ -245,8 +246,8 @@ public class DenovoShared {
       return this;
     }
 
-    public Builder stageId(String stageId) {
-      this.stageId = stageId;
+    public Builder caller(Caller caller) {
+      this.caller = caller;
       return this;
     }
 

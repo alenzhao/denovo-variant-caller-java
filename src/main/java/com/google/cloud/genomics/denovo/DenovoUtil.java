@@ -54,6 +54,8 @@ public class DenovoUtil {
     }
   }
 
+  public enum Caller { VARIANT, READ }
+  
   public enum TrioIndividual {
     DAD, MOM, CHILD;
 

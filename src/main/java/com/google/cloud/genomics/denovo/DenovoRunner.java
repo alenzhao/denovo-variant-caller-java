@@ -13,6 +13,8 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
@@ -27,7 +29,6 @@ import com.google.api.services.genomics.model.SearchCallsetsRequest;
 import com.google.api.services.genomics.model.SearchReadsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.Variant;
-import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 import com.google.cloud.genomics.denovo.VariantsBuffer.PositionCall;
 import com.google.cloud.genomics.utils.GenomicsFactory;
@@ -117,8 +118,8 @@ public class DenovoRunner {
       .endPosition(cmdLine.endPosition)
       .allChromosomes(allChromosomes)
       .chromosomes(verifyAndSetChromsomes(cmdLine.chromosomes, allChromosomes))
-      .inferMethod(InferenceMethod.selectMethodfromString(cmdLine.inferMethod))     
-      .stageId(cmdLine.stageId)
+      .inferMethod(cmdLine.inferMethod)
+      .caller(cmdLine.caller)
       .inputFileName(cmdLine.inputFileName)
       .outputFileName(cmdLine.outputFileName)
       .max_api_retries(cmdLine.maxApiRetries)
@@ -127,7 +128,7 @@ public class DenovoRunner {
       .sequenceErrorRate(cmdLine.sequenceErrorRate)
       .build();
     
-      bayesInferrer = new BayesInfer(shared);
+    bayesInferrer = new BayesInfer(shared);
   }
 
   /**
@@ -162,12 +163,12 @@ public class DenovoRunner {
   }
 
   public void execute() throws IOException, ParseException {
-    if (shared.getStageId().equals("stage1")) {
+    if (shared.getCaller() == VARIANT) {
       stage1();
-    } else if (shared.getStageId().equals("stage2")) {
+    } else if (shared.getCaller() == READ) {
       stage2();
     } else {
-      throw new IllegalArgumentException("Unknown stage : " + shared.getStageId());
+      throw new IllegalArgumentException("Unknown stage : " + shared.getCaller());
     }
   }
 
