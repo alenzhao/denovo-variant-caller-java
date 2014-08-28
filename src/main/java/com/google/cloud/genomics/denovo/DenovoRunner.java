@@ -63,18 +63,18 @@ import java.util.concurrent.TimeUnit;
  *  stage1 : Filter to get candidate denovo mutation sites using variantStore variants stage2 :
  * Bayesian Inference engine to select mutation sites from candidate sites
  */
-public class ExperimentRunner {
+public class DenovoRunner {
 
   private final DenovoShared shared;
   private final BayesInfer bayesInferrer;
   
   
-  public static ExperimentRunner initFromCommandLine(CommandLine cmdLine) 
+  public static DenovoRunner initFromCommandLine(CommandLine cmdLine) 
       throws IOException, GeneralSecurityException {
-    return new ExperimentRunner(cmdLine);
+    return new DenovoRunner(cmdLine);
   }
   
-  private ExperimentRunner(CommandLine cmdLine) throws IOException, GeneralSecurityException {
+  private DenovoRunner(CommandLine cmdLine) throws IOException, GeneralSecurityException {
 
     Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
         .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));

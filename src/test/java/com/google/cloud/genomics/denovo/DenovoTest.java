@@ -38,7 +38,7 @@ import java.util.Map;
 
 public abstract class DenovoTest {
   @Mock Genomics genomics;
-  @Mock ExperimentRunner expRunner;
+  @Mock DenovoRunner expRunner;
   
   @Mock Genomics.Callsets callsets;
   @Mock Genomics.Callsets.Search callsetSearch;
