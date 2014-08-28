@@ -20,6 +20,8 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
+import org.junit.Before;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +31,13 @@ import java.util.Map;
  */
 public abstract class BayesInferTest extends DenovoTest {
 
-  static BayesInfer bayesInferrer = new BayesInfer(1e-2, 1e-8);
+  BayesInfer bayesInferrer;
+  
+  @Before
+  public void initBayesMocks() {
+    bayesInferrer = new BayesInfer(shared);  
+  }
+  
  
   Map<TrioIndividual, ReadSummary> createReadSummaryMapChrXPos154226820() {
     Map<TrioIndividual, ReadSummary> readSummaryMap = new HashMap<>();

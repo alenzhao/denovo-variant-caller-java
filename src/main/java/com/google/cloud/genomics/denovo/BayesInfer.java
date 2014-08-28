@@ -39,11 +39,14 @@ import java.util.TreeMap;
  */
 public class BayesInfer {
   private DenovoBayesNet dbn;
-    
-  public BayesInfer(Double sequenceErrorRate, Double denovoMutationRate) {
+  private DenovoShared shared;
+  
+  public BayesInfer(DenovoShared shared) {
 
     // Create a new Denovo BayesNet
-    dbn = new DenovoBayesNet(sequenceErrorRate, denovoMutationRate);
+    double sequenceErrorRate = shared.getSequenceErrorRate();
+    dbn = new DenovoBayesNet(sequenceErrorRate, shared.getDenovoMutationRate());
+    this.shared = shared;
   }
 
   /*
@@ -112,7 +115,7 @@ public class BayesInfer {
     DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
 
     // Use the likelihood ratio rule
-    boolean isDenovo = dbnResult.likelihoodRatio > DenovoUtil.LRT_THRESHOLD;
+    boolean isDenovo = dbnResult.likelihoodRatio > shared.getLrtThreshold();
 
     return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
         createReadCountString(readSummaryMap));

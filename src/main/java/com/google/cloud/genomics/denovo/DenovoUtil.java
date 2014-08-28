@@ -15,13 +15,10 @@ package com.google.cloud.genomics.denovo;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.Call;
-import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.GetVariantsSummaryResponse;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Readset;
-import com.google.api.services.genomics.model.SearchCallsetsRequest;
-import com.google.api.services.genomics.model.SearchCallsetsResponse;
 import com.google.api.services.genomics.model.SearchReadsRequest;
 import com.google.api.services.genomics.model.SearchReadsResponse;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
@@ -48,13 +45,10 @@ import java.util.Map;
 public class DenovoUtil {
 
   public static final double EPS = 1e-12;
-  public static double LRT_THRESHOLD = 1.0;
   static public Map<String, Float> qualityThresholdMap = new HashMap<>();
   static public Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = 
       new HashMap<>();
-  
-  static public int debugLevel = 0; 
-  
+
   static {
     // Constant Values Needed for stage 2 experiments
     qualityThresholdMap = Collections.unmodifiableMap(qualityThresholdMap);
@@ -233,11 +227,6 @@ public class DenovoUtil {
     return new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
   }
 
-  private static SearchCallsetsRequest createSearchCallsetsRequest(String datasetId) {
-
-    // Init searchRequest obj
-    return new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId));
-  }
 
   public static Optional<List<Integer>> getGenotype(Call call) {
     List<Integer> genoType = call.getGenotype();
@@ -269,20 +258,6 @@ public class DenovoUtil {
     List<Readset> readsets = execute.getReadsets();
 
     return readsets;
-  }
-
-  /**
-   * @return List<Callset>
-   * @throws IOException
-   */
-  public static List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
-    SearchCallsetsRequest searchCallsetsRequest = createSearchCallsetsRequest(datasetId);
-    Genomics.Callsets.Search search =
-        genomics.callsets().search(searchCallsetsRequest);
-    SearchCallsetsResponse execute = search.execute();
-    List<Callset> callsets = execute.getCallsets();
-
-    return callsets;
   }
 
   /**

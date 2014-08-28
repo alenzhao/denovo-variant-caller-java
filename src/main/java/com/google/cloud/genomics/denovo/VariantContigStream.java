@@ -13,9 +13,6 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
-
-import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.Genomics.Variants.Search;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
@@ -33,22 +30,19 @@ public class VariantContigStream {
   private SearchVariantsRequest searchVariantsRequest;
   private SearchVariantsResponse searchVariantsExecuted;
   private Search searchVariantsRequestLoaded;
-  private String datasetId;
-  private Genomics genomics;
-  private long maxVariantResults;
   private long startPosition;
   private long endPosition;
   private List<String> callsetIds;
+  private DenovoShared shared;
   
-  public VariantContigStream(Genomics genomics, String contig, String datasetId, 
-      long maxVariantResults, long startPosition, long endPosition, List<String> callsetIds) {
-    this.genomics = genomics;
+  
+  public VariantContigStream(String contig, long startPosition, long endPosition,
+      List<String> callsetIds, DenovoShared shared) {
     this.contig = contig;
-    this.datasetId = datasetId;
-    this.maxVariantResults = maxVariantResults;
+    this.callsetIds = callsetIds;
     this.startPosition = startPosition;
     this.endPosition = endPosition;
-    this.callsetIds = callsetIds;
+    this.shared = shared;
   }
 
   public boolean hasMore() {
@@ -67,9 +61,9 @@ public class VariantContigStream {
           contig,
           startPosition,
           endPosition,
-          datasetId,
+          shared.getDatasetId(),
           null,
-          maxVariantResults,
+          shared.getMaxVariantResults(),
           callsetIds);
 
     } else if (searchVariantsExecuted.getNextPageToken() != null) {
@@ -79,20 +73,20 @@ public class VariantContigStream {
           contig,
           startPosition,
           endPosition,
-          datasetId,
+          shared.getDatasetId(),
           searchVariantsExecuted.getNextPageToken(),
-          maxVariantResults,
+          shared.getMaxVariantResults(),
           callsetIds);
     } else {
       return null;
     }
 
-    if (debugLevel >= 1) {
+    if (shared.getDebugLevel() >= 1) {
       System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));  
     }
 
     searchVariantsRequestLoaded =
-        genomics.variants().search(searchVariantsRequest);
+        shared.genomics.variants().search(searchVariantsRequest);
     searchVariantsExecuted = searchVariantsRequestLoaded.execute();
     List<Variant> variants = searchVariantsExecuted.getVariants();
     

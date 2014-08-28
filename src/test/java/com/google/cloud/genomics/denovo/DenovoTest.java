@@ -52,6 +52,8 @@ public abstract class DenovoTest {
   @Mock Genomics.Variants variants;
   @Mock Genomics.Variants.GetSummary variantSummary;
   @Mock Genomics.Variants.Search variantSearch;
+
+  @Mock DenovoShared shared;
   
   ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
@@ -65,6 +67,10 @@ public abstract class DenovoTest {
     Mockito.when(genomics.variants()).thenReturn(variants);
 
     Mockito.when(readsetSearch.setFields(Mockito.anyString())).thenReturn(readsetSearch);
+
+    Mockito.when(shared.getSequenceErrorRate()).thenReturn(1e-2);
+    Mockito.when(shared.getDenovoMutationRate()).thenReturn(1e-8);
+    Mockito.when(shared.getLrtThreshold()).thenReturn(1.0);
   }
 
   @Before

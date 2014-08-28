@@ -13,7 +13,6 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.debugLevel;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
@@ -24,6 +23,7 @@ import com.google.api.services.genomics.model.Callset;
 import com.google.api.services.genomics.model.ContigBound;
 import com.google.api.services.genomics.model.Read;
 import com.google.api.services.genomics.model.Readset;
+import com.google.api.services.genomics.model.SearchCallsetsRequest;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.InferenceMethod;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
@@ -43,6 +43,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,55 +63,61 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExperimentRunner {
 
-  /**
-   * Placeholder for running denovo variant calling
-   */
-  private CommandLine cmdLine;
-  private Genomics genomics;
-  private final int numThreads;
-  private final Map<TrioIndividual, String> personToCallsetIdMap;
-  private final Map<TrioIndividual, String> personToReadsetIdMap;
-  private final Map<TrioIndividual, String> personToCallsetNameMap;
-  private final Map<String, TrioIndividual> callsetIdToPersonMap;
-
+  private final DenovoShared shared;
   private final BayesInfer bayesInferrer;
-  private final List<String> chromosomes;
-  private final List<String> allChromosomes;
-  private final InferenceMethod inferMethod;
-  private final String datasetId;
-  private final Long startPosition;
-  private final Long endPosition;
   
   public ExperimentRunner(CommandLine cmdLine, Genomics genomics) throws IOException {
-    this.cmdLine = cmdLine;
-    this.genomics = genomics;
-    numThreads = cmdLine.numThreads;
+    Map<TrioIndividual, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
+    Map<TrioIndividual, String> personToCallsetIdMap = createCallsetIdMap(
+        getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
+    List<String> allChromosomes = fetchAllChromosomes(cmdLine.datasetId, genomics);
 
-    // Set the overall System wide debug Level
-    DenovoUtil.debugLevel = cmdLine.debugLevel;
-    DenovoUtil.LRT_THRESHOLD = cmdLine.lrtThreshold;
 
-    datasetId = cmdLine.datasetId;
-
-    personToCallsetNameMap = createCallsetNameMap(cmdLine);
-    personToReadsetIdMap = createReadsetIdMap(datasetId, personToCallsetNameMap, genomics);
-    personToCallsetIdMap = createCallsetIdMap(DenovoUtil.getCallsets(datasetId, genomics));
-    callsetIdToPersonMap = DenovoUtil.getReversedMap(personToCallsetIdMap);
+    shared = new DenovoShared.Builder()
+      .datasetId(cmdLine.datasetId)
+      .numThreads(cmdLine.numThreads)
+      .debugLevel(cmdLine.debugLevel)
+      .lrtThreshold(cmdLine.lrtThreshold)
+      .genomics(genomics)
+      .personToCallsetNameMap(personToCallsetNameMap)
+      .personToReadsetIdMap(createReadsetIdMap(cmdLine.datasetId, personToCallsetNameMap, genomics))
+      .personToCallsetIdMap(personToCallsetIdMap)
+      .callsetIdToPersonMap(DenovoUtil.getReversedMap(personToCallsetIdMap))
+      .startPosition(cmdLine.startPosition)
+      .endPosition(cmdLine.endPosition)
+      .allChromosomes(allChromosomes)
+      .chromosomes(verifyAndSetChromsomes(cmdLine.chromosomes, allChromosomes))
+      .inferMethod(InferenceMethod.selectMethodfromString(cmdLine.inferMethod))     
+      .stageId(cmdLine.stageId)
+      .inputFileName(cmdLine.inputFileName)
+      .outputFileName(cmdLine.outputFileName)
+      .max_api_retries(cmdLine.maxApiRetries)
+      .max_variant_results(cmdLine.maxVariantResults)
+      .denovoMutationRate(cmdLine.denovoMutationRate)
+      .sequenceErrorRate(cmdLine.sequenceErrorRate)
+      .build();
     
-    startPosition = cmdLine.startPosition;
-    endPosition = cmdLine.endPosition;
-
-    // Create the BayesNet inference object
-    bayesInferrer = new BayesInfer(cmdLine.sequenceErrorRate, cmdLine.denovoMutationRate);
-    allChromosomes = fetchAllChromosomes(genomics);
-    chromosomes = verifyAndSetChromsomes(cmdLine.chromosomes);
-    inferMethod = InferenceMethod.selectMethodfromString(cmdLine.inferMethod);
+      bayesInferrer = new BayesInfer(shared);
   }
 
+  /**
+   * @return List<Callset>
+   * @throws IOException
+   */
+  public static List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
+    List<Callset> callsets = genomics.callsets()
+        .search(new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
+        .execute()
+        .getCallsets(); 
+    return callsets;
+  }
+
+  
   /*
    * Verify that the chromosomes supplied from the commandline are legal
    */
-  private List<String> verifyAndSetChromsomes(List<String> chromosomes) {
+  private List<String> verifyAndSetChromsomes(List<String> chromosomes, 
+      List<String> allChromosomes) {
 
     if (chromosomes == null || chromosomes.size() == 1 && chromosomes.get(0).equals("all")) {
       return allChromosomes;
@@ -124,7 +131,7 @@ public class ExperimentRunner {
     return chromosomes;
   }
 
-  private ImmutableList<String> fetchAllChromosomes(Genomics genomics) throws IOException {
+  private List<String> fetchAllChromosomes(String datasetId, Genomics genomics) throws IOException {
     // verify the commandline chromosomes
     List<ContigBound> contigBounds = DenovoUtil.getVariantsSummary(datasetId, genomics);
 
@@ -139,12 +146,12 @@ public class ExperimentRunner {
   }
 
   public void execute() throws IOException, ParseException {
-    if (cmdLine.stageId.equals("stage1")) {
+    if (shared.getStageId().equals("stage1")) {
       stage1();
-    } else if (cmdLine.stageId.equals("stage2")) {
+    } else if (shared.getStageId().equals("stage2")) {
       stage2();
     } else {
-      throw new IllegalArgumentException("Unknown stage : " + cmdLine.stageId);
+      throw new IllegalArgumentException("Unknown stage : " + shared.getStageId());
     }
   }
 
@@ -152,7 +159,7 @@ public class ExperimentRunner {
    * Stage 1 : Get a list of the candidates from VCF file
    */
   public void stage1() throws IOException {
-    if (debugLevel >= 0) {
+    if (shared.getDebugLevel() >= 0) {
       System.out.println("---------Starting Stage 1 VCF Filter -----------");
     }
 
@@ -160,32 +167,33 @@ public class ExperimentRunner {
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
-    final File outputFile = new File(outdir, cmdLine.outputFileName);
+    final File outputFile = new File(outdir, shared.getOutputFileName());
 
     // Open File Outout handles
     try (PrintWriter callWriter = new PrintWriter(outputFile);) {
 
       /* Get a list of all the contigs */
       List<ContigBound> contigBounds = FluentIterable
-          .from(DenovoUtil.getVariantsSummary(datasetId, genomics))
+          .from(DenovoUtil.getVariantsSummary(shared.getDatasetId(), shared.genomics))
           .filter(new Predicate<ContigBound>() {
 
             @Override
             public boolean apply(ContigBound cb) {
-              return chromosomes.contains(cb.getContig());
+              return shared.getChromosomes().contains(cb.getContig());
             }
           }).toList();
 
-      ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+      ExecutorService executor = Executors.newFixedThreadPool(shared.getNumThreads());
       /* Iterate through each contig and do variant filtering for each contig */
       for (ContigBound contigBound : contigBounds) {
-        Long startContigPos = startPosition == null ? 1L : startPosition;
-        Long endContigPos = endPosition == null ? contigBound.getUpperBound() : endPosition;
-        Long strideLength = (endContigPos - startContigPos) / numThreads;
+        Long startContigPos = shared.getStartPosition() == null ? 1L : shared.getStartPosition();
+        Long endContigPos = shared.getEndPosition() == null 
+            ? contigBound.getUpperBound() : shared.getEndPosition();
+        Long strideLength = (endContigPos - startContigPos) / shared.getNumThreads();
 
-        for (int threadIdx = 0 ; threadIdx < numThreads ; threadIdx++) {
+        for (int threadIdx = 0 ; threadIdx < shared.getNumThreads() ; threadIdx++) {
           long start = startContigPos + threadIdx * strideLength;
-          long end = threadIdx == numThreads - 1 ? endContigPos : start + strideLength - 1;
+          long end = threadIdx == shared.getNumThreads() - 1 ? endContigPos : start + strideLength - 1;
           Runnable worker = new SimpleDenovoRunnable(callWriter, contigBound.getContig(),
               start, end);
           executor.execute(worker);
@@ -195,7 +203,7 @@ public class ExperimentRunner {
       executor.shutdown();
       while (!executor.isTerminated()) {
       }
-      if (debugLevel >= 1) {
+      if (shared.getDebugLevel() >= 1) {
         System.out.println("All contigs processed");
       }
     }
@@ -224,7 +232,7 @@ public class ExperimentRunner {
         callSimpleDenovo(writer, contig, startPos, endPos);
       } catch (IOException e) {
         e.printStackTrace();
-        if (numTries < cmdLine.max_api_retries) {
+        if (numTries < shared.getMaxApiRetries()) {
           System.err.printf("Attempt #%d : contig %s%n", numTries + 1, contig);
           run();
         } else {
@@ -245,7 +253,8 @@ public class ExperimentRunner {
   /*
    * Creates a TrioType to callset ID map
    */
-  private Map<TrioIndividual, String> createCallsetIdMap(List<Callset> callsets) {
+  private Map<TrioIndividual, String> createCallsetIdMap(List<Callset> callsets, 
+      Map<TrioIndividual, String> personToCallsetNameMap) {
 
     Map<TrioIndividual, String> callsetIdMap = new HashMap<>();
     // Create a family person type to callset id map
@@ -308,13 +317,11 @@ public class ExperimentRunner {
 
     VariantsBuffer vbuffer = new VariantsBuffer();
     
-    VariantContigStream variantContigStream = new VariantContigStream(genomics, 
-        contig,
-        datasetId, 
-        cmdLine.max_variant_results, 
+    VariantContigStream variantContigStream = new VariantContigStream(contig,
         startPosition, 
         endPosition,
-        Lists.newArrayList(personToCallsetIdMap.values()));
+        Lists.newArrayList(shared.getPersonToCallsetIdMap().values()),
+        shared);
 
     while (variantContigStream.hasMore()) {
       StringBuilder builder = new StringBuilder();
@@ -338,23 +345,23 @@ public class ExperimentRunner {
       for (Variant variant : variants) {
         
         for (Call call : variant.getCalls()) {
-          vbuffer.checkAndAdd(callsetIdToPersonMap.get(call.getCallsetId()), 
+          vbuffer.checkAndAdd(shared.getCallsetIdToPersonMap().get(call.getCallsetId()), 
               Pair.with(variant, call));
           
         }
-        if(debugLevel > 1) {
+        if(shared.getDebugLevel() > 1) {
           System.out.println(vbuffer);  
         }
         
         // Try to see if buffer can be processed
         while(vbuffer.canProcess()) {
-          if(debugLevel > 1) {
+          if(shared.getDebugLevel() > 1) {
             System.out.println("canProcess1 : "+vbuffer.toString());  
           }
 
           Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
           if (nextCall.isPresent()) {
-            if (debugLevel > 1) {
+            if (shared.getDebugLevel() > 1) {
               System.out.println(nextCall);  
             }
             
@@ -365,12 +372,12 @@ public class ExperimentRunner {
             }
           }
           
-          if(debugLevel > 1) {
+          if(shared.getDebugLevel() > 1) {
             System.out.println("canProcess2 : "+vbuffer.toString());  
           }
           vbuffer.pop(CHILD);
           
-          if(debugLevel > 1) {
+          if(shared.getDebugLevel() > 1) {
             System.out.println("canProcess3 : "+vbuffer.toString());  
           }
         }
@@ -382,7 +389,7 @@ public class ExperimentRunner {
     StringBuilder builder = new StringBuilder();
     while (!vbuffer.isEmpty(CHILD)) {
       
-      if(debugLevel > 1) {
+      if(shared.getDebugLevel() > 1) {
         System.out.println("Flush1 : "+vbuffer.toString());  
       }
       
@@ -396,7 +403,7 @@ public class ExperimentRunner {
         }
       }
       
-      if(debugLevel > 1) {
+      if(shared.getDebugLevel() > 1) {
         System.out.println("Flush2 : "+vbuffer.toString());  
       }
       vbuffer.pop(CHILD);
@@ -409,20 +416,21 @@ public class ExperimentRunner {
    */
   public void stage2() throws ParseException, IOException {
 
-    if (debugLevel >= 0) {
+    if (shared.getDebugLevel() >= 0) {
       System.out.println("---- Starting Stage2 Bayesian Caller -----");
     }
 
     final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
     DenovoUtil.helperCreateDirectory(outdir);
 
-    final File stage1CallsFile = new File(outdir, cmdLine.inputFileName);
-    final File stage2CallsFile = new File(outdir, cmdLine.outputFileName);
+    final File stage1CallsFile = new File(outdir, shared.getInputFileName());
+    final File stage2CallsFile = new File(outdir, shared.getOutputFileName());
 
-    ExecutorService executor = new ThreadPoolExecutor(numThreads, // core thread pool size
-        numThreads, // maximum thread pool size
+    ExecutorService executor = new ThreadPoolExecutor(shared.getNumThreads(), // core thread pool size
+        shared.getNumThreads(), // maximum thread pool size
         1, // time to wait before resizing pool
-        TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(numThreads, true), new ThreadPoolExecutor.CallerRunsPolicy());
+        TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(shared.getNumThreads(), true),
+        new ThreadPoolExecutor.CallerRunsPolicy());
 
     /* Check if each candidate call is truly denovo by Bayesian denovo calling */
     try (BufferedReader callCandidateReader = new BufferedReader(new FileReader(stage1CallsFile));
@@ -431,11 +439,11 @@ public class ExperimentRunner {
         CallHolder callHolder = parseLine(line);
 
         /* Skip variant if chromosome does not match */
-        if (!chromosomes.contains(callHolder.chromosome)) {
+        if (!shared.getChromosomes().contains(callHolder.chromosome)) {
           continue;
         }
 
-        if (numThreads >= 2) {
+        if (shared.getNumThreads() >= 2) {
           executor.submit(new BayesDenovoRunnable(callHolder, callWriter));
         } else {
           new RunBayesDenovoWithRetries().run(callHolder, callWriter);
@@ -474,29 +482,13 @@ public class ExperimentRunner {
     /* Get reads for the current position */
     Map<TrioIndividual, List<Read>> readMap = new HashMap<>();
     for (TrioIndividual person : TrioIndividual.values()) {
-      List<Read> reads = DenovoUtil.getReads(personToReadsetIdMap.get(person), chromosome,
-          candidatePosition, candidatePosition, genomics);
+      List<Read> reads = DenovoUtil.getReads(shared.getPersonToReadsetIdMap().get(person), chromosome,
+          candidatePosition, candidatePosition, shared.genomics);
       readMap.put(person, reads);
     }
     return readMap;
   }
 
-  public Genomics getGenomics() {
-    return genomics;
-  }
-
-  public void setGenomics(Genomics genomics) {
-    this.genomics = genomics;
-  }
-
-  public Map<TrioIndividual, String> getPersonToCallsetIdMap() {
-    return personToCallsetIdMap;
-  }
-
-  public Map<String, TrioIndividual> getCallsetIdToPersonMap() {
-    return callsetIdToPersonMap;
-  }
-  
   /*
    * Runs the Bayesian Denovo inference on a trio call
    */
@@ -511,9 +503,10 @@ public class ExperimentRunner {
         getReadSummaryMap(callHolder.position, readMap);
 
     // Call the bayes inference algorithm to generate likelihood
-    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, inferMethod);
+    BayesInfer.InferenceResult result = bayesInferrer.infer(readSummaryMap, 
+        shared.getInferMethod());
 
-    if (debugLevel >= 1) {
+    if (shared.getDebugLevel() >= 1) {
       synchronized (this) {
         System.out.printf("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
             result.getDetails());
@@ -553,7 +546,7 @@ public class ExperimentRunner {
         runBayesDenovoInference(callHolder, writer);
       } catch (IOException e) {
         e.printStackTrace();
-        if (numTries < cmdLine.max_api_retries) {
+        if (numTries < shared.getMaxApiRetries()) {
           System.err.printf("Attempt #%d : call %s%n", numTries + 1, callHolder);
           run(callHolder, writer);
         } else {
