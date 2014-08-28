@@ -93,18 +93,6 @@ public class DenovoRunner {
       .build();
   }
 
-  /**
-   * @return List<Callset>
-   * @throws IOException
-   */
-  List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
-    List<Callset> callsets = genomics.callsets()
-        .search(new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
-        .execute()
-        .getCallsets(); 
-    return callsets;
-  }
-
   public void execute() throws IOException, ParseException, GeneralSecurityException {
     
     if (shared.getCaller() == VARIANT) {
@@ -124,6 +112,18 @@ public class DenovoRunner {
     } else {
       throw new IllegalArgumentException("Unknown stage : " + shared.getCaller());
     }
+  }
+
+  /**
+   * @return List<Callset>
+   * @throws IOException
+   */
+  List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
+    List<Callset> callsets = genomics.callsets()
+        .search(new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
+        .execute()
+        .getCallsets(); 
+    return callsets;
   }
 
   /*

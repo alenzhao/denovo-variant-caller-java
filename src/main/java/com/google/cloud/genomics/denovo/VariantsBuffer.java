@@ -40,24 +40,24 @@ import java.util.Map;
 /**
  * A Map consisting of queues which hold variant calls from a trio
  */
-public class VariantsBuffer {
+class VariantsBuffer {
 
   private Map<TrioIndividual, Deque<Pair<Variant,Call>>> bufferMap = new HashMap<>();
   private Map<TrioIndividual, Long> mostRecentStartPosition = new HashMap<>();
 
-  public VariantsBuffer() {
+  VariantsBuffer() {
     for (TrioIndividual person : TrioIndividual.values()) {
       bufferMap.put(person, new LinkedList<Pair<Variant,Call>>());
       mostRecentStartPosition.put(person, 0L);
     }
   }
 
-  public void push(TrioIndividual person, Pair<Variant,Call> pair) {
+  void push(TrioIndividual person, Pair<Variant,Call> pair) {
     getQueue(person).addLast(pair);
     mostRecentStartPosition.put(person, pair.getValue0().getPosition());
   }
 
-  public Pair<Variant,Call> pop(TrioIndividual person) {
+  Pair<Variant,Call> pop(TrioIndividual person) {
     if (isEmpty(person)) {
       throw new IllegalStateException("Trying to pop from empty queue");
     }
@@ -67,7 +67,7 @@ public class VariantsBuffer {
   /*
    * Checks if first variant in CHILD buffer can be processed
    */
-  public boolean canProcess() {
+  boolean canProcess() {
     return (!isEmpty(CHILD) 
         && getMostRecentStartPosition(MOM) >= getStartPosition(CHILD)
         && getMostRecentStartPosition(DAD) >= getStartPosition(CHILD));
@@ -80,14 +80,14 @@ public class VariantsBuffer {
   /*
    * Returns 0 if the buffer is empty for that person otherwise coord position
    */
-  public Long getStartPosition(TrioIndividual person) {
+  Long getStartPosition(TrioIndividual person) {
     return isEmpty(person) ? 0 : getQueue(person).getFirst().getValue0().getPosition();
   }
 
   /*
    * Returns 0 if the buffer is empty for that person otherwise coord position
    */
-  public Long getEndPosition(TrioIndividual person) {
+  Long getEndPosition(TrioIndividual person) {
     return isEmpty(person) ? 0 : getQueue(person).getLast().getValue0().getEnd();
   }
 
@@ -117,15 +117,15 @@ public class VariantsBuffer {
         }));
   }
 
-  public Map<TrioIndividual, Deque<Pair<Variant,Call>>> getBufferMap() {
+  Map<TrioIndividual, Deque<Pair<Variant,Call>>> getBufferMap() {
     return bufferMap;
   }
 
-  public Deque<Pair<Variant,Call>> getQueue(TrioIndividual person) {
+  Deque<Pair<Variant,Call>> getQueue(TrioIndividual person) {
     return bufferMap.get(person);
   }
 
-  public boolean isEmpty(TrioIndividual person) {
+  boolean isEmpty(TrioIndividual person) {
     return getQueue(person).isEmpty();
   }
 
@@ -144,14 +144,14 @@ public class VariantsBuffer {
     }
   }
 
-  public Pair<Variant,Call> getFirst(TrioIndividual person) {
+  Pair<Variant,Call> getFirst(TrioIndividual person) {
     return getQueue(person).getFirst();
   }
 
   /*
    * Check if a call passes filters for queue and then add it
    */
-  public boolean checkAndAdd(TrioIndividual person, Pair<Variant, Call> pair) {
+  boolean checkAndAdd(TrioIndividual person, Pair<Variant, Call> pair) {
     
     Call variant = pair.getValue1();
     if (person == CHILD && !isSnp(pair) 
@@ -176,7 +176,7 @@ public class VariantsBuffer {
   /*
    * Returns the next available PositionCall
    */
-  public PositionCall retrieveNextCall() {
+  PositionCall retrieveNextCall() {
     evictParents();
 
     Pair<Variant, Call> childSNP = getNextSNP(CHILD);
@@ -300,11 +300,11 @@ public class VariantsBuffer {
   /*
    * A data class for storing position
    */
-  public static class PositionCall {
-    public final Long position;
-    public final Map<TrioIndividual, Genotype> genotypeMap;
+  static class PositionCall {
+    private final Long position;
+    private final Map<TrioIndividual, Genotype> genotypeMap;
 
-    public PositionCall(Long snpPosition, Map<TrioIndividual, Genotype> map) {
+    PositionCall(Long snpPosition, Map<TrioIndividual, Genotype> map) {
       this.position = snpPosition;
       this.genotypeMap = map;
     }
@@ -312,14 +312,28 @@ public class VariantsBuffer {
     /*
      * Is call denovo
      */
-    public boolean isDenovo() {
-      return DenovoUtil.isDenovoMap.get(Triplet.with(genotypeMap.get(DAD),
-            genotypeMap.get(MOM),genotypeMap.get(CHILD)));
+    boolean isDenovo() {
+      return DenovoUtil.isDenovoMap.get(Triplet.with(getGenotypeMap().get(DAD),
+            getGenotypeMap().get(MOM),getGenotypeMap().get(CHILD)));
     }
     
     @Override
     public String toString() {
-      return "[" + position.toString() + "," + genotypeMap.toString() + "]";
+      return "[" + getPosition().toString() + "," + getGenotypeMap().toString() + "]";
+    }
+
+    /**
+     * @return the position
+     */
+    public Long getPosition() {
+      return position;
+    }
+
+    /**
+     * @return the genotypeMap
+     */
+    public Map<TrioIndividual, Genotype> getGenotypeMap() {
+      return genotypeMap;
     }
   }
 }

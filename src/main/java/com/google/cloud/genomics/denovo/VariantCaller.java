@@ -156,7 +156,7 @@ public class VariantCaller extends DenovoCaller {
             
             if (nextCall.get().isDenovo()) {
               builder.append(
-                  String.format("%s,%d,%s%n", contig, nextCall.get().position,
+                  String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
                       nextCall.get()));
             }
           }
@@ -187,7 +187,7 @@ public class VariantCaller extends DenovoCaller {
         System.out.println(nextCall);
         if (nextCall.get().isDenovo()) {
           builder.append(
-              String.format("%s,%d,%s%n", contig, nextCall.get().position,
+              String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
                   nextCall.get()));
         }
       }

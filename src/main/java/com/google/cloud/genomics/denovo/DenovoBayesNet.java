@@ -21,7 +21,6 @@ import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,10 +33,9 @@ import java.util.Map;
  */
 public class DenovoBayesNet {
 
-
-  private final DenovoShared shared;
-  private Map<TrioIndividual, Node<TrioIndividual, Genotype>> nodeMap;
-
+    private final DenovoShared shared;
+    private final Map<TrioIndividual, Node<TrioIndividual, Genotype>> nodeMap; 
+    
   public DenovoBayesNet(DenovoShared shared) {
     this.shared = shared;
     nodeMap = new HashMap<TrioIndividual, Node<TrioIndividual, Genotype>>();
@@ -51,35 +49,15 @@ public class DenovoBayesNet {
     addNode(new Node<>(CHILD, childParents, createConditionalProbabilityTable(CHILD)));
   }
 
-  public void addNode(Node<TrioIndividual, Genotype> node) {
+  void addNode(Node<TrioIndividual, Genotype> node) {
     getNodeMap().put(node.getId(), node);
-  }
-
-  /*
-   * Prints the conditional probability to terminal
-   */
-  /**
-   * @param conditionalProbabilityTable
-   */
-  public static void printConditionalProbabilityTable(PrintStream out,
-      Map<List<Genotype>, Double> conditionalProbabilityTable) {
-
-    for (Genotype dadGenotype : Genotype.values()) {
-      for (Genotype momGenotype : Genotype.values()) {
-        for (Genotype childGenotype : Genotype.values()) {
-          List<Genotype> cptKey = Arrays.asList(dadGenotype, momGenotype, childGenotype);
-          Double probVal = conditionalProbabilityTable.get(cptKey);
-          out.printf("%s : %s%n", cptKey, probVal);
-        }
-      }
-    }
   }
 
   /*
    * Creates the conditional probability table to be used in the bayes net One each for mom, dad and
    * child
    */
-  public Map<List<Genotype>, Double> createConditionalProbabilityTable(TrioIndividual individual) {
+  Map<List<Genotype>, Double> createConditionalProbabilityTable(TrioIndividual individual) {
 
     Map<List<Genotype>, Double> conditionalProbabilityTable = new HashMap<>();
     if (individual == DAD || individual == MOM) {
@@ -229,19 +207,11 @@ public class DenovoBayesNet {
   /**
    * @return the nodeMap
    */
-  public Map<TrioIndividual, Node<TrioIndividual, Genotype>> getNodeMap() {
+  Map<TrioIndividual, Node<TrioIndividual, Genotype>> getNodeMap() {
     return nodeMap;
   }
 
-  /**
-   * @param hashMap the nodeMap to set
-   */
-  public void setNodeMap(Map<TrioIndividual, Node<TrioIndividual, Genotype>> hashMap) {
-    this.nodeMap = hashMap;
-  }
-
-  public DenovoBayesNet.InferenceResult performInference(
-      Map<TrioIndividual, ReadSummary> readSummaryMap) {
+  public BayesInferenceResult performInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
 
     // Calculate Likelihoods of the different reads
     Map<TrioIndividual, Map<Genotype, Double>> individualLogLikelihood =
@@ -281,7 +251,7 @@ public class DenovoBayesNet {
     // ln(likelihood null/likelihood alternate)
     double likelihoodRatio = denovoLikelihood / mendelianLikelihood;
     
-    return new DenovoBayesNet.InferenceResult(maxGenoType, maxLogLikelihood, 
+    return new BayesInferenceResult(maxGenoType, maxLogLikelihood, 
         bayesDenovoProb, likelihoodRatio, Math.log(mendelianLikelihood), Math.log(denovoLikelihood));
   }
 
@@ -321,42 +291,4 @@ public class DenovoBayesNet {
     logLikelihood += getLogLikelihoodFromCPT(CHILD, genoTypeDad, genoTypeMom, genoTypeChild);
     return logLikelihood;
   }
-  
-  static class InferenceResult {
-    final List<Genotype> maxTrioGenotype;
-    final double maxLikelihood;
-    final double bayesDenovoProb;
-    final double likelihoodRatio;
-    final double mendelianLogLikelihood;
-    final double denovoLogLikelihood;
-    
-    public InferenceResult(List<Genotype> maxTrioGenotype, 
-        double maxLikelihood, 
-        double bayesDenovoProb,
-        double logOfLikelihoodRatio,
-        double mendelianLogLikelihood,
-        double denovoLogLikelihood) {
-      this.maxTrioGenotype = maxTrioGenotype;
-      this.maxLikelihood = maxLikelihood;
-      this.bayesDenovoProb = bayesDenovoProb;
-      this.likelihoodRatio = logOfLikelihoodRatio;
-      this.mendelianLogLikelihood = mendelianLogLikelihood;
-      this.denovoLogLikelihood = denovoLogLikelihood;
-    }
-    
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("<");
-      sb.append("maxGT : " + maxTrioGenotype.toString());
-      sb.append(", maxLL : " + String.valueOf(maxLikelihood));
-      sb.append(", mendelLL : " + String.valueOf(mendelianLogLikelihood));
-      sb.append(", denovoLL : " + String.valueOf(denovoLogLikelihood));
-      sb.append(", bayesProb : " + String.valueOf(bayesDenovoProb));
-      sb.append(", llRatio : " + String.valueOf(likelihoodRatio));
-      sb.append(">");
-      return sb.toString();
-    }
-  }
-
 }

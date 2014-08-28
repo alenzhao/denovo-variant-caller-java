@@ -205,7 +205,7 @@ public class DenovoUtil {
   /*
    * Reverse a dictionary
    */
-  public static <K, V> Map<V, K> getReversedMap(Map<K, V> map) {
+  static <K, V> Map<V, K> getReversedMap(Map<K, V> map) {
     Map<V, K> reversed = new HashMap<>();
     for (Map.Entry<K, V> entry : map.entrySet()) {
       reversed.put(entry.getValue(), entry.getKey());
@@ -213,7 +213,7 @@ public class DenovoUtil {
     return reversed;
   }
 
-  public static void helperCreateDirectory(File theDir) {
+  static void helperCreateDirectory(File theDir) {
     // if the directory does not exist, create it
     if (!theDir.exists()) {
       System.err.println("creating directory: " + theDir);
@@ -235,7 +235,7 @@ public class DenovoUtil {
    * @param trioGenotypeList
    * @return isDenovo
    */
-  public static boolean checkTrioGenoTypeIsDenovo(List<Genotype> trioGenotypeList) {
+  static boolean checkTrioGenoTypeIsDenovo(List<Genotype> trioGenotypeList) {
     Genotype genotypeDad = trioGenotypeList.get(0);
     Genotype genotypeMom = trioGenotypeList.get(1);
     Genotype genotypeChild = trioGenotypeList.get(2);

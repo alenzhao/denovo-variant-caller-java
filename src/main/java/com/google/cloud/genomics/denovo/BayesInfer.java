@@ -87,36 +87,36 @@ class BayesInfer {
   private InferenceResult performMAPInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
     
     // Get the trio genotype with the max likelihood
-    DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
+    BayesInferenceResult dbnResult = dbn.performInference(readSummaryMap);
 
     // Check that the MAP genotype has indeed the highest likelihood
-    boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(dbnResult.maxTrioGenotype);
+    boolean isDenovo = DenovoUtil.checkTrioGenoTypeIsDenovo(dbnResult.getMaxTrioGenotype());
 
-    return createInferenceResult(Pair.with(dbnResult.maxTrioGenotype, isDenovo), 
+    return createInferenceResult(Pair.with(dbnResult.getMaxTrioGenotype(), isDenovo), 
         createReadCountString(readSummaryMap));
   }
   
   private InferenceResult performBayesInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
     
     // Get the trio genotype with the max likelihood
-    DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
+    BayesInferenceResult dbnResult = dbn.performInference(readSummaryMap);
 
     // Use the bayesian classifier rule
-    boolean isDenovo = dbnResult.bayesDenovoProb > 0.5;
+    boolean isDenovo = dbnResult.getBayesDenovoProb() > 0.5;
 
-    return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
+    return createInferenceResult(new Pair<>(dbnResult.getMaxTrioGenotype(), isDenovo), 
         createReadCountString(readSummaryMap));
   }
   
   private InferenceResult performLRTInference(Map<TrioIndividual, ReadSummary> readSummaryMap) {
     
     // Get the trio genotype with the max likelihood
-    DenovoBayesNet.InferenceResult dbnResult = dbn.performInference(readSummaryMap);
+    BayesInferenceResult dbnResult = dbn.performInference(readSummaryMap);
 
     // Use the likelihood ratio rule
-    boolean isDenovo = dbnResult.likelihoodRatio > shared.getLrtThreshold();
+    boolean isDenovo = dbnResult.getLikelihoodRatio() > shared.getLrtThreshold();
 
-    return createInferenceResult(new Pair<>(dbnResult.maxTrioGenotype, isDenovo), 
+    return createInferenceResult(new Pair<>(dbnResult.getMaxTrioGenotype(), isDenovo), 
         createReadCountString(readSummaryMap));
   }
 

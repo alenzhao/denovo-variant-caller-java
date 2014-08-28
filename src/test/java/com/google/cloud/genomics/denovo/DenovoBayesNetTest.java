@@ -28,7 +28,6 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual.MOM;
 import static org.junit.Assert.assertEquals;
 
-import com.google.cloud.genomics.denovo.DenovoBayesNet.InferenceResult;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioIndividual;
@@ -410,12 +409,12 @@ public class DenovoBayesNetTest extends DenovoTest {
         dbn.getReadSummaryLogLikelihood(summary);
     Map<TrioIndividual, ReadSummary> summaryMap = 
        createMapReadSummary(summary, summary, summary);
-    InferenceResult result = dbn.performInference(summaryMap);
+    BayesInferenceResult result = dbn.performInference(summaryMap);
     
     double answer = llMap.get(AA) * 3 + dbn.getLogLikelihoodFromCPT(CHILD, AA,AA,AA) 
         + dbn.getLogLikelihoodFromCPT(DAD, AA) + dbn.getLogLikelihoodFromCPT(MOM, AA);
     
-    assertEquals("ll(AA,AA,AA)", answer, result.maxLikelihood, EPS_SMALL);
+    assertEquals("ll(AA,AA,AA)", answer, result.getMaxLikelihood(), EPS_SMALL);
   }
 
   @Test
@@ -425,11 +424,11 @@ public class DenovoBayesNetTest extends DenovoTest {
         dbn.getReadSummaryLogLikelihood(summary);
     Map<TrioIndividual, ReadSummary> summaryMap = 
         createMapReadSummary(summary, summary, summary);
-    InferenceResult result = dbn.performInference(summaryMap);
+    BayesInferenceResult result = dbn.performInference(summaryMap);
     
     double answer = llMap.get(AA) * 3 + dbn.getLogLikelihoodFromCPT(CHILD, AA,AA,AA) 
         + dbn.getLogLikelihoodFromCPT(DAD, AA) + dbn.getLogLikelihoodFromCPT(MOM, AA);
     
-    assertEquals("ll(AA,AA,AA)", answer, result.maxLikelihood, EPS_SMALL);
+    assertEquals("ll(AA,AA,AA)", answer, result.getMaxLikelihood(), EPS_SMALL);
   }
 }
