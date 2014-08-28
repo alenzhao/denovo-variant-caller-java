@@ -55,7 +55,7 @@ public class VariantContigStream {
       System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
     }
 
-    SearchVariantsResponse response = shared.genomics.variants().search(request).execute();
+    SearchVariantsResponse response = shared.getGenomics().variants().search(request).execute();
 
     nextPageToken = response.getNextPageToken();
     return response.getVariants();

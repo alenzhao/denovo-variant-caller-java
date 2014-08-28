@@ -14,7 +14,7 @@ import java.util.Set;
  */
 public class DenovoShared {
 
-  Genomics genomics;
+  private final Genomics genomics;
   private final int numThreads;
   private final Map<TrioIndividual, String> personToCallsetIdMap;
   private final Map<TrioIndividual, String> personToReadsetIdMap;
@@ -190,6 +190,13 @@ public class DenovoShared {
    */
   public double getDenovoMutationRate() {
     return denovoMutationRate;
+  }
+
+  /**
+   * @return the genomics
+   */
+  public Genomics getGenomics() {
+    return genomics;
   }
 
   public static class Builder {
