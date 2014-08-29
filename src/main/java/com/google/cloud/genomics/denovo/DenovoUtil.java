@@ -90,7 +90,7 @@ public class DenovoUtil {
    * Mebers in the trio
    */
   public enum TrioMember {
-    DAD, MOM, CHILD;
+    CHILD, MOM, DAD;
 
     public static final EnumSet<TrioMember> PARENTS = EnumSet.of(DAD, MOM);
   }

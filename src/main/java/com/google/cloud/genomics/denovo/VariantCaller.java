@@ -164,9 +164,12 @@ public class VariantCaller extends DenovoCaller {
           Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
           if (nextCall.isPresent()) {
             if (nextCall.get().isDenovo()) {
-              builder.append(
-                  String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
-                      nextCall.get()));
+              builder.append(String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
+                  nextCall.get()));
+
+              // Logging
+              System.out.printf("%s,%d,%s%n", contig, nextCall.get().getPosition(),
+                  nextCall.get());
             }
           }
           vbuffer.pop(CHILD);
@@ -184,6 +187,10 @@ public class VariantCaller extends DenovoCaller {
           builder.append(
               String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
                   nextCall.get()));
+          
+          // Logging
+          System.out.printf("%s,%d,%s%n", contig, nextCall.get().getPosition(),
+              nextCall.get());
         }
       }
       vbuffer.pop(CHILD);

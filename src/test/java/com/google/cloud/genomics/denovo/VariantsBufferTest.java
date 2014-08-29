@@ -88,6 +88,6 @@ public class VariantsBufferTest extends DenovoTest {
     vbuf.push(DAD, pair);
     vbuf.push(MOM, pair);
     vbuf.push(MOM, Pair.with(new Variant().setPosition(3L).setEnd(5000L), dummyCall));
-    assertEquals("DAD:[1-1000,1-1000,1-1000], MOM:[1-1000,3-5000], CHILD:[]", vbuf.toString());
+    assertEquals("CHILD:[], MOM:[1-1000,3-5000], DAD:[1-1000,1-1000,1-1000]", vbuf.toString());
   }
 }

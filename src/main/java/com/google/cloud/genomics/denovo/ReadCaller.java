@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -139,7 +140,7 @@ public class ReadCaller extends DenovoCaller {
    */
   Map<TrioMember, ReadSummary> getReadSummaryMap(Long candidatePosition,
       Map<TrioMember, List<Read>> readMap) {
-    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    Map<TrioMember, ReadSummary> readSummaryMap = new TreeMap<>();
     for (TrioMember person : TrioMember.values()) {
       readSummaryMap.put(person,
           new ReadSummary(readMap.get(person), candidatePosition));
