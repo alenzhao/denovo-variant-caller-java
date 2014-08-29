@@ -163,10 +163,6 @@ public class VariantCaller extends DenovoCaller {
         while(vbuffer.canProcess()) {
           Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
           if (nextCall.isPresent()) {
-            if (shared.getDebugLevel() > 1) {
-              System.out.println(nextCall);  
-            }
-            
             if (nextCall.get().isDenovo()) {
               builder.append(
                   String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
@@ -184,16 +180,11 @@ public class VariantCaller extends DenovoCaller {
     while (!vbuffer.isEmpty(CHILD)) {
       Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
       if (nextCall.isPresent()) {
-        System.out.println(nextCall);
         if (nextCall.get().isDenovo()) {
           builder.append(
               String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
                   nextCall.get()));
         }
-      }
-      
-      if(shared.getDebugLevel() > 1) {
-        System.out.println("Flush2 : "+vbuffer.toString());  
       }
       vbuffer.pop(CHILD);
     }

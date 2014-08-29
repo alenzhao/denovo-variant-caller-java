@@ -60,10 +60,6 @@ class CommandLine {
       usage = "Child's callset name e.g. NA12879")
   public String childCallsetName;
   
-  @Option(name = "--project_id", metaVar = "<id>",
-      usage = "Project id", required = true)
-  public long projectId = 1085016379660L;
-
   @Option(name = "--dataset_id", metaVar = "<id>",
       usage = "Dataset id", required = true)
   public String datasetId = "14004469326575082626";

@@ -65,7 +65,7 @@ public class VariantContigStream {
     requestCount++;
     request.setPageToken(nextPageToken);
 
-    if (shared.getDebugLevel() >= 1) {
+    if (shared.getDebugLevel() > 1) {
       System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
     }
 
