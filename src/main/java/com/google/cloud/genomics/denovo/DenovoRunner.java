@@ -13,9 +13,9 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.FULL;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.FULL;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
@@ -41,6 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 /**
  * Wrappper for caller objects
@@ -86,14 +92,12 @@ public class DenovoRunner {
                   return Chromosome.fromString(input);
                 }
             }).toList());
-    
-    
-    // Get a list of all the contigBounds and the chromosomes
-    
+
+    // Initialize the shared object
     shared = new DenovoShared.Builder()
       .datasetId(cmdLine.datasetId)
       .numThreads(cmdLine.numThreads)
-      .debugLevel(cmdLine.debugLevel)
+      .logger(setUpLogger(cmdLine))
       .lrtThreshold(cmdLine.lrtThreshold)
       .genomics(genomics)
       .personToCallsetNameMap(personToCallsetNameMap)
@@ -112,6 +116,46 @@ public class DenovoRunner {
       .denovoMutationRate(cmdLine.denovoMutationRate)
       .sequenceErrorRate(cmdLine.sequenceErrorRate)
       .build();
+  }
+
+  /** Set up the logge. Creates a new one each time.
+   * @param cmdLine
+   * @return the logger
+   * @throws IOException
+   */
+  private Logger setUpLogger(CommandLine cmdLine) throws IOException {
+
+    if (LogManager.getLogManager().getLogger(DenovoRunner.class.getName()) != null) {
+      return LogManager.getLogManager().getLogger(DenovoRunner.class.getName());
+    }
+    
+    Logger logger = Logger.getLogger(DenovoRunner.class.getName());
+    ConsoleHandler consoleHandler = new ConsoleHandler();
+    logger.setLevel(cmdLine.logLevel.getLevel());
+    logger.setUseParentHandlers(false);
+    Formatter conciseFormat = new Formatter(){
+      @Override
+      public String format(LogRecord record) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(DenovoUtil.LogLevel.levelMap.get(record.getLevel()));
+        sb.append(" : ");
+        sb.append(record.getMessage());
+        sb.append("\n");
+        return sb.toString();
+      }
+    };
+    consoleHandler.setFormatter(conciseFormat);
+    consoleHandler.setLevel(cmdLine.logLevel.getLevel());
+    logger.addHandler(consoleHandler);
+    
+    if (cmdLine.logFile != null) {
+      FileHandler fileHandler = new FileHandler(
+          DenovoUtil.getNormalizedFile(cmdLine.logFile).getAbsolutePath(), false);
+      fileHandler.setFormatter(conciseFormat);
+      fileHandler.setLevel(cmdLine.logLevel.getLevel());
+      logger.addHandler(fileHandler);
+    }
+    return logger;
   }
 
   /**

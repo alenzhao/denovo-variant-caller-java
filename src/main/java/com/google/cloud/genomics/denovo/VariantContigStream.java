@@ -65,9 +65,8 @@ public class VariantContigStream {
     requestCount++;
     request.setPageToken(nextPageToken);
 
-    if (shared.getDebugLevel() > 1) {
-      System.out.println("Executing Search Variants Request : " + String.valueOf(requestCount));
-    }
+    shared.getLogger().finer(
+      String.format("Executing Search Variants Request : " + String.valueOf(requestCount)));
 
     SearchVariantsResponse response = shared.getGenomics().variants().search(request).execute();
 

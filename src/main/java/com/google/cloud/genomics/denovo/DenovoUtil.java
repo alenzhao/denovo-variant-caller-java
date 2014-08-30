@@ -22,6 +22,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 /*
  * Utility functions shared by other classes in Denovo project
@@ -55,6 +56,29 @@ public class DenovoUtil {
    * Type of Caller. Variant bases or read based (more expensive)
    */
   public enum Caller { VARIANT, READ, FULL }
+  
+  public enum LogLevel { 
+    ERROR(Level.SEVERE), 
+    INFO(Level.INFO), 
+    DEBUG(Level.FINE); 
+  
+    private final Level level;
+    public static final Map<Level, LogLevel> levelMap = new HashMap<>(); 
+    
+    static {
+      levelMap.put(Level.SEVERE, ERROR);
+      levelMap.put(Level.INFO, INFO);
+      levelMap.put(Level.FINE, DEBUG);
+    }
+    
+    private LogLevel(Level level) {
+      this.level = level; 
+    }
+  
+    public Level getLevel() { 
+      return level;
+    }
+  }
   
   public enum Chromosome {
     CHR1,

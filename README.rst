@@ -42,14 +42,17 @@ There are three modes for Denovo calling
 
     java -jar target/denovo-variant-caller-0.1.jar --caller full \
     --client_secrets_filename ${HOME}/Downloads/client_secrets.json \
-    --debug_level 1 \
-    --chromosome chr1 \
-    --output_file NA12878_full.calls \
-    --num_threads 25 \
+    --dataset_id 14004469326575082626 \
     --dad_callset_name NA12891 \
     --mom_callset_name NA12892 \
     --child_callset_name NA12878 \
-    --dataset_id 14004469326575082626 
+    --chromosome chr1 \
+    --start_position 1 \
+    --end_position 14000000 \
+    --log_level debug \
+    --num_threads 25\
+    --output_file NA12878_full.calls
+
 
 Additional Options
 ------------------
@@ -70,14 +73,14 @@ See below for all options ::
      --client_secrets_filename <file>       : Path to client_secrets.json
      --dad_callset_name <name>              : Dad's callset name e.g. NA12877
      --dataset_id <id>                      : Dataset id
-     --debug_level <level>                  : specify the debug level (0 for no
-                                              debug spew)
      --denovo_mut_rate <rate>               : Specify the denovo mutation rate
                                               (default 1e-8)
      --end_position <position>              : end position ( usually set
                                               automatically )
      --inference_method [MAP | BAYES | LRT] : Inference method (map | bayes | lrt)
      --input_calls_file <file>              : File to read from
+     --log_file <file>                      : specify the log file
+     --log_level [ERROR | INFO | DEBUG]     : specify the logging level
      --lrt_threshold <sig_level>            : likelihood ratio test significance
                                               level (default 1. ;higher the
                                               stricter)
@@ -92,7 +95,6 @@ See below for all options ::
      --seq_err_rate <rate>                  : Specify the sequence error rate
                                               (default 1e-2)
      --start_position <position>            : start position ( usually 1 )
-
 	
 .. _Google Genomics API: https://developers.google.com/genomics
 .. _Apache Maven: http://maven.apache.org/download.cgi

@@ -28,12 +28,13 @@ public class DenovoMain {
     cmdLine = new CommandLine();
     try {
       cmdLine.setArgs(args);
-      
     } catch (Exception e) {
       cmdLine.printHelp(e.getMessage() + "\n", System.err);
       e.printStackTrace();
       System.exit(1);
     }
+    
+    
     
     try {
       DenovoRunner.initFromCommandLine(cmdLine).execute();

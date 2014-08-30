@@ -21,6 +21,7 @@ import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Container for shared parameters in project
@@ -38,7 +39,6 @@ public class DenovoShared {
   private final String datasetId;
   private final Long startPosition;
   private final Long endPosition;
-  private final int debugLevel;
   private final double lrtThreshold;
   private final Caller caller;
   private final String outputFileName;
@@ -47,6 +47,7 @@ public class DenovoShared {
   private final long maxVariantResults;
   private final double sequenceErrorRate;
   private final double denovoMutationRate;
+  private final Logger logger;
   
   private DenovoShared(Builder builder) {
     genomics = builder.genomics;
@@ -60,7 +61,7 @@ public class DenovoShared {
     datasetId = builder.datasetId;
     startPosition = builder.startPosition;
     endPosition = builder.endPosition;
-    debugLevel = builder.debugLevel;
+    logger = builder.logger;
     lrtThreshold = builder.lrtThreshold;
     outputFileName = builder.outputFileName;
     maxApiRetries = builder.maxApiRetries;
@@ -142,10 +143,10 @@ public class DenovoShared {
   }
 
   /**
-   * @return the debugLevel
+   * @return the logger
    */
-  public int getDebugLevel() {
-    return debugLevel;
+  public Logger getLogger() {
+    return logger;
   }
 
   /**
@@ -227,7 +228,6 @@ public class DenovoShared {
     private String datasetId;
     private Long startPosition;
     private Long endPosition;
-    private int debugLevel;
     private double lrtThreshold;
     private Caller caller;
     private String outputFileName;
@@ -236,6 +236,7 @@ public class DenovoShared {
     private String inputFileName;
     private double sequenceErrorRate;
     private double denovoMutationRate;
+    private Logger logger;
 
     public Builder denovoMutationRate(double denovoMutationRate) {
       this.denovoMutationRate = denovoMutationRate;
@@ -288,8 +289,8 @@ public class DenovoShared {
       return this;
     }
 
-    public Builder debugLevel(int debugLevel) {
-      this.debugLevel = debugLevel;
+    public Builder logger(Logger logger) {
+      this.logger = logger;
       return this;
     }
 

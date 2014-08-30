@@ -84,10 +84,14 @@ class CommandLine {
       usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
   public int numThreads = 1;
 
-  @Option(name = "--debug_level", metaVar = "<level>",
-      usage = "specify the debug level (0 for no debug spew)")
-  public int debugLevel = 0;
+  @Option(name = "--log_level", metaVar = "<level>",
+      usage = "specify the logging level")
+  public DenovoUtil.LogLevel logLevel = DenovoUtil.LogLevel.INFO;
 
+  @Option(name = "--log_file", metaVar = "<file>",
+      usage = "specify the log file")
+  public String logFile;
+  
   @Option(name = "--chromosome", metaVar = "<name>",
       usage = "specify the chromosomes to search (specify multiple times for multiple chromsomes)")
   public List<String> chromosomes;

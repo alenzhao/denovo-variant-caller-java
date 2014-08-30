@@ -56,9 +56,7 @@ public class ReadCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws ParseException, IOException, IOException {
-    if (shared.getDebugLevel() >= 0) {
-      System.out.println("---- Starting Bayesian Read Caller -----");
-    }
+    shared.getLogger().info("---- Starting Bayesian Read Caller -----");
 
     final File inputFile = DenovoUtil.getNormalizedFile(shared.getInputFileName());
     final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
@@ -114,16 +112,13 @@ public class ReadCaller extends DenovoCaller {
     BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, 
         shared.getInferMethod());
 
-    if (shared.getDebugLevel() >= 1) {
-      synchronized (this) {
-        System.out.printf("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
-            result.getDetails());
-      }
-    }
-
-    if (result.isDenovo()) {
-      writeCalls(writer, String.format("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
+    synchronized (this) {
+      shared.getLogger().fine(String.format("%s,%d,%s", callHolder.chromosome, callHolder.position,
           result.getDetails()));
+      if (result.isDenovo()) {
+        writeCalls(writer, String.format("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
+            result.getDetails()));
+      }
     }
   }
 

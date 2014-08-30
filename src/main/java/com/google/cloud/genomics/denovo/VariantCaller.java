@@ -51,9 +51,9 @@ public class VariantCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws IOException {
-    if (shared.getDebugLevel() >= 0) {
-      System.out.println("---------Starting Variant Caller -----------");
-    }
+    
+    shared.getLogger().info("---------Starting Variant Caller -----------");
+
 
     // Define Experiment Specific Constant Values
     final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
@@ -87,7 +87,9 @@ public class VariantCaller extends DenovoCaller {
         Long endContigPos = shared.getEndPosition() == null 
             ? contigBound.getUpperBound() : shared.getEndPosition();
         Long strideLength = (endContigPos - startContigPos) / shared.getNumThreads();
-
+        
+        shared.getLogger().info("Processing Chromosome : " + contigBound.getContig());
+        
         for (int threadIdx = 0 ; threadIdx < shared.getNumThreads() ; threadIdx++) {
           long start = startContigPos + threadIdx * strideLength;
           long end = threadIdx == shared.getNumThreads() - 1 ? endContigPos : start + strideLength - 1;
@@ -100,9 +102,7 @@ public class VariantCaller extends DenovoCaller {
       executor.shutdown();
       while (!executor.isTerminated()) {
       }
-      if (shared.getDebugLevel() >= 1) {
-        System.out.println("All contigs processed");
-      }
+      shared.getLogger().info("All choromosomes processed");
     }
   }
   
@@ -165,8 +165,8 @@ public class VariantCaller extends DenovoCaller {
                   nextCall.get()));
 
               // Logging
-              System.out.printf("%s,%d,%s%n", contig, nextCall.get().getPosition(),
-                  nextCall.get());
+              shared.getLogger().fine(String.format("%s,%d,%s", contig, 
+                  nextCall.get().getPosition(), nextCall.get()));
             }
           }
           vbuffer.pop(CHILD);
@@ -186,8 +186,8 @@ public class VariantCaller extends DenovoCaller {
                   nextCall.get()));
           
           // Logging
-          System.out.printf("%s,%d,%s%n", contig, nextCall.get().getPosition(),
-              nextCall.get());
+          shared.getLogger().fine(String.format("%s,%d,%s", contig, 
+              nextCall.get().getPosition(), nextCall.get()));
         }
       }
       vbuffer.pop(CHILD);
