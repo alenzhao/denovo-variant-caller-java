@@ -84,6 +84,23 @@ public class DenovoUtil {
     CHRM;
     
     public static final EnumSet<Chromosome> ALL = EnumSet.allOf(Chromosome.class);
+    
+    public static Chromosome fromString(String str) {
+      str = str.toUpperCase();
+      try {
+        return Chromosome.valueOf(str);
+      } catch (IllegalArgumentException e) {
+        for(int i = 1 ; i <= 22 ; i++) {
+          if (str.equals(String.valueOf(i))) {
+            return Chromosome.valueOf("CHR" + String.valueOf(i));
+          }
+        }
+        if (Arrays.asList("X","Y","M").contains(str.toUpperCase())) {
+          return Chromosome.valueOf("CHR" + str);
+        }
+        throw new IllegalArgumentException("Unknown Chromosome " + str);
+      }
+    }
   }
 
   /**

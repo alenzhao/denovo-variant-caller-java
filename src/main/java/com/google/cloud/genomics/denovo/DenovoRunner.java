@@ -27,6 +27,8 @@ import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.cloud.genomics.utils.GenomicsFactory;
+import com.google.common.base.Function;
+import com.google.common.collect.FluentIterable;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +39,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Wrappper for caller objects
@@ -72,6 +75,17 @@ public class DenovoRunner {
     Map<TrioMember, String> personToCallsetIdMap = createCallsetIdMap(
         getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
     this.cmdLine = cmdLine;
+    Set<Chromosome> chromosomes = cmdLine.chromosomes == null 
+        ? Chromosome.ALL 
+        : EnumSet.copyOf(FluentIterable
+            .from(cmdLine.chromosomes)
+            .transform(new Function<String, Chromosome>() {
+                @Override
+                public Chromosome apply(String input) {
+                  return Chromosome.fromString(input);
+                }
+            }).toList());
+    
     
     // Get a list of all the contigBounds and the chromosomes
     
@@ -87,8 +101,7 @@ public class DenovoRunner {
       .callsetIdToPersonMap(DenovoUtil.getReversedMap(personToCallsetIdMap))
       .startPosition(cmdLine.startPosition)
       .endPosition(cmdLine.endPosition)
-      .chromosomes(cmdLine.chromosomes == null 
-          ? Chromosome.ALL : EnumSet.copyOf(cmdLine.chromosomes))
+      .chromosomes(chromosomes)
       .inferMethod(cmdLine.inferMethod)
       .caller(cmdLine.caller)
       .inputFileName(cmdLine.inputFileName)
