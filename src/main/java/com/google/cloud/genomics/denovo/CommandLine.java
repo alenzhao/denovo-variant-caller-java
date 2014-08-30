@@ -29,7 +29,7 @@ class CommandLine {
   CmdLineParser parser;
 
   @Option(name = "--caller", metaVar = "<variant|read>",
-      usage = "The caller to use (variant or read) based", required = true)
+      usage = "The caller mode", required = true)
   public DenovoUtil.Caller caller;
   
   @Option(name = "--inference_method", metaVar = "<map|bayes|lrt>",

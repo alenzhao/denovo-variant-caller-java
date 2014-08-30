@@ -15,6 +15,7 @@ package com.google.cloud.genomics.denovo;
 
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.FULL;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
@@ -125,6 +126,8 @@ public class DenovoRunner {
     } else if (shared.getCaller() == READ && shared.getInputFileName() != null) {
       DenovoCallers.getReadCaller(shared).execute();
     } else if (shared.getCaller() == READ && shared.getInputFileName() == null) {
+      throw new IllegalArgumentException("Input calls file needed for read mode");
+    } else if (shared.getCaller() == FULL) {
       String outFile = shared.getOutputFileName();
       String tempOutFile = outFile + ".tmp";
       cmdLine.outputFileName = tempOutFile;
@@ -135,7 +138,7 @@ public class DenovoRunner {
       cmdLine.caller = READ;
       DenovoRunner.initFromCommandLine(cmdLine).execute();
     } else {
-      throw new IllegalArgumentException("Unknown stage : " + shared.getCaller());
+      throw new IllegalArgumentException("Unknown caller mode : " + shared.getCaller());
     }
   }
 

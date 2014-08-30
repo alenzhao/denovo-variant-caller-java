@@ -54,7 +54,7 @@ public class DenovoUtil {
   /**
    * Type of Caller. Variant bases or read based (more expensive)
    */
-  public enum Caller { VARIANT, READ }
+  public enum Caller { VARIANT, READ, FULL }
   
   public enum Chromosome {
     CHR1,

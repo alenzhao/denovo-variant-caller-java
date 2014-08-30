@@ -32,35 +32,24 @@ variant calling.
 * Move the ``client_secrets.json`` file into the client-java directory.
   (Authentication will take place the first time you make an API call.)
 
-There are two modes for Denovo calling
+There are three modes for Denovo calling
 
-* **Variants** Based - Examines variant calls and filters based on mendelian inheritance rules ::
+* **Variants** Based - Examines variant calls and filters based on mendelian inheritance rules.
 
-    java -jar target/denovo-variant-caller-0.1.jar --caller variant \
+* **Reads** based - Examines reads for candidate positions and filters based based on Bayesian evidence weighting. Lower false positive rate but more expensive to compute. **Note** that this step requires a  pre selected list of candidate positions ``--input_calls_file`` which can be obtained from the previous variant based step.
+
+* **Full** - A utility mode that runs both the variant and the reads mode for you such that output of variants mode is piped to reads mode ::
+
+    java -jar target/denovo-variant-caller-0.1.jar --caller full \
     --client_secrets_filename ${HOME}/Downloads/client_secrets.json \
     --debug_level 1 \
     --chromosome chr1 \
-    --output_file NA12878_variants.calls \
+    --output_file NA12878_full.calls \
     --num_threads 25 \
     --dad_callset_name NA12891 \
     --mom_callset_name NA12892 \
     --child_callset_name NA12878 \
     --dataset_id 14004469326575082626 
-
-* **Reads** based - Examines reads for candidate positions and filters based based on Bayesian evidence weighting. Lower false positive rate but more expensive to compute. Not that this step requires a  pre selected list of candidate positions ``--input_calls_file`` which can be obtained from the  previous variant based step. Default behavior is to invoke variants method if candidates are not  present. ::
-
-    java -jar target/denovo-variant-caller-0.1.jar --caller read \
-    --client_secrets_filename ${HOME}/Downloads/client_secrets.json \
-    --input_calls_file  NA12878_variants.calls
-    --debug_level 1 \
-    --chromosome chr1 \
-    --output_file NA12878_reads.calls \
-    --num_threads 25 \
-    --dad_callset_name NA12891 \
-    --mom_callset_name NA12892 \
-    --child_callset_name NA12878 \
-    --dataset_id 14004469326575082626 \
-    --inference_method bayes
 
 Additional Options
 ------------------
@@ -73,8 +62,7 @@ To restrict to one or more chromosomes use the ``--chromosome`` flag.
 See below for all options ::
 
     Usage: DenovoMain [flags...]
-     --caller [VARIANT | READ]              : The caller to use (variant or read)
-                                              based
+     --caller [VARIANT | READ | FULL]       : The caller mode
      --child_callset_name <name>            : Child's callset name e.g. NA12879
      --chromosome <name>                    : specify the chromosomes to search
                                               (specify multiple times for multiple
