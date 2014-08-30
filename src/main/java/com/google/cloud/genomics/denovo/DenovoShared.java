@@ -47,7 +47,6 @@ public class DenovoShared {
   private final long maxVariantResults;
   private final double sequenceErrorRate;
   private final double denovoMutationRate;
-
   
   private DenovoShared(Builder builder) {
     genomics = builder.genomics;
@@ -237,7 +236,6 @@ public class DenovoShared {
     private String inputFileName;
     private double sequenceErrorRate;
     private double denovoMutationRate;
-
 
     public Builder denovoMutationRate(double denovoMutationRate) {
       this.denovoMutationRate = denovoMutationRate;

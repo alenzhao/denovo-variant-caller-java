@@ -24,6 +24,7 @@ public class DenovoMain {
   private static CommandLine cmdLine;
 
   public static void main(String[] args) throws IOException {
+    
     cmdLine = new CommandLine();
     try {
       cmdLine.setArgs(args);

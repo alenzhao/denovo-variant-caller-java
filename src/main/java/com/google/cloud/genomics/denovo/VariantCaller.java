@@ -56,11 +56,8 @@ public class VariantCaller extends DenovoCaller {
     }
 
     // Define Experiment Specific Constant Values
-
-    final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
-    DenovoUtil.helperCreateDirectory(outdir);
-    final File outputFile = new File(outdir, shared.getOutputFileName());
-
+    final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
+    
     List<ContigBound> allContigBounds = shared.getGenomics().variants().getSummary()
     .setDatasetId(shared.getDatasetId())
     .setDisableGZipContent(true)

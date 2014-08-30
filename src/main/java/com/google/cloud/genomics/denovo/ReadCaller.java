@@ -60,11 +60,8 @@ public class ReadCaller extends DenovoCaller {
       System.out.println("---- Starting Bayesian Read Caller -----");
     }
 
-    final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
-    DenovoUtil.helperCreateDirectory(outdir);
-
-    final File inputFile = new File(outdir, shared.getInputFileName());
-    final File outputFile = new File(outdir, shared.getOutputFileName());
+    final File inputFile = DenovoUtil.getNormalizedFile(shared.getInputFileName());
+    final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
 
     ExecutorService executor = new ThreadPoolExecutor(shared.getNumThreads(), // core thread pool size
         shared.getNumThreads(), // maximum thread pool size
@@ -90,14 +87,12 @@ public class ReadCaller extends DenovoCaller {
           new RunBayesDenovoWithRetries().run(callHolder, outputWriter);
         }
       }
+      // shutdown threadpool and wait
+      executor.shutdown();
+      while (!executor.isTerminated()) {
+      }
     }
-    // shutdown threadpool and wait
-    executor.shutdown();
-    while (!executor.isTerminated()) {
-    }
-
   }
-  
   
   /**
    * Retreives Reads and makes a call to inference engine

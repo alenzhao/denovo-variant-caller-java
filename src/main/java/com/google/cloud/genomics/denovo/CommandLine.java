@@ -40,6 +40,10 @@ class CommandLine {
       usage = "File to write results", required = true)
   public String outputFileName;
   
+  @Option(name = "--output_dir", metaVar = "<dir>",
+      usage = "File to write results")
+  public String outputDir;
+  
   @Option(name = "--input_calls_file", metaVar = "<file>",
       usage = "File to read from")
   public String inputFileName;

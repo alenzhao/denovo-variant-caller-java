@@ -259,16 +259,10 @@ public class DenovoUtil {
     return reversed;
   }
 
-  /**
-   * Create a directory
-   * @param theDir
-   */
-  static void helperCreateDirectory(File theDir) {
-    // if the directory does not exist, create it
-    if (!theDir.exists()) {
-      System.err.println("creating directory: " + theDir);
-      theDir.mkdir();
-    }
+  static File getNormalizedFile(String fpath) {
+    return new File(fpath).isAbsolute() 
+        ? new File(fpath)
+        : new File(System.getProperty("user.dir"), fpath);
   }
 
   /**
