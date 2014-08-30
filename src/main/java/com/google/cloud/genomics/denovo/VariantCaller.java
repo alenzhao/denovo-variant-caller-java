@@ -57,6 +57,7 @@ public class VariantCaller extends DenovoCaller {
 
     // Define Experiment Specific Constant Values
     final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
+    shared.getLogger().fine(String.format("Output File : %s", outputFile.getAbsolutePath()));
     
     List<ContigBound> allContigBounds = shared.getGenomics().variants().getSummary()
     .setDatasetId(shared.getDatasetId())

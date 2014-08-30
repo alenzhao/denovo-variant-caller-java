@@ -61,6 +61,9 @@ public class ReadCaller extends DenovoCaller {
     final File inputFile = DenovoUtil.getNormalizedFile(shared.getInputFileName());
     final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
 
+    shared.getLogger().fine(String.format("Input File : %s", inputFile.getAbsolutePath()));
+    shared.getLogger().fine(String.format("Output File : %s", outputFile.getAbsolutePath()));
+    
     ExecutorService executor = new ThreadPoolExecutor(shared.getNumThreads(), // core thread pool size
         shared.getNumThreads(), // maximum thread pool size
         1, // time to wait before resizing pool

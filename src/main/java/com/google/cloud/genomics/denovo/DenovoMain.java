@@ -34,8 +34,6 @@ public class DenovoMain {
       System.exit(1);
     }
     
-    
-    
     try {
       DenovoRunner.initFromCommandLine(cmdLine).execute();
     } catch (GeneralSecurityException | ParseException e) {

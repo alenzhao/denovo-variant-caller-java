@@ -34,7 +34,7 @@ class CommandLine {
   
   @Option(name = "--inference_method", metaVar = "<map|bayes|lrt>",
       usage = "Inference method (map | bayes | lrt)")
-  public DenovoUtil.InferenceMethod inferMethod;
+  public DenovoUtil.InferenceMethod inferMethod = DenovoUtil.InferenceMethod.BAYES;
 
   @Option(name = "--output_file", metaVar = "<file>",
       usage = "File to write results", required = true)
