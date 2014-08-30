@@ -50,7 +50,7 @@ There are three modes for Denovo calling
     --start_position 1 \
     --end_position 14000000 \
     --log_level debug \
-    --num_threads 25\
+    --num_threads 25 \
     --output_file NA12878_full.calls
 
 
