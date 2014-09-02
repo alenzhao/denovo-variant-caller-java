@@ -31,7 +31,9 @@ public class DenovoUtil {
 
   public static final double EPS = 1e-12;
   public static Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = new HashMap<>();
-
+  public static int READ_INFO_STRIDE = 100;
+  public static int VARIANT_INFO_STRIDE = 1000000;
+  
   static {
     for (Genotype genotypeDad : Genotype.values()) {
       for (Genotype genotypeMom : Genotype.values()) {

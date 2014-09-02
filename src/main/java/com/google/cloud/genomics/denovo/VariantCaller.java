@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Makes Denovo calls by examining variants at candidate position and checking mendelian 
@@ -41,7 +42,8 @@ import java.util.concurrent.Executors;
 public class VariantCaller extends DenovoCaller {
 
   private final DenovoShared shared;
-   
+  private final AtomicCounter variantCounter = new AtomicCounter();
+  
   public VariantCaller(DenovoShared shared){
     this.shared = shared;
     
@@ -52,7 +54,7 @@ public class VariantCaller extends DenovoCaller {
   @Override
   public void execute() throws IOException {
     
-    shared.getLogger().info("---------Starting Variant Caller -----------");
+    shared.getLogger().info("---- Starting Variant Caller ----");
 
 
     // Define Experiment Specific Constant Values
@@ -103,7 +105,7 @@ public class VariantCaller extends DenovoCaller {
       executor.shutdown();
       while (!executor.isTerminated()) {
       }
-      shared.getLogger().info("All choromosomes processed");
+      shared.getLogger().info("---- Variant caller terminated ----");
     }
   }
   
@@ -152,6 +154,17 @@ public class VariantCaller extends DenovoCaller {
 
       
       for (Variant variant : variants) {
+        
+        // Logging related
+        if(variantCounter.value() % DenovoUtil.VARIANT_INFO_STRIDE == 0 && 
+            variantCounter.value() > 0) {
+          synchronized(this) {
+            shared.getLogger().info(String.format("%d Variant candidates processed", 
+                variantCounter.value()));  
+          }
+        }
+        variantCounter.increment();
+        
         // Push into queue
         for (Call call : variant.getCalls()) {
           vbuffer.checkAndAdd(shared.getCallsetIdToPersonMap().get(call.getCallsetId()), 
@@ -231,4 +244,20 @@ public class VariantCaller extends DenovoCaller {
       }
     }
   }
+  
+  class AtomicCounter {
+    private AtomicInteger c = new AtomicInteger(0);
+
+    public void increment() {
+        c.incrementAndGet();
+    }
+
+    public void decrement() {
+        c.decrementAndGet();
+    }
+
+    public int value() {
+        return c.get();
+    }
+}
 }

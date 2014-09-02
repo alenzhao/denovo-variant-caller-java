@@ -56,7 +56,7 @@ public class ReadCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws ParseException, IOException, IOException {
-    shared.getLogger().info("---- Starting Bayesian Read Caller -----");
+    shared.getLogger().info("---- Starting Bayesian Read Caller ----");
 
     final File inputFile = DenovoUtil.getNormalizedFile(shared.getInputFileName());
     final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
@@ -71,11 +71,18 @@ public class ReadCaller extends DenovoCaller {
         new ThreadPoolExecutor.CallerRunsPolicy());
 
     /* Check if each candidate call is truly denovo by Bayesian denovo calling */
+    
+    int lineCount = 0;
     try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFile));
         PrintWriter outputWriter = new PrintWriter(outputFile);) {
       for (String line; (line = inputReader.readLine()) != null;) {
         CallHolder callHolder = parseLine(line);
 
+        if(lineCount % DenovoUtil.READ_INFO_STRIDE == 0 && lineCount > 0){
+          shared.getLogger().info(String.format("%d Read candidates processed", lineCount));
+        }
+        lineCount++;
+        
         /* Skip variant if chromosome does not match */
         if (!shared.getChromosomes().contains(
             Chromosome.valueOf(callHolder.chromosome.toUpperCase()))) {
@@ -93,6 +100,7 @@ public class ReadCaller extends DenovoCaller {
       while (!executor.isTerminated()) {
       }
     }
+    shared.getLogger().info("---- Read caller terminated ----");
   }
   
   /**
