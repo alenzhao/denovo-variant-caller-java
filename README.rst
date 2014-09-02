@@ -1,11 +1,11 @@
 denovo-variant-caller |Build Status|_ |Build Coverage|_
 =====================
 
-.. |Build Status| image:: http://img.shields.io/travis/googlegenomics/denovo-variant-caller.svg?style=flat
-.. _Build Status: https://travis-ci.org/googlegenomics/denovo-variant-caller
+.. |Build Status| image:: http://img.shields.io/travis/googlegenomics/denovo-variant-caller-java.svg?style=flat
+.. _Build Status: https://travis-ci.org/googlegenomics/denovo-variant-caller-java
 
-.. |Build Coverage| image:: http://img.shields.io/coveralls/googlegenomics/denovo-variant-caller.svg?style=flat
-.. _Build Coverage: https://coveralls.io/r/googlegenomics/denovo-variant-caller?branch=master
+.. |Build Coverage| image:: http://img.shields.io/coveralls/googlegenomics/denovo-variant-caller-java.svg?style=flat
+.. _Build Coverage: https://coveralls.io/r/googlegenomics/denovo-variant-caller-java?branch=master
 
 
 Calls de novo variants using information from a mother, father and child trio.
