@@ -31,7 +31,11 @@ public abstract class DenovoCaller {
    */
   public abstract void execute() throws ParseException, IOException;
 
-
+  /** parse next line to read call chromosome and position
+   * @param line next line to be parsed
+   * @return a data class containing the chromosome and position of the call
+   * @throws ParseException
+   */
   CallHolder parseLine(String line) throws ParseException {
     String[] splitLine = line.split(",");
     if (splitLine.length < 2) {

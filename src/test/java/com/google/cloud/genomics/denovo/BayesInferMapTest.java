@@ -43,7 +43,6 @@ public class BayesInferMapTest extends BayesInferTest {
     assertEquals(summaryMap.toString()+" => [AA,AA,AA]", 
         Arrays.asList(AA,AA,AA), result.getMaxTrioGenoType());
   }
-  
 
   @Test
   public void testAlmostAllBasesSame() {

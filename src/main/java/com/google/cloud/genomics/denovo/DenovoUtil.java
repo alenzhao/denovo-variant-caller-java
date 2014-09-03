@@ -22,6 +22,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 /*
  * Utility functions shared by other classes in Denovo project
@@ -30,7 +31,9 @@ public class DenovoUtil {
 
   public static final double EPS = 1e-12;
   public static Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = new HashMap<>();
-
+  public static int READ_LOG_FREQ = 100;
+  public static int VARIANT_LOG_FREQ = 1000000;
+  
   static {
     for (Genotype genotypeDad : Genotype.values()) {
       for (Genotype genotypeMom : Genotype.values()) {
@@ -54,7 +57,30 @@ public class DenovoUtil {
   /**
    * Type of Caller. Variant bases or read based (more expensive)
    */
-  public enum Caller { VARIANT, READ }
+  public enum Caller { VARIANT, READ, FULL }
+  
+  public enum LogLevel { 
+    ERROR(Level.SEVERE), 
+    INFO(Level.INFO), 
+    DEBUG(Level.FINE); 
+  
+    private final Level level;
+    public static final Map<Level, LogLevel> levelMap = new HashMap<>(); 
+    
+    static {
+      levelMap.put(Level.SEVERE, ERROR);
+      levelMap.put(Level.INFO, INFO);
+      levelMap.put(Level.FINE, DEBUG);
+    }
+    
+    private LogLevel(Level level) {
+      this.level = level; 
+    }
+  
+    public Level getLevel() { 
+      return level;
+    }
+  }
   
   public enum Chromosome {
     CHR1,
@@ -84,13 +110,30 @@ public class DenovoUtil {
     CHRM;
     
     public static final EnumSet<Chromosome> ALL = EnumSet.allOf(Chromosome.class);
+    
+    public static Chromosome fromString(String str) {
+      str = str.toUpperCase();
+      try {
+        return Chromosome.valueOf(str);
+      } catch (IllegalArgumentException e) {
+        for(int i = 1 ; i <= 22 ; i++) {
+          if (str.equals(String.valueOf(i))) {
+            return Chromosome.valueOf("CHR" + String.valueOf(i));
+          }
+        }
+        if (Arrays.asList("X","Y","M").contains(str.toUpperCase())) {
+          return Chromosome.valueOf("CHR" + str);
+        }
+        throw new IllegalArgumentException("Unknown Chromosome " + str);
+      }
+    }
   }
 
   /**
    * Mebers in the trio
    */
   public enum TrioMember {
-    DAD, MOM, CHILD;
+    CHILD, MOM, DAD;
 
     public static final EnumSet<TrioMember> PARENTS = EnumSet.of(DAD, MOM);
   }
@@ -259,16 +302,10 @@ public class DenovoUtil {
     return reversed;
   }
 
-  /**
-   * Create a directory
-   * @param theDir
-   */
-  static void helperCreateDirectory(File theDir) {
-    // if the directory does not exist, create it
-    if (!theDir.exists()) {
-      System.err.println("creating directory: " + theDir);
-      theDir.mkdir();
-    }
+  static File getNormalizedFile(String fpath) {
+    return new File(fpath).isAbsolute() 
+        ? new File(fpath)
+        : new File(System.getProperty("user.dir"), fpath);
   }
 
   /**

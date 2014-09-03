@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,16 +56,14 @@ public class ReadCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws ParseException, IOException, IOException {
-    if (shared.getDebugLevel() >= 0) {
-      System.out.println("---- Starting Bayesian Read Caller -----");
-    }
+    shared.getLogger().info("---- Starting Bayesian Read Caller ----");
 
-    final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
-    DenovoUtil.helperCreateDirectory(outdir);
+    final File inputFile = DenovoUtil.getNormalizedFile(shared.getInputFileName());
+    final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
 
-    final File inputFile = new File(outdir, shared.getInputFileName());
-    final File outputFile = new File(outdir, shared.getOutputFileName());
-
+    shared.getLogger().fine(String.format("Input File : %s", inputFile.getAbsolutePath()));
+    shared.getLogger().fine(String.format("Output File : %s", outputFile.getAbsolutePath()));
+    
     ExecutorService executor = new ThreadPoolExecutor(shared.getNumThreads(), // core thread pool size
         shared.getNumThreads(), // maximum thread pool size
         1, // time to wait before resizing pool
@@ -72,11 +71,18 @@ public class ReadCaller extends DenovoCaller {
         new ThreadPoolExecutor.CallerRunsPolicy());
 
     /* Check if each candidate call is truly denovo by Bayesian denovo calling */
+    
+    int lineCount = 0;
     try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFile));
         PrintWriter outputWriter = new PrintWriter(outputFile);) {
       for (String line; (line = inputReader.readLine()) != null;) {
         CallHolder callHolder = parseLine(line);
 
+        if(lineCount % DenovoUtil.READ_LOG_FREQ == 0 && lineCount > 0){
+          shared.getLogger().info(String.format("%d Read candidates processed", lineCount));
+        }
+        lineCount++;
+        
         /* Skip variant if chromosome does not match */
         if (!shared.getChromosomes().contains(
             Chromosome.valueOf(callHolder.chromosome.toUpperCase()))) {
@@ -89,14 +95,13 @@ public class ReadCaller extends DenovoCaller {
           new RunBayesDenovoWithRetries().run(callHolder, outputWriter);
         }
       }
+      // shutdown threadpool and wait
+      executor.shutdown();
+      while (!executor.isTerminated()) {
+      }
     }
-    // shutdown threadpool and wait
-    executor.shutdown();
-    while (!executor.isTerminated()) {
-    }
-
+    shared.getLogger().info("---- Read caller terminated ----");
   }
-  
   
   /**
    * Retreives Reads and makes a call to inference engine
@@ -104,30 +109,24 @@ public class ReadCaller extends DenovoCaller {
    * @param writer print stream 
    * @throws IOException
    */
-  void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer)
-      throws IOException {
+  void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer) throws IOException {
     // get reads for chromosome and position
-    Map<TrioMember, List<Read>> readMap =
-        getReadMap(callHolder.chromosome, callHolder.position);
+    Map<TrioMember, List<Read>> readMap = getReadMap(callHolder.chromosome, callHolder.position);
 
     // Extract the relevant bases for the currrent position
-    Map<TrioMember, ReadSummary> readSummaryMap =
-        getReadSummaryMap(callHolder.position, readMap);
+    Map<TrioMember, ReadSummary> readSummaryMap = getReadSummaryMap(callHolder.position, readMap);
 
     // Call the bayes inference algorithm to generate likelihood
-    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, 
-        shared.getInferMethod());
-
-    if (shared.getDebugLevel() >= 1) {
-      synchronized (this) {
-        System.out.printf("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
-            result.getDetails());
-      }
-    }
+    BayesInfer.BayesCallResult result =
+        bayesInferrer.infer(readSummaryMap, shared.getInferMethod());
 
     if (result.isDenovo()) {
-      writeCalls(writer, String.format("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
-          result.getDetails()));
+      shared.getLogger().fine(String.format(
+          "%s,%d,%s", callHolder.chromosome, callHolder.position, result.getDetails()));
+      synchronized (this) {
+        writeCalls(writer, String.format("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
+            result.getDetails()));
+      }
     }
   }
 
@@ -139,7 +138,7 @@ public class ReadCaller extends DenovoCaller {
    */
   Map<TrioMember, ReadSummary> getReadSummaryMap(Long candidatePosition,
       Map<TrioMember, List<Read>> readMap) {
-    Map<TrioMember, ReadSummary> readSummaryMap = new HashMap<>();
+    Map<TrioMember, ReadSummary> readSummaryMap = new TreeMap<>();
     for (TrioMember person : TrioMember.values()) {
       readSummaryMap.put(person,
           new ReadSummary(readMap.get(person), candidatePosition));

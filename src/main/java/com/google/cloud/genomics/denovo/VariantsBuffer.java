@@ -32,15 +32,15 @@ import org.javatuples.Pair;
 
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.TreeMap;
 
 /** Provide Buffering for fetching variants
  */
 class VariantsBuffer {
-  private Map<TrioMember, Deque<Pair<Variant,Call>>> bufferMap = new HashMap<>();
-  private Map<TrioMember, Long> mostRecentStartPosition = new HashMap<>();
+  private Map<TrioMember, Deque<Pair<Variant,Call>>> bufferMap = new TreeMap<>();
+  private Map<TrioMember, Long> mostRecentStartPosition = new TreeMap<>();
 
   VariantsBuffer() {
     for (TrioMember person : TrioMember.values()) {
@@ -199,7 +199,7 @@ class VariantsBuffer {
     Pair<Variant, Call> childSNP = getNextSNP(CHILD);
     Long snpPosition = childSNP.getValue0().getPosition();
     String referenceBase = childSNP.getValue0().getReferenceBases();
-    Map<TrioMember, Genotype> genotypeMap = new HashMap<>();
+    Map<TrioMember, Genotype> genotypeMap = new TreeMap<>();
 
     for (TrioMember person : TrioMember.values()) {
 

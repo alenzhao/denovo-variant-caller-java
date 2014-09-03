@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Makes Denovo calls by examining variants at candidate position and checking mendelian 
@@ -41,7 +42,8 @@ import java.util.concurrent.Executors;
 public class VariantCaller extends DenovoCaller {
 
   private final DenovoShared shared;
-   
+  private final AtomicInteger variantCounter = new AtomicInteger();
+  
   public VariantCaller(DenovoShared shared){
     this.shared = shared;
     
@@ -51,16 +53,14 @@ public class VariantCaller extends DenovoCaller {
    */
   @Override
   public void execute() throws IOException {
-    if (shared.getDebugLevel() >= 0) {
-      System.out.println("---------Starting Variant Caller -----------");
-    }
+    
+    shared.getLogger().info("---- Starting Variant Caller ----");
+
 
     // Define Experiment Specific Constant Values
-
-    final File outdir = new File(System.getProperty("user.home"), ".denovo_experiments");
-    DenovoUtil.helperCreateDirectory(outdir);
-    final File outputFile = new File(outdir, shared.getOutputFileName());
-
+    final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
+    shared.getLogger().fine(String.format("Output File : %s", outputFile.getAbsolutePath()));
+    
     List<ContigBound> allContigBounds = shared.getGenomics().variants().getSummary()
     .setDatasetId(shared.getDatasetId())
     .setDisableGZipContent(true)
@@ -90,7 +90,9 @@ public class VariantCaller extends DenovoCaller {
         Long endContigPos = shared.getEndPosition() == null 
             ? contigBound.getUpperBound() : shared.getEndPosition();
         Long strideLength = (endContigPos - startContigPos) / shared.getNumThreads();
-
+        
+        shared.getLogger().info("Processing Chromosome : " + contigBound.getContig());
+        
         for (int threadIdx = 0 ; threadIdx < shared.getNumThreads() ; threadIdx++) {
           long start = startContigPos + threadIdx * strideLength;
           long end = threadIdx == shared.getNumThreads() - 1 ? endContigPos : start + strideLength - 1;
@@ -103,9 +105,7 @@ public class VariantCaller extends DenovoCaller {
       executor.shutdown();
       while (!executor.isTerminated()) {
       }
-      if (shared.getDebugLevel() >= 1) {
-        System.out.println("All contigs processed");
-      }
+      shared.getLogger().info("---- Variant caller terminated ----");
     }
   }
   
@@ -154,6 +154,17 @@ public class VariantCaller extends DenovoCaller {
 
       
       for (Variant variant : variants) {
+        
+        // Logging related
+        synchronized (this) {
+          if (variantCounter.get() % DenovoUtil.VARIANT_LOG_FREQ == 0
+              && variantCounter.get() > 0) {
+            shared.getLogger().info(
+                String.format("%d Variant candidates processed", variantCounter.get()));
+          }
+          variantCounter.getAndIncrement();
+        }
+        
         // Push into queue
         for (Call call : variant.getCalls()) {
           vbuffer.checkAndAdd(shared.getCallsetIdToPersonMap().get(call.getCallsetId()), 
@@ -163,14 +174,13 @@ public class VariantCaller extends DenovoCaller {
         while(vbuffer.canProcess()) {
           Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
           if (nextCall.isPresent()) {
-            if (shared.getDebugLevel() > 1) {
-              System.out.println(nextCall);  
-            }
-            
             if (nextCall.get().isDenovo()) {
-              builder.append(
-                  String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
-                      nextCall.get()));
+              builder.append(String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
+                  nextCall.get()));
+
+              // Logging
+              shared.getLogger().fine(String.format("%s,%d,%s", contig, 
+                  nextCall.get().getPosition(), nextCall.get()));
             }
           }
           vbuffer.pop(CHILD);
@@ -184,16 +194,15 @@ public class VariantCaller extends DenovoCaller {
     while (!vbuffer.isEmpty(CHILD)) {
       Optional<PositionCall> nextCall = Optional.fromNullable(vbuffer.retrieveNextCall());
       if (nextCall.isPresent()) {
-        System.out.println(nextCall);
         if (nextCall.get().isDenovo()) {
           builder.append(
               String.format("%s,%d,%s%n", contig, nextCall.get().getPosition(),
                   nextCall.get()));
+          
+          // Logging
+          shared.getLogger().fine(String.format("%s,%d,%s", contig, 
+              nextCall.get().getPosition(), nextCall.get()));
         }
-      }
-      
-      if(shared.getDebugLevel() > 1) {
-        System.out.println("Flush2 : "+vbuffer.toString());  
       }
       vbuffer.pop(CHILD);
     }

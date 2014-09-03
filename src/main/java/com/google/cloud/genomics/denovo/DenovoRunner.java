@@ -13,6 +13,7 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.FULL;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
@@ -27,6 +28,8 @@ import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.cloud.genomics.utils.GenomicsFactory;
+import com.google.common.base.Function;
+import com.google.common.collect.FluentIterable;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +40,13 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 /**
  * Wrappper for caller objects
@@ -72,13 +82,22 @@ public class DenovoRunner {
     Map<TrioMember, String> personToCallsetIdMap = createCallsetIdMap(
         getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
     this.cmdLine = cmdLine;
-    
-    // Get a list of all the contigBounds and the chromosomes
-    
+    Set<Chromosome> chromosomes = cmdLine.chromosomes == null 
+        ? Chromosome.ALL 
+        : EnumSet.copyOf(FluentIterable
+            .from(cmdLine.chromosomes)
+            .transform(new Function<String, Chromosome>() {
+                @Override
+                public Chromosome apply(String input) {
+                  return Chromosome.fromString(input);
+                }
+            }).toList());
+
+    // Initialize the shared object
     shared = new DenovoShared.Builder()
       .datasetId(cmdLine.datasetId)
       .numThreads(cmdLine.numThreads)
-      .debugLevel(cmdLine.debugLevel)
+      .logger(setUpLogger(cmdLine))
       .lrtThreshold(cmdLine.lrtThreshold)
       .genomics(genomics)
       .personToCallsetNameMap(personToCallsetNameMap)
@@ -87,8 +106,7 @@ public class DenovoRunner {
       .callsetIdToPersonMap(DenovoUtil.getReversedMap(personToCallsetIdMap))
       .startPosition(cmdLine.startPosition)
       .endPosition(cmdLine.endPosition)
-      .chromosomes(cmdLine.chromosomes == null 
-          ? Chromosome.ALL : EnumSet.copyOf(cmdLine.chromosomes))
+      .chromosomes(chromosomes)
       .inferMethod(cmdLine.inferMethod)
       .caller(cmdLine.caller)
       .inputFileName(cmdLine.inputFileName)
@@ -98,6 +116,46 @@ public class DenovoRunner {
       .denovoMutationRate(cmdLine.denovoMutationRate)
       .sequenceErrorRate(cmdLine.sequenceErrorRate)
       .build();
+  }
+
+  /** Set up the logge. Creates a new one each time.
+   * @param cmdLine
+   * @return the logger
+   * @throws IOException
+   */
+  private Logger setUpLogger(CommandLine cmdLine) throws IOException {
+
+    if (LogManager.getLogManager().getLogger(DenovoRunner.class.getName()) != null) {
+      return LogManager.getLogManager().getLogger(DenovoRunner.class.getName());
+    }
+    
+    Logger logger = Logger.getLogger(DenovoRunner.class.getName());
+    ConsoleHandler consoleHandler = new ConsoleHandler();
+    logger.setLevel(cmdLine.logLevel.getLevel());
+    logger.setUseParentHandlers(false);
+    Formatter conciseFormat = new Formatter(){
+      @Override
+      public String format(LogRecord record) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(DenovoUtil.LogLevel.levelMap.get(record.getLevel()));
+        sb.append(" : ");
+        sb.append(record.getMessage());
+        sb.append("\n");
+        return sb.toString();
+      }
+    };
+    consoleHandler.setFormatter(conciseFormat);
+    consoleHandler.setLevel(cmdLine.logLevel.getLevel());
+    logger.addHandler(consoleHandler);
+    
+    if (cmdLine.logFile != null) {
+      FileHandler fileHandler = new FileHandler(
+          DenovoUtil.getNormalizedFile(cmdLine.logFile).getAbsolutePath(), false);
+      fileHandler.setFormatter(conciseFormat);
+      fileHandler.setLevel(cmdLine.logLevel.getLevel());
+      logger.addHandler(fileHandler);
+    }
+    return logger;
   }
 
   /**
@@ -112,6 +170,8 @@ public class DenovoRunner {
     } else if (shared.getCaller() == READ && shared.getInputFileName() != null) {
       DenovoCallers.getReadCaller(shared).execute();
     } else if (shared.getCaller() == READ && shared.getInputFileName() == null) {
+      throw new IllegalArgumentException("Input calls file needed for read mode");
+    } else if (shared.getCaller() == FULL) {
       String outFile = shared.getOutputFileName();
       String tempOutFile = outFile + ".tmp";
       cmdLine.outputFileName = tempOutFile;
@@ -122,7 +182,7 @@ public class DenovoRunner {
       cmdLine.caller = READ;
       DenovoRunner.initFromCommandLine(cmdLine).execute();
     } else {
-      throw new IllegalArgumentException("Unknown stage : " + shared.getCaller());
+      throw new IllegalArgumentException("Unknown caller mode : " + shared.getCaller());
     }
   }
 

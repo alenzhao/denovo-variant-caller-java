@@ -29,16 +29,20 @@ class CommandLine {
   CmdLineParser parser;
 
   @Option(name = "--caller", metaVar = "<variant|read>",
-      usage = "The caller to use (variant or read) based", required = true)
+      usage = "The caller mode", required = true)
   public DenovoUtil.Caller caller;
   
   @Option(name = "--inference_method", metaVar = "<map|bayes|lrt>",
       usage = "Inference method (map | bayes | lrt)")
-  public DenovoUtil.InferenceMethod inferMethod;
+  public DenovoUtil.InferenceMethod inferMethod = DenovoUtil.InferenceMethod.BAYES;
 
   @Option(name = "--output_file", metaVar = "<file>",
       usage = "File to write results", required = true)
   public String outputFileName;
+  
+  @Option(name = "--output_dir", metaVar = "<dir>",
+      usage = "File to write results")
+  public String outputDir;
   
   @Option(name = "--input_calls_file", metaVar = "<file>",
       usage = "File to read from")
@@ -60,10 +64,6 @@ class CommandLine {
       usage = "Child's callset name e.g. NA12879")
   public String childCallsetName;
   
-  @Option(name = "--project_id", metaVar = "<id>",
-      usage = "Project id", required = true)
-  public long projectId = 1085016379660L;
-
   @Option(name = "--dataset_id", metaVar = "<id>",
       usage = "Dataset id", required = true)
   public String datasetId = "14004469326575082626";
@@ -84,13 +84,17 @@ class CommandLine {
       usage = "Specify the number of threads (default 1 ; 1 to 50 suggested)")
   public int numThreads = 1;
 
-  @Option(name = "--debug_level", metaVar = "<level>",
-      usage = "specify the debug level (0 for no debug spew)")
-  public int debugLevel = 0;
+  @Option(name = "--log_level", metaVar = "<level>",
+      usage = "specify the logging level")
+  public DenovoUtil.LogLevel logLevel = DenovoUtil.LogLevel.INFO;
 
+  @Option(name = "--log_file", metaVar = "<file>",
+      usage = "specify the log file")
+  public String logFile;
+  
   @Option(name = "--chromosome", metaVar = "<name>",
       usage = "specify the chromosomes to search (specify multiple times for multiple chromsomes)")
-  public List<DenovoUtil.Chromosome> chromosomes;
+  public List<String> chromosomes;
 
   @Option(name = "--start_position", metaVar = "<position>",
       usage = "start position ( usually 1 )")

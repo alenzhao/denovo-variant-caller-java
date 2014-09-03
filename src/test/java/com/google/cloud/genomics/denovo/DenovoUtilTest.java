@@ -25,6 +25,8 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.GT;
 import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 
+import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
+
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -86,5 +88,34 @@ public class DenovoUtilTest extends DenovoTest {
     assertEquals("CC|AC,AC", false,
         DenovoUtil.checkTrioGenoTypeIsDenovo(Arrays.asList(AC, AC, CC)));
   }
+  
+  @Test(expected=IllegalArgumentException.class)
+  public void testChromosome_chr100() {
+     Chromosome.fromString("chr100");
+  }
 
+  @Test
+  public void testChromosome_chr1() {
+    assertEquals(Chromosome.CHR1, Chromosome.fromString("chr1"));
+  }
+
+  @Test
+  public void testChromosome_CHR1() {
+    assertEquals(Chromosome.CHR1, Chromosome.fromString("CHR1"));
+  }
+  
+  @Test
+  public void testChromosome_1() {
+    assertEquals(Chromosome.CHR1, Chromosome.fromString("chr1"));
+  }
+  
+  @Test
+  public void testChromosome_X() {
+    assertEquals(Chromosome.CHRX, Chromosome.fromString("chrX"));
+  }
+
+  @Test
+  public void testChromosome_x() {
+    assertEquals(Chromosome.CHRX, Chromosome.fromString("chrx"));
+  }
 }
