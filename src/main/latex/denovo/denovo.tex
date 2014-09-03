@@ -1,0 +1,136 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{color}
+\usepackage{fullpage}
+
+\def\xcolorversion{2.00}
+\def\xkeyvalversion{1.8}
+
+\usepackage[version=0.96]{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows, backgrounds, positioning, fit, shapes}
+\usepackage[latin1]{inputenc}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{axiom}[theorem]{Axiom}
+
+\newenvironment{definition}[1][Definition]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+\newenvironment{example}[1][Example]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+\newenvironment{remark}[1][Remark]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\begin{document}
+
+\title{De Novo Variant Caller using Google Genomics API}
+
+\author{
+	Subhodeep Moitra\\ 
+	Carnegie Mellon University \\
+	{\tt subhodee@cs.cmu.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+This tool identifies de novo genetic mutations in a family trio (child, mother and father). De novo genetic mutations are defined as those mutations which occur in the child but do not occur in the genomes of the parents. The tool queries the genomics API in order to search and retrieve genetic variants and reads. It implements a Bayesian inference algorithm for identifying  de novo mutations from the retrieved data. The tool also provides options for customizing the inference algorithm and the search region. This tool can be used by customers of google genomics for their analysis needs and also provides an example of code that interacts with the Genomics API for a non-trivial scientific analysis task.
+\end{abstract} 
+
+\section{Background}
+We will create an externally-releasable program for calling de novo variants using the Google Genomics API.  We will assume both read and variant data for all three members of the trio are available.  The program will first scan through variant data for the trio, searching for variants called in the child but neither of the parents.  If the variant data includes reference calls, we can additionally require both parents to have a reference call overlapping the child's variant.  At such candidate sites, the program will retrieve read data overlapping the site and perform inference in a probabilistic model to jointly call the genotype for all three trio members.  If the probability that the genotypes correspond to a de novo mutation exceeds a user-specified threshold, the program will output a call.  For now, we'll call only de novo SNVs, but the same procedure should be relatively easy to extend to small indels (though not large structural variants).
+
+The goal of this project is to create an accurate de novo variant caller that can be used by customers such as Autism Speaks.  Furthermore, the released code should provide an illustrative real-world example that exercises many parts of the Genomics API.
+
+
+\subsection{Theory}
+
+
+\subsection{Algorithm}
+
+
+\begin{align}\label{eqn:diffeq}
+\frac{dC(t)}{dt}  &= \sum_{i \in \mathcal{V}}\alpha_i V_i(t) - \sum_{j \in \mathcal{P}}\beta_j C(t)\\
+\frac{dP_j(t)}{dt}  &= \beta_j C(t) - \sum_{i \in \mathcal{V}}\gamma_{ij}V_j(t) \\
+\frac{dV_i(t)}{dt}  &= \sum_{j \in \mathcal{P}}\gamma_{ij}P_j(t) - \alpha_i V_i(t)
+\end{align}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,thick,
+  pleasure node/.style={circle,fill=red!20,draw,font=\sffamily\bfseries},
+  blank node/.style={circle,fill=blue!20,fill opacity=0,font=\sffamily\bfseries},
+  bucket/.style={draw, fill=blue!20, minimum height=3em, minimum width=4em, cylinder, shape border rotate=90, shape aspect=0.1}]
+
+
+    \node [bucket] (Vw)                                    {$V_{work}(t)$};
+    \node [bucket] (Vf) [below of=Vw]                      {$V_{family}(t)$};
+
+    \node [bucket, minimum height=5em, minimum width=4em, fill=green!20] (C) [right of=Vw, yshift = -15mm]                         {$C(t)$};
+
+
+    \node [pleasure node] (Pj) [right of=C]                      {$P_{joy}(t)$};
+    \node [pleasure node] (Pp) [above of=Pj]                       {$P_{peace}(t)$};
+    \node [pleasure node] (Pt)  [below of=Pj] 					 {$P_{thrill}(t)$};
+
+ \path[every node/.style={font=\sffamily\small}]
+    (Vw) edge node [below] {$\alpha_w$} (C)
+    (Vf) edge node [above]   {$\alpha_f$} (C)
+
+    (C) edge  node [below] {$\beta_p$} (Pp)
+     edge node [above]   {$\beta_j$} (Pj)
+     edge  node [above] {$\beta_t$} (Pt)
+
+	(Pp) edge [bend right] node [above] {$\gamma_{pw}$} (Vw)
+	 edge [bend right] node [above] {$\gamma_{pf}$} (Vf)
+	 
+	(Pj) edge [bend right] node [above] {$\gamma_{jw}$} (Vw)
+	 edge [bend left] node [below] {$\gamma_{jf}$} (Vf)
+	 
+	(Pt) edge [bend left] node [below] {$\gamma_{tw}$} (Vw)
+	 edge [bend left] node [below] {$\gamma_{tf}$} (Vf);
+
+  \begin{pgfonlayer}{background}
+    \filldraw [line width=4mm,join=round,black!10]
+      (Vw.north  -| Vw.east)  rectangle (Vf.south  -| Vf.west)
+      (C.north  -| C.east)  rectangle (C.south  -| C.west)
+      (Pp.north  -| Pp.east)  rectangle (Pt.south  -| Pt.west);
+  \end{pgfonlayer}
+\end{tikzpicture}
+\caption{A simple instance of Bucket Theory. There are two value buckets $\mathcal{V}=\{work,family\}$, the control bank $C$ and three nutrients at the pleasure Caf\'e $\mathcal{P}=\{peace, joy, thrill\}$.  The value resources are converted into a control currency, $C(t)$. Control is then used to purchase the different pleasure nutrients $P_j(t) ; j\in \mathcal{P}$. }
+\label{fig:pleasure}
+\end{figure}
+
+
+Some citations are ~\cite{Li2012} and~\cite{Michaelson2012}.
+
+\section{Design}
+
+\section{Experiments and Validation}
+
+\begin{thebibliography}{10}
+
+\bibitem{Li2012}
+   Li B et. al,
+   \emph{A likelihood-based framework for variant calling and de novo mutation detection in families},
+   PLoS Genetics, 2012
+   Volume 8, Number 10, Pages e1002944
+
+\bibitem{Michaelson2012}   
+   Michaelson et al,
+   \emph{Whole-Genome Sequencing in Autism Identifies Hot Spots for De Novo Germline Mutation},  
+   Cell, 2012, 
+   Volume 151, Number 7, Pages 1431 - 1442
+
+\end{thebibliography}
+\end{document}
