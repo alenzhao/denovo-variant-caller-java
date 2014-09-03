@@ -78,7 +78,7 @@ public class ReadCaller extends DenovoCaller {
       for (String line; (line = inputReader.readLine()) != null;) {
         CallHolder callHolder = parseLine(line);
 
-        if(lineCount % DenovoUtil.READ_INFO_STRIDE == 0 && lineCount > 0){
+        if(lineCount % DenovoUtil.READ_LOG_FREQ == 0 && lineCount > 0){
           shared.getLogger().info(String.format("%d Read candidates processed", lineCount));
         }
         lineCount++;
@@ -109,24 +109,21 @@ public class ReadCaller extends DenovoCaller {
    * @param writer print stream 
    * @throws IOException
    */
-  void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer)
-      throws IOException {
+  void runBayesDenovoInference(CallHolder callHolder, PrintWriter writer) throws IOException {
     // get reads for chromosome and position
-    Map<TrioMember, List<Read>> readMap =
-        getReadMap(callHolder.chromosome, callHolder.position);
+    Map<TrioMember, List<Read>> readMap = getReadMap(callHolder.chromosome, callHolder.position);
 
     // Extract the relevant bases for the currrent position
-    Map<TrioMember, ReadSummary> readSummaryMap =
-        getReadSummaryMap(callHolder.position, readMap);
+    Map<TrioMember, ReadSummary> readSummaryMap = getReadSummaryMap(callHolder.position, readMap);
 
     // Call the bayes inference algorithm to generate likelihood
-    BayesInfer.BayesCallResult result = bayesInferrer.infer(readSummaryMap, 
-        shared.getInferMethod());
+    BayesInfer.BayesCallResult result =
+        bayesInferrer.infer(readSummaryMap, shared.getInferMethod());
 
-    synchronized (this) {
-      shared.getLogger().fine(String.format("%s,%d,%s", callHolder.chromosome, callHolder.position,
-          result.getDetails()));
-      if (result.isDenovo()) {
+    if (result.isDenovo()) {
+      shared.getLogger().fine(String.format(
+          "%s,%d,%s", callHolder.chromosome, callHolder.position, result.getDetails()));
+      synchronized (this) {
         writeCalls(writer, String.format("%s,%d,%s%n", callHolder.chromosome, callHolder.position,
             result.getDetails()));
       }

@@ -157,7 +157,7 @@ public class VariantCaller extends DenovoCaller {
         
         // Logging related
         synchronized (this) {
-          if (variantCounter.get() % DenovoUtil.VARIANT_INFO_STRIDE == 0
+          if (variantCounter.get() % DenovoUtil.VARIANT_LOG_FREQ == 0
               && variantCounter.get() > 0) {
             shared.getLogger().info(
                 String.format("%d Variant candidates processed", variantCounter.get()));
