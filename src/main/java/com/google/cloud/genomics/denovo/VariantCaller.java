@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class VariantCaller extends DenovoCaller {
 
   private final DenovoShared shared;
-  private final AtomicCounter variantCounter = new AtomicCounter();
+  private final AtomicInteger variantCounter = new AtomicInteger();
   
   public VariantCaller(DenovoShared shared){
     this.shared = shared;
@@ -156,14 +156,14 @@ public class VariantCaller extends DenovoCaller {
       for (Variant variant : variants) {
         
         // Logging related
-        if(variantCounter.value() % DenovoUtil.VARIANT_INFO_STRIDE == 0 && 
-            variantCounter.value() > 0) {
-          synchronized(this) {
-            shared.getLogger().info(String.format("%d Variant candidates processed", 
-                variantCounter.value()));  
+        synchronized (this) {
+          if (variantCounter.get() % DenovoUtil.VARIANT_INFO_STRIDE == 0
+              && variantCounter.get() > 0) {
+            shared.getLogger().info(
+                String.format("%d Variant candidates processed", variantCounter.get()));
           }
+          variantCounter.getAndIncrement();
         }
-        variantCounter.increment();
         
         // Push into queue
         for (Call call : variant.getCalls()) {
@@ -244,20 +244,4 @@ public class VariantCaller extends DenovoCaller {
       }
     }
   }
-  
-  class AtomicCounter {
-    private AtomicInteger c = new AtomicInteger(0);
-
-    public void increment() {
-        c.incrementAndGet();
-    }
-
-    public void decrement() {
-        c.decrementAndGet();
-    }
-
-    public int value() {
-        return c.get();
-    }
-}
 }
