@@ -9,7 +9,7 @@
 
 \usepackage[version=0.96]{pgf}
 \usepackage{tikz}
-\usetikzlibrary{arrows, backgrounds, positioning, fit, shapes}
+\usetikzlibrary{arrows, backgrounds, positioning, fit, shapes, automata}
 \usepackage[latin1]{inputenc}
 
 \usepackage{algpseudocode}
@@ -17,19 +17,6 @@
 
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
-
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{corollary}[theorem]{Corollary}
-\newtheorem{axiom}[theorem]{Axiom}
-
-\newenvironment{definition}[1][Definition]{\begin{trivlist}
-\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
-\newenvironment{example}[1][Example]{\begin{trivlist}
-\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
-\newenvironment{remark}[1][Remark]{\begin{trivlist}
-\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
 
 \begin{document}
 
@@ -48,15 +35,93 @@ This tool identifies de novo genetic mutations in a family trio (child, mother a
 \end{abstract} 
 
 \section{Background}
-We will create an externally-releasable program for calling de novo variants using the Google Genomics API.  We will assume both read and variant data for all three members of the trio are available.  The program will first scan through variant data for the trio, searching for variants called in the child but neither of the parents.  If the variant data includes reference calls, we can additionally require both parents to have a reference call overlapping the child's variant.  At such candidate sites, the program will retrieve read data overlapping the site and perform inference in a probabilistic model to jointly call the genotype for all three trio members.  If the probability that the genotypes correspond to a de novo mutation exceeds a user-specified threshold, the program will output a call.  For now, we'll call only de novo SNVs, but the same procedure should be relatively easy to extend to small indels (though not large structural variants).
 
-The goal of this project is to create an accurate de novo variant caller that can be used by customers such as Autism Speaks.  Furthermore, the released code should provide an illustrative real-world example that exercises many parts of the Genomics API.
+\subsection{Bayes Net}
+The de novo variant caller is implemented using a bayes net. A bayes net belongs to the class of mathematical models known as graphical models which are a marriage between graph theory and probability theory~\cite{Jordan2008}. A Bayes Net is a directed acyclic graph which defines conditional independence relationships between random variables in a probability distribution. A Bayes net can be used for sampling, marginal inference and decoding of the hidden variables. 
+
+\vspace{5mm} 
+We follow the bayes net implementation for de novo variant calling as in Li et al~\cite{Li2012}. They model a bayes net to encode the diploid Mendelian relationship between the members of the trio. See Figure~\ref{fig:bayesnet} for an illustration of the bayes net. The hidden variables $G_{F}, G_{M} and G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the bases present at the candidate position for a particular read. 
+
+\begin{equation}\label{eqn:model}
+P(G_F,G_M,G_C|D_F,D_M,D_C) =  \frac{P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)}{\sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)}
+\end{equation}
 
 
-\subsection{Theory}
+\begin{align}\label{eqn:model}
+P(D_F,D_M,D_C|G_F,G_M,G_C) &= P(D_F|G_F)P(D_M|G_M)P(D_C|G_M) \\
+	&= \left(\prod_{f=1}^{|D_F|}P(R_f|G_F)\right)\left(\prod_{m=1}^{|D_M|}P(R_m|G_M)\right)\left(\prod_{c=1}^{|D_C|}P(R_c|G_C)\right)
+\end{align}
 
+\begin{equation}\label{eqn:model}
+P(G_F,G_M,G_C) = P(G_C|G_F,G_M)P(G_F)P(G_M)
+\end{equation}
+
+\[ P(R|G) = \left\{ 
+  \begin{array}{l l}
+    1-\epsilon_{seq} & \quad \text{if $G$ is homozygous and $R \in G$}\\
+    \epsilon_{seq}/3 & \quad \text{if $G$ is homozygous and $R \notin G$}\\    
+      0.5(1-2\epsilon_{seq}/3) & \quad \text{if $G$ is heterozygous and $R \in G$}\\
+    \epsilon_{seq}/3 & \quad \text{if $G$ is heterozygous and $R \notin G$}
+  \end{array} \right.\]
+  
+
+\[ P(G_C|G_F,G_M) = \left\{ 
+  \begin{array}{l l}
+    \epsilon_{denovo}/N_{denovo} & \quad \text{if $G_C$ is a denovo mutation}\\
+    (1-\epsilon_{denovo})/N_{mendelian} & \quad \text{otherwise}
+  \end{array} \right.\]
+
+\begin{align*}
+L_{denovo} &= \sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)I_{denovo}(G_F,G_M,G_C)\\
+L_{mendelian} &= \sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)I_{mendelian}(G_F,G_M,G_C)
+\end{align*}
+
+\begin{align}
+\frac{L_{denovo}}{L_{denovo} + L_{mendelian}} > 0.5
+\end{align}
+
+\begin{align}
+\frac{L_{denovo}}{L_{mendelian}} > \mathcal{T}
+\end{align}
+
+\begin{align}
+I_{denovo}(\argmax_{G_F,G_M,G_C} P(G_F,G_M,G_C|D_F,D_M,D_C))
+\end{align}
+
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,
+                    semithick]
+  \tikzstyle{every state}=[fill=red,draw=none,text=white]
+  \tikzstyle{parent}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
+  \tikzstyle{child}=[parent,draw=red!75,fill=red!20]
+  \tikzstyle{data}=[rectangle,thick,draw=black!75,
+  			  fill=black!20,minimum size=4mm]
+
+  \node[child] 		   (C)                    {$G_C$};
+  \node[parent]         (F) [above left of=C] {$G_F$};
+  \node[parent]         (M) [above right of=C] {$G_M$};
+  \node[data]         (DC) [below of=C] 		{$D_M$};
+  \node[data]         (DF) [below of=F]       {$D_F$};
+  \node[data]         (DM) [below of=M]       {$D_C$};
+
+  \path (F) edge              node {} (C)
+            edge              node {} (DF)
+        (M) edge              node {} (C)
+            edge              node {} (DM)
+        (C) edge              node {} (DC);
+        
+\end{tikzpicture}
+\caption{The hidden variables $G_{F}, G_{M} and G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the bases present at the candidate position for a particular read }
+\label{fig:bayesnet}
+\end{figure}
 
 \subsection{Algorithm}
+
+\section{Design}
+
+
 
 
 \begin{align}\label{eqn:diffeq}
@@ -111,12 +176,18 @@ The goal of this project is to create an accurate de novo variant caller that ca
 \label{fig:pleasure}
 \end{figure}
 
+\subsection{Commandline usage}
+
 
 Some citations are ~\cite{Li2012} and~\cite{Michaelson2012}.
 
-\section{Design}
-
 \section{Experiments and Validation}
+
+\subsection{NA12878 trio}
+
+\subsection{Benchmarking}
+
+\section{Conclusion}
 
 \begin{thebibliography}{10}
 
@@ -132,5 +203,11 @@ Some citations are ~\cite{Li2012} and~\cite{Michaelson2012}.
    Cell, 2012, 
    Volume 151, Number 7, Pages 1431 - 1442
 
+\bibitem{Jordan2008}
+	Wainwright, Jordan,
+	\emph{Graphical Models, Exponential Families, and Variational Inference},
+	Foundations and Trends in Machine Learning, 2008,
+	Volume 1, Issue 1-2, pp 1-305	
+	
 \end{thebibliography}
 \end{document}
