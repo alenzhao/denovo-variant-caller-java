@@ -101,6 +101,15 @@ See below for all options ::
 .. _sign up instructions: https://developers.google.com/genomics
 
 
+Building Documentation
+----------------------
+
+To build the documentation ::
+    
+    mvn latex:latex
+
+The built pdf is available at ``target/denovo.pdf``
+
 The mailing list
 ----------------
 
