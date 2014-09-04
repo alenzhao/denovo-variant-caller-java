@@ -9,7 +9,7 @@
 
 \usepackage[version=0.96]{pgf}
 \usepackage{tikz}
-\usetikzlibrary{arrows, backgrounds, positioning, fit, shapes, automata}
+\usetikzlibrary{arrows, backgrounds, positioning, fit, shapes, automata, shadows}
 \usepackage[latin1]{inputenc}
 
 \usepackage{algpseudocode}
@@ -40,7 +40,7 @@ This tool identifies de novo genetic mutations in a family trio (child, mother a
 The de novo variant caller is implemented using a bayes net. A bayes net belongs to the class of mathematical models known as graphical models which are a marriage between graph theory and probability theory~\cite{Jordan2008}. A Bayes Net is a directed acyclic graph which defines conditional independence relationships between random variables in a probability distribution. A Bayes net can be used for sampling, marginal inference and decoding of the hidden variables. 
 
 \vspace{5mm} 
-We follow the bayes net implementation for de novo variant calling as in Li et al~\cite{Li2012}. They model a bayes net to encode the diploid Mendelian relationship between the members of the trio. See Figure~\ref{fig:bayesnet} for an illustration of the bayes net. The hidden variables $G_{F}, G_{M} and G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the bases present at the candidate position for a particular read. 
+We follow the bayes net implementation for de novo variant calling as in Li et al~\cite{Li2012}. They model a bayes net to encode the diploid Mendelian relationship between the members of the trio. See Figure~\ref{fig:bayesnet} for an illustration of the bayes net. The hidden variables $G_{F}, G_{M}$ and $G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the bases present at the candidate position for a particular read. 
 
 \begin{equation}\label{eqn:model}
 P(G_F,G_M,G_C|D_F,D_M,D_C) =  \frac{P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)}{\sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)}
@@ -93,10 +93,9 @@ I_{denovo}(\argmax_{G_F,G_M,G_C} P(G_F,G_M,G_C|D_F,D_M,D_C))
 \centering
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,
                     semithick]
-  \tikzstyle{every state}=[fill=red,draw=none,text=white]
   \tikzstyle{parent}=[circle,thick,draw=blue!75,fill=blue!20,minimum size=6mm]
   \tikzstyle{child}=[parent,draw=red!75,fill=red!20]
-  \tikzstyle{data}=[rectangle,thick,draw=black!75,
+  \tikzstyle{data}=[rectangle, copy shadow, thick,draw=black!75,
   			  fill=black!20,minimum size=4mm]
 
   \node[child] 		   (C)                    {$G_C$};
@@ -113,7 +112,7 @@ I_{denovo}(\argmax_{G_F,G_M,G_C} P(G_F,G_M,G_C|D_F,D_M,D_C))
         (C) edge              node {} (DC);
         
 \end{tikzpicture}
-\caption{The hidden variables $G_{F}, G_{M} and G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the bases present at the candidate position for a particular read }
+\caption{The hidden variables $G_{F}, G_{M}$ and $G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the bases present at the candidate position for a particular read }
 \label{fig:bayesnet}
 \end{figure}
 
@@ -134,42 +133,104 @@ I_{denovo}(\argmax_{G_F,G_M,G_C} P(G_F,G_M,G_C|D_F,D_M,D_C))
 \centering
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,thick,
   pleasure node/.style={circle,fill=red!20,draw,font=\sffamily\bfseries},
-  blank node/.style={circle,fill=blue!20,fill opacity=0,font=\sffamily\bfseries},
-  bucket/.style={draw, fill=blue!20, minimum height=3em, minimum width=4em, cylinder, shape border rotate=90, shape aspect=0.1}]
+  blank node/.style={circle,fill=blue!20,fill opacity=0,font=\sffamily\bfseries}]
+  \tikzstyle{files}=[rectangle, copy shadow, thick,draw=black!75,
+  			  fill=black!20,minimum size=8mm]
 
 
-    \node [bucket] (Vw)                                    {$V_{work}(t)$};
-    \node [bucket] (Vf) [below of=Vw]                      {$V_{family}(t)$};
+	\tikzstyle{bucket}=[draw, fill=blue!20, minimum height=6em, minimum width=8em, cylinder, shape border rotate=90, thick, shape aspect=0.1]
 
-    \node [bucket, minimum height=5em, minimum width=4em, fill=green!20] (C) [right of=Vw, yshift = -15mm]                         {$C(t)$};
+  \tikzstyle{component}=[rectangle, draw=black!75, fill=yellow!20,minimum size=8mm]
+
+ \tikzstyle{rectsplit} = [   
+        align=center,                                           
+        draw,
+        rectangle split,
+        rectangle split horizontal,
+        rectangle split parts=3
+    ]
+
+\begin{scope}
+
+    \node [bucket] (Vs)                                    {\textbf{Varstore}};
+    \node [bucket, fill=red!20] (Rs) [below of=Vs, yshift=-4cm]                      {\textbf{Readstore}};
+    \node [files] (V) [left of=Vs, fill=blue!20, xshift=-1cm]                                   
+    {\begin{tabular}{c}
+    \textbf{Variants}\\
+	\small{.VCF files}
+     \end{tabular}};
+    \node [files] (R) [left of=Rs, fill=red!20, xshift=-1cm]                      {\begin{tabular}{c}
+    \textbf{Reads}\\
+	\small{.BAM files}
+     \end{tabular}};
 
 
-    \node [pleasure node] (Pj) [right of=C]                      {$P_{joy}(t)$};
-    \node [pleasure node] (Pp) [above of=Pj]                       {$P_{peace}(t)$};
-    \node [pleasure node] (Pt)  [below of=Pj] 					 {$P_{thrill}(t)$};
+\node[component,    	% layout (defined above)
+  right of=Vs, 	% Position is to the right of QUERY
+  xshift=2.5cm] (VStr) 	
+ { Variant Stream};
+ 
+\node[component,    	% layout (defined above)
+  right of=VStr, xshift=1.2cm] (VBuf) 	
+ { Variant Buffer};
+
+\node[component,    	% layout (defined above)
+  below of=VBuf, yshift=1cm] (MFil) 	
+ { Mendel Filter};
+
+\node[component, fill=green!20,    	% layout (defined above)
+  below of=MFil, yshift=0.7cm] (filt) 	
+ { Filtered Candidates};
+
+
+\node[component,    	% layout (defined above)
+  right of=Rs, 	% Position is to the right of QUERY
+  xshift=2.5cm] (RStr) 	
+ { Read Stream};
+ 
+\node[component,    	% layout (defined above)
+  right of=RStr, xshift=1.2cm, minimum height=1cm, minimum width=4cm, align=center] (Binf) 	
+{\emph{Bayesian Inference}\\[2em]};
+
+\node[rectsplit, align=center] at (Binf)
+       (inf)
+       {      \nodepart{one}
+          \textbf{MAP} \nodepart{two}
+          \textbf{Bayes} \nodepart{three}
+          \textbf{LRT}};
+          
+\node[component, fill=green!80,    	% layout (defined above)
+  below of=Binf, yshift=0.7cm] (final) 	
+ { Final Candidates};
+
+\node[component, minimum height=1mm, fill=cyan!20, xshift=0.5cm, yshift=0.4cm, draw=black!10] at (Binf.north west) (Rcall) 	
+ { Read Caller};
+
+\node[component, minimum height=1mm, fill=cyan!20, xshift=-0.7cm, yshift=0.4cm, draw=black!10] at (VBuf.north west) (Vcall) 	
+ { Variant Caller};
+
 
  \path[every node/.style={font=\sffamily\small}]
-    (Vw) edge node [below] {$\alpha_w$} (C)
-    (Vf) edge node [above]   {$\alpha_f$} (C)
-
-    (C) edge  node [below] {$\beta_p$} (Pp)
-     edge node [above]   {$\beta_j$} (Pj)
-     edge  node [above] {$\beta_t$} (Pt)
-
-	(Pp) edge [bend right] node [above] {$\gamma_{pw}$} (Vw)
-	 edge [bend right] node [above] {$\gamma_{pf}$} (Vf)
-	 
-	(Pj) edge [bend right] node [above] {$\gamma_{jw}$} (Vw)
-	 edge [bend left] node [below] {$\gamma_{jf}$} (Vf)
-	 
-	(Pt) edge [bend left] node [below] {$\gamma_{tw}$} (Vw)
-	 edge [bend left] node [below] {$\gamma_{tf}$} (Vf);
+    (V) edge node [below] {$import$} (Vs)
+    (R) edge node [above]   {$import$} (Rs)
+    (Vs) edge node [above]   {API Calls} (VStr)
+    (VStr) edge node    {} (Vs)
+    (Rs) edge node [above]   {API Calls} (RStr)
+    (RStr) edge node  {} (Rs)
+    (VStr) edge node [above] {Buffering} (VBuf)
+    (RStr) edge node [above] {} (Binf)
+    (VBuf) edge node [right] {} (MFil)
+    (MFil) edge node [right] {} (filt)
+    (filt) edge node [right] {} (Binf)
+    (filt) edge node [right] {} (RStr)
+    (Binf) edge node [right] {} (final);
+    
+\end{scope}
 
   \begin{pgfonlayer}{background}
     \filldraw [line width=4mm,join=round,black!10]
-      (Vw.north  -| Vw.east)  rectangle (Vf.south  -| Vf.west)
-      (C.north  -| C.east)  rectangle (C.south  -| C.west)
-      (Pp.north  -| Pp.east)  rectangle (Pt.south  -| Pt.west);
+      (Vcall.north  -| VStr.west)  rectangle (MFil.south  -| MFil.east)
+      (Rcall.north  -| RStr.west)  rectangle (Binf.south  -| Binf.east);
   \end{pgfonlayer}
 \end{tikzpicture}
 \caption{A simple instance of Bucket Theory. There are two value buckets $\mathcal{V}=\{work,family\}$, the control bank $C$ and three nutrients at the pleasure Caf\'e $\mathcal{P}=\{peace, joy, thrill\}$.  The value resources are converted into a control currency, $C(t)$. Control is then used to purchase the different pleasure nutrients $P_j(t) ; j\in \mathcal{P}$. }
