@@ -15,6 +15,12 @@ to judge the denovo calls.
 
 **NOTE** : Currently under development. Usage should be considered experimental.
 
+Documentation
+-------------
+Documentation for the project can be found at `github page`_.
+
+.. _github page: https://raw.githubusercontent.com/googlegenomics/denovo-variant-caller-java/master/denovo.pdf
+
 Getting started
 ---------------
 
