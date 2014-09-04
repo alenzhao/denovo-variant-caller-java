@@ -30,11 +30,11 @@
 \maketitle
 
 \begin{abstract}
-This tool identifies de novo genetic mutations in a family trio (child, mother and father). De novo genetic mutations are defined as those mutations which occur in the child but do not occur in the genomes of the parents. This tool queries the Google Genomics API in order to search and retrieve genetic variants and reads. It implements a Bayesian inference algorithm for identifying  de novo mutations from the retrieved data. This document describes the motivation, theory and design behind the de novo caller. 
+This tool identifies de novo genetic mutations in a family trio (child, mother and father). De novo genetic mutations are defined as those mutations which occur in the child but do not occur in the genomes of the parents. This tool queries the Google Genomics API in order to search and retrieve genetic variants and reads. It implements a Bayesian inference algorithm for identifying  de novo mutations from the retrieved data. This document describes theory, design and early experiments for the de novo caller. 
 \end{abstract} 
 
 \section{Background}
-De novo genetic mutations are a set of rare genetic mutations that occur in the genomes of a child but do not occur in the genome of the child's parents. These mutations are being increasingly implicated to play an important role in a variety of diseases such as Autism~\cite{Michaelson2012} and Schizophrenia. With the advent of Whole Genome Sequencing, a large number of these mutations are being discovered at both the exome and the intronic regions. 
+De novo genetic mutations are a set of rare genetic mutations that occur in the genomes of a child but do not occur in the genome of the child's parents. These mutations are being increasingly implicated to play an important role in a variety of diseases such as Autism~\cite{Michaelson2012} and Schizophrenia. With the advent of Whole Genome Sequencing, a large number of these mutations are being discovered at both the exonic and the intronic regions. 
 
 \vspace{1em}
 Detecting de novo mutations is a challenging task. Some of the issues that affect de novo mutation detection are : 
@@ -42,12 +42,12 @@ Detecting de novo mutations is a challenging task. Some of the issues that affec
 \item \textbf{Rare event}: A de novo mutation is a very rare event ($\sim$1 in $10^8$ bp).
 \item \textbf{Sequencing errors}: Sequencing errors occur at the rate of 1 in 100 bp. This makes it much more likely to observe a sequencing error rather than a de novo mutation.
 \item \textbf{Read Depth}: Since the reads mapped to a particular position are essentially random, it is possible that the denovo mutation is completely skipped by inadequate coverage at that position.
-\item \textbf{Misalignment}: Variant detection pipelines assume a high quality alignment of reads. In cases where this suffers, variant detection suffers.
-\item \textbf{Expensive Validation}: Currently there is no gold standard for de novo mutations. When candidates are discovered they have to be verified through expensive Sanger sequencing.
-\item \textbf{Structural Variation}: A number of structural variations in the chromosome through insertions, deletions, inversions, copy number variations, translocations make the task challenging.
+\item \textbf{Misalignment}: Variant detection pipelines assume a high quality alignment of reads. In areas of poor alignment, variant detection suffers.
+\item \textbf{Expensive Validation}: Candidates have to be verified through expensive Sanger sequencing.
+\item \textbf{Structural Variation}: Complications arise through structural variations in the chromosome through insertions, deletions, inversions, copy number variations, translocations, etc.
 \end{itemize}
 
-The Google Genomics API~\cite{GoogleGenomics} provides services to import and query variants and reads data. This tool assumes that variants and reads are available for the trio under study and have been imported into the Genomics API. The tool provides two callers (1) Variant Caller (2) Read Caller. The variant caller walks over the entire genome of the trio and examines SNPs avaiable through the \verb|variants| API. After filtering for variants based on quality cutoffs and mendelian inheritance rules, a set of candidate calls are generated and passed onto the Read Caller for finer discrimination. The Read Caller makes requests to the \verb|reads| API to fetch mapped reads for these candidate position and makes a finer call using a bayesian inference engine.  Validation experiments against NA12878 trio from Platinum genomes~\cite{platinum} were also run and compared against experimentally validated de novo and somatic mutations~\cite{Conrad2011} ; results are reported in section ~\ref{experiments}.
+The Google Genomics API~\cite{GoogleGenomics} provides services to import and query variants and reads data. This tool assumes that variants and reads are available for the trio under study and have been imported into the Genomics API. The tool provides two callers (1) Variant Caller (2) Read Caller. The variant caller walks over the trio of genomes and examines SNPs avaiable through the \verb|variants| API. After filtering for variants based on quality cutoffs and mendelian inheritance rules, a set of candidate calls are generated and passed onto the Read Caller for finer discrimination. The Read Caller makes requests to the \verb|reads| API to fetch mapped reads for these candidate position and makes a finer call using a bayesian inference algorithm.  Validation experiments against NA12878 trio from Platinum genomes~\cite{platinum} were also run and compared against experimentally validated de novo and somatic mutations~\cite{Conrad2011} ; results are reported in section ~\ref{experiments}.
 
 \subsection{Bayes Net}
 We employ a probabilistic inference framework using bayes nets for de novo variant calling. A bayes net belongs to the class of mathematical models known as graphical models which are a marriage between graph theory and probability theory~\cite{Jordan2008}. A Bayes Net is a directed acyclic graph which defines conditional independence relationships between random variables in a probability distribution. A Bayes net can be used for sampling, marginal inference and decoding of the hidden variables. 
@@ -80,12 +80,13 @@ We employ a probabilistic inference framework using bayes nets for de novo varia
 \end{figure}
 
 \vspace{5mm} 
-We follow the bayes net implementation for de novo variant calling as in Li et al~\cite{Li2012}. They model a bayes net to encode the diploid Mendelian relationship between the members of the trio. See Figure~\ref{fig:bayesnet} for an illustration of the bayes net. The hidden variables $G_{F}, G_{M}$ and $G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the reads obtained at a candidate position. We fix the baseline sequencing error rate $\epsilon_{seq}$ and the de novo mutation rate $\epsilon_{denovo}$. In equation~\ref{eqn:model}, we apply Bayes rule to calculate the probability of a particular genotype trio given observed reads.
+We follow the bayes net implementation for de novo variant calling as in Li et al~\cite{Li2012}. They model a bayes net to encode the diploid Mendelian relationship between the members of the trio. See Figure~\ref{fig:bayesnet} for an illustration of the bayes net. The hidden variables $G_{F}, G_{M}$ and $G_{C}$ correspond to the genotypes of the father, mother and child respectively. The genotypes take one among 10 values from $AA, AC, AT, AG, CC, CT, CG, GG, GT$ and $TT$. The trio of genotypes values can thus have $10^3$ possible values. The observed variables ($D_F, D_M$ and $D_C$) are the reads obtained at a candidate position. We fix the baseline sequencing error rate $\epsilon_{seq}$ and the baseline de novo mutation rate $\epsilon_{denovo}$. In equation~\ref{eqn:model}, we apply Bayes rule to calculate the probability of a particular genotype trio given observed reads.
 
 \begin{equation}\label{eqn:model}
 P(G_F,G_M,G_C|D_F,D_M,D_C) =  \frac{P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)}{\sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)}
 \end{equation}
 
+\noindent 
 The term $P(D_F,D_M,D_C|G_F,G_M,G_C)$ is the data likelihood and is calculated as in equation~\ref{eqn:read_likelihood}. 
 
 \begin{align}\label{eqn:read_likelihood}
@@ -93,7 +94,8 @@ P(D_F,D_M,D_C|G_F,G_M,G_C) &= P(D_F|G_F)P(D_M|G_M)P(D_C|G_M) \\
 	&= \left(\prod_{f=1}^{|D_F|}P(R_f|G_F)\right)\left(\prod_{m=1}^{|D_M|}P(R_m|G_M)\right)\left(\prod_{c=1}^{|D_C|}P(R_c|G_C)\right)
 \end{align}
 
-The term $P(G_F,G_M,G_C)$ encodes the mendelian inheritance relationship in the trio and can be factorized further according to equation~\ref{eqn:mendel_factor}. Furthermore, this likelihood can be expressed in terms of $\epsilon_{seq}$ and $\epsilon_{denovo}$ as in equation~\ref{eqn:mendel_likelihood} where $N_denovo$ corresponds to the number of $G_C$ cases that are de novo given that the parents ; similarly $N_mendelian$ corresponds to the number of $G_C$ cases that are mendelian given that the parents.
+\noindent
+The term $P(G_F,G_M,G_C)$ encodes the mendelian inheritance relationship in the trio and can be factorized further according to equation~\ref{eqn:mendel_factor}. Furthermore, this likelihood can be expressed in terms of $\epsilon_{seq}$ and $\epsilon_{denovo}$ as in equation~\ref{eqn:mendel_likelihood} where $N_{denovo}$ corresponds to the number of $G_C$ cases that are de novo given the parents ; similarly $N_{mendelian}$ corresponds to the number of $G_C$ cases that are mendelian given the parents.
 
 \begin{equation}\label{eqn:mendel_factor}
 P(G_F,G_M,G_C) = P(G_C|G_F,G_M)P(G_F)P(G_M)
@@ -123,7 +125,7 @@ P(R|G) = \left\{
 \end{equation}
   
 \subsection{Bayesian Inference Strategies}
-In the previous section we defined the bayes net model. In this section we will discuss the inference strategies for determining if a candidate position is a de novo variant. We define the function $I_{denovo}(G_F,G_M,G_C)$ as an indicator function for when trio genotype is a case of de novo inheritance. We also calculate the likelihoods of all the de novo and the mendelian inheritance cases as described in equation~\ref{eqn:denovo_like}.
+In the previous section we defined the bayes net model. In this section we will discuss the inference strategies for determining if a candidate position is a de novo variant. We define the function $I_{denovo}(G_F,G_M,G_C)$ as an indicator function when the child genotype is a de novo mutation. We also calculate the likelihoods of all the de novo and the mendelian inheritance cases as described in equation~\ref{eqn:denovo_like}.
 
 \begin{align}
 \label{eqn:denovo_like}
@@ -270,7 +272,7 @@ This tool is designed as a standalone command line tool for performing inference
 There are two main components (1) Variant Caller interacting with Varstore (2) Read Caller interacting with Readstore. See Figure~\ref{fig:design} for an illustrative diagram. The Variant caller makes API calls to Varstore using a Variant Stream object that interfaces with a variants buffer. The buffer manages overlapping variants from the trio. Once a set of suitable variants have been obtained it is filtered using mendelian inheritance checks. These candidates are then passed onto the the Read Caller which obtains reads for the candidate position from readstore. The candidates are filtered using one of three Bayesian inference procedures (1) MAP - Maximum a posteriori (2) Bayes Rule (3) LRT - Likelihood Ratio test. Successful candidates are written onto disk.
 
 \subsection{Concurrency / Multi-threading}
-Profiling indicated that a lot of time was spent in network I/O delays. To speed up the execution, requests to the \verb|variants| API and the \verb|reads| API can be parallelized using multiple threads. Performance testing showed that multi-threading a linear speedup with the number of threads(Graphs not shown). For this purpose the Variant Caller and the Read Caller implements a helper class \verb|SimpleDenovoRunnable| and \verb|BayesDenovoRunnable| respectively. Their behavior can be controlled by the \verb|--num_threads| option.
+Profiling indicated that a lot of time was spent in network I/O delays. To speed up the execution, requests to the \verb|variants| API and the \verb|reads| API can be parallelized using multiple threads. Performance testing showed that multi-threading achieves a linear speedup with the number of threads(Graphs not shown). For this purpose the Variant Caller and the Read Caller implements a helper class \verb|SimpleDenovoRunnable| and \verb|BayesDenovoRunnable| respectively. Their behavior can be controlled by the \verb|--num_threads| option.
 
 
 \subsection{Commandline usage}
@@ -338,10 +340,10 @@ Usage: DenovoMain [flags...]
 We ran validation experiments against the NA12878 trio (NA12878 child, NA12891 father, NA12892 mother) from Platinum genomes~\cite{platinum} and compared them against experimentally validated de novo and somatic mutations~\cite{Conrad2011}. The results are shown in Table~\ref{tab:NA12878}. The tool has high recall $\sim 96\%$. The precision is less than desirable ; however it is only a lower bound since the NA12878 trio is derived from cell lines and hence has accumulated a lot of somatic cell mutations. A blood line dataset may reveal more accurate numbers. The compute time is favorable ; 3 hours to go over 3 Billion base pairs. 
 
 \vspace{1em}
-Figure~\ref{fig:variant_caller} shows a false candidate for a denovo mutation at chr10:23,662,774 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Father Genotype from \verb|variants| API is $AA$, mother genotype is $AA$ while child is $AG$. Variant is called by variant caller but correctly rejected by read caller due to insufficient evidence from reads. The bayesian inference reads caller observes that there have been occurrences of some $G$ bases in the parents which diminishes the likelihood of a denovo mutation.
+Figure~\ref{fig:variant_caller} shows a false de novo mutation  candidate at chr10:23,662,774 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Father Genotype from \verb|variants| API is $AA$, mother genotype is $AA$ while child is $AG$. Variant is called by variant caller but correctly rejected by read caller due to insufficient evidence from reads. The Bayesian inference reads caller observes that there have been occurrences of some $G$ bases in the parents which diminishes the likelihood of a denovo mutation.
 
 \vspace{1em}
-Figure~\ref{fig:germline} shows a true experimentally validated germline mutation at chr1:75,884343 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Inferred father Genotype is $TT$, mother genotype is $TT$ while child is $CT$. Variant is called by correctly by both variant and read caller. 
+Figure~\ref{fig:germline} shows a true experimentally validated germline mutation at chr1:75,884343 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Inferred father Genotype is $TT$, mother genotype is $TT$ while child is $CT$. De novo mutation is called correctly by both variant and read caller. 
 
 \begin{table}
     \label{tab:NA12878}
@@ -354,7 +356,7 @@ Figure~\ref{fig:germline} shows a true experimentally validated germline mutatio
 (20 threads) \\
     \hline
     \end{tabular}
-    \caption{Results on NA12878 trio (NA12878 child, NA12891 father, NA12892 mother) from Platinum genomes~\cite{platinum} compared against experimentally validated de novo and somatic mutations~\cite{Conrad2011}. The tool has high recall $\sim 96\%$. \textit{* The precision is inconclusive ; it is possible that is a lower bound since the NA12878 trio is derived from somatic cell lines. A follow up blood line experiment will likely reveal more accurate numbers.} The compute time is favorable; 3 hours to go over 3 Billion base pairs. }
+    \caption{Results on NA12878 trio (NA12878 child, NA12891 father, NA12892 mother) from Platinum genomes~\cite{platinum} compared against experimentally validated de novo and somatic mutations~\cite{Conrad2011}. The tool has high recall $\sim 96\%$. \textit{* The precision is inconclusive ; most likely is a lower bound since the NA12878 trio is derived from somatic cell lines. A follow up blood line experiment will likely reveal more accurate numbers.} The compute time is favorable; 3 hours to go over 3 Billion base pairs. }
 \end{table}
 
 \begin{figure}[!ht]
