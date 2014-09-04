@@ -64,9 +64,9 @@ We employ a probabilistic inference framework using bayes nets for de novo varia
   \node[child] 		   (C)                    {$G_C$};
   \node[parent]         (F) [above left of=C] {$G_F$};
   \node[parent]         (M) [above right of=C] {$G_M$};
-  \node[data]         (DC) [below of=C] 		{$D_M$};
+  \node[data]         (DC) [below of=C] 		{$D_C$};
   \node[data]         (DF) [below of=F]       {$D_F$};
-  \node[data]         (DM) [below of=M]       {$D_C$};
+  \node[data]         (DM) [below of=M]       {$D_M$};
 
   \path (F) edge              node {} (C)
             edge              node {} (DF)
