@@ -16,13 +16,19 @@ package com.google.cloud.genomics.denovo;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
 import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
 
 import org.javatuples.Pair;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Test Cases for Variants Buffer
@@ -89,5 +95,17 @@ public class VariantsBufferTest extends DenovoTest {
     vbuf.push(MOM, pair);
     vbuf.push(MOM, Pair.with(new Variant().setPosition(3L).setEnd(5000L), dummyCall));
     assertEquals("CHILD:[], MOM:[1-1000,3-5000], DAD:[1-1000,1-1000,1-1000]", vbuf.toString());
+  }
+  
+  // Poosition Call tests
+  @Test
+  public void testPositionCall_1() {
+    Map<TrioMember, Genotype> map = new HashMap<>();
+    map.put(TrioMember.DAD, Genotype.AA);
+    map.put(TrioMember.MOM, Genotype.AA);
+    map.put(TrioMember.CHILD, Genotype.AC);
+    VariantsBuffer.PositionCall pc = new VariantsBuffer.PositionCall(10000L, map);
+    assertTrue(pc.isDenovo());
+    assertEquals(map, pc.getGenotypeMap());
   }
 }
