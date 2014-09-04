@@ -30,7 +30,7 @@
 \maketitle
 
 \begin{abstract}
-This tool identifies de novo genetic mutations in a family trio (child, mother and father). De novo genetic mutations are defined as those mutations which occur in the child but do not occur in the genomes of the parents. This tool queries the Google Genomics API in order to search and retrieve genetic variants and reads. It implements a Bayesian inference algorithm for identifying  de novo mutations from the retrieved data. This this document describes the motivation, theory and design behind the de novo caller. 
+This tool identifies de novo genetic mutations in a family trio (child, mother and father). De novo genetic mutations are defined as those mutations which occur in the child but do not occur in the genomes of the parents. This tool queries the Google Genomics API in order to search and retrieve genetic variants and reads. It implements a Bayesian inference algorithm for identifying  de novo mutations from the retrieved data. This document describes the motivation, theory and design behind the de novo caller. 
 \end{abstract} 
 
 \section{Background}
@@ -123,15 +123,14 @@ P(R|G) = \left\{
 \end{equation}
   
 \subsection{Bayesian Inference Strategies}
-In the previous section we defined the bayes net model. In this section we will discuss the inference strategies for determining if a candidate position is a de novo variant. We define the function $I_{denovo}(G_F,G_M,G_C)$ as an indicator function for when trio genotype is a case of de novo inheritance. We also calculate the likelihoods of all the de novo and the mendelian inheritance cases as described in equation~\ref{eqn:denovo_likelihood}.
+In the previous section we defined the bayes net model. In this section we will discuss the inference strategies for determining if a candidate position is a de novo variant. We define the function $I_{denovo}(G_F,G_M,G_C)$ as an indicator function for when trio genotype is a case of de novo inheritance. We also calculate the likelihoods of all the de novo and the mendelian inheritance cases as described in equation~\ref{eqn:denovo_like}.
 
-\begin{align*}
-\label{eqn:denovo_likelihood}
+\begin{align}
+\label{eqn:denovo_like}
 L_{denovo} &= \sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)I_{denovo}(G_F,G_M,G_C)\\
 L_{mendelian} &= \sum_{G_F,G_M,G_C}P(D_F,D_M,D_C|G_F,G_M,G_C)P(G_F,G_M,G_C)I_{mendelian}(G_F,G_M,G_C)
-\end{align*}
+\end{align}
 
-\vspace{1em}
 \subsubsection{Maximum A Posteriori (MAP)} 
 Call a de novo variant if condition~\ref{eqn:map} holds.
 \begin{equation}
@@ -334,26 +333,34 @@ Usage: DenovoMain [flags...]
 \end{verbatim}
 
 
-\section{Experiments and Validation}
+\section{Experiments}
 \label{experiments}
+We ran validation experiments against the NA12878 trio (NA12878 child, NA12891 father, NA12892 mother) from Platinum genomes~\cite{platinum} and compared them against experimentally validated de novo and somatic mutations~\cite{Conrad2011}. The results are shown in Table~\ref{tab:NA12878}. The tool has high recall $\sim 96\%$. The precision is less than desirable ; however it is only a lower bound since the NA12878 trio is derived from cell lines and hence has accumulated a lot of somatic cell mutations. A blood line dataset may reveal more accurate numbers. The compute time is favorable ; 3 hours to go over 3 Billion base pairs. 
 
-\subsection{NA12878 trio}
+\vspace{1em}
+Figure~\ref{fig:variant_caller} shows a false candidate for a denovo mutation at chr10:23,662,774 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Father Genotype from \verb|variants| API is $AA$, mother genotype is $AA$ while child is $AG$. Variant is called by variant caller but correctly rejected by read caller due to insufficient evidence from reads. The bayesian inference reads caller observes that there have been occurrences of some $G$ bases in the parents which diminishes the likelihood of a denovo mutation.
 
-\begin{center}
+\vspace{1em}
+Figure~\ref{fig:germline} shows a true experimentally validated germline mutation at chr1:75,884343 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Inferred father Genotype is $TT$, mother genotype is $TT$ while child is $CT$. Variant is called by correctly by both variant and read caller. 
+
+\begin{table}
+    \label{tab:NA12878}
+    \centering
     \begin{tabular}{ | c | c | c | c | c | c |}
     \hline
     \textbf{Filter} & \textbf{Num Calls Filter} & \textbf{Precision} & \textbf{Recall }& \textbf{Time} & \textbf{Throughput} \\ \hline
-	Variant & 4090 & 22.12\% & 96.69\% & $\sim$3 hours (20 threads) & $\sim$3 mbps(20 threads) \\\hline
-	Variant $+$ BayesNet & 2207 & 40.55\% & 95.62\% & $\sim$30 mins(20 threads) & $\sim$ 1.5 mbps
+	Variant & 4090 & 22.12\%* & 96.69\% & $\sim$3 hours (20 threads) & $\sim$3 mbps(20 threads) \\\hline
+	Variant $+$ BayesNet & 2207 & 40.55\%* & 95.62\% & $\sim$30 mins(20 threads) & $\sim$ 1.5 mbps
 (20 threads) \\
     \hline
     \end{tabular}
-\end{center}
+    \caption{Results on NA12878 trio (NA12878 child, NA12891 father, NA12892 mother) from Platinum genomes~\cite{platinum} compared against experimentally validated de novo and somatic mutations~\cite{Conrad2011}. The tool has high recall $\sim 96\%$. \textit{* The precision is inconclusive ; it is possible that is a lower bound since the NA12878 trio is derived from somatic cell lines. A follow up blood line experiment will likely reveal more accurate numbers.} The compute time is favorable; 3 hours to go over 3 Billion base pairs. }
+\end{table}
 
 \begin{figure}[!ht]
   \centering
   \includegraphics[width=6in]{chr10_23662774.png}
-  \caption{Variant called by variant caller but rejected by read caller}
+  \caption{Shows a false candidate for a denovo mutation at chr10:23662774 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track corresponds to the child genome (NA12878). Father Genotype variant is $AA$, mother genotype is $AA$ and child is $AG$. Variant is called by variant caller but correctly rejected by read caller due to insufficient evidence from reads. The bayesian inference reads caller observes that there have been occurrences of some $G$ bases (brown lines) in the parents which diminishes the likelihood of a denovo mutation.}
    \label{fig:variant_caller}
 \end{figure}
 
@@ -361,14 +368,14 @@ Usage: DenovoMain [flags...]
 \begin{figure}[!ht]
   \centering
   \includegraphics[width=6in]{chr1_75,884,323_75,884,363.png}
-  \caption{Germline mutation selected by both variant and read caller and validated by experime ntal studeis}
+  \caption{Shows a true experimentally validated germline mutation at chr1:75,884343 in NA12878 trio. The top two tracks correspond to parents (NA12891 and NA12892) while the bottom track (NA12878) corresponds to the child genome. Inferred father Genotype is $TT$, mother genotype is $TT$ while child is $CT$. Variant is called by correctly by both variant and read caller}
    \label{fig:germline}
 \end{figure}
 
 
 \section{Future Work and Conclusion}
+This tool identifies de novo genetic mutations in a family trio (child, mother and father) by exercising the Google Genomics API to fetch variants and reads which is subsequently  . It provides concurrency options to speed up execution. Experiments were run against the NA12878 trio which showed high recall $\sim 96\%$ against experimentally validated germline and cell line mutations. Precision scores were inconclusive and will need follow up experiments against blood derived genomes.
 
-\clearpage
 
 \begin{thebibliography}{10}
 
