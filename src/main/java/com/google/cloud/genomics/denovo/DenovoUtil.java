@@ -27,7 +27,7 @@ import java.util.logging.Level;
 /*
  * Utility functions shared by other classes in Denovo project
  */
-public class DenovoUtil {
+class DenovoUtil {
 
   public static final double EPS = 1e-12;
   public static Map<Triplet<Genotype, Genotype, Genotype>, Boolean> isDenovoMap = new HashMap<>();
@@ -153,11 +153,10 @@ public class DenovoUtil {
     }
 
     /**
-     * @param allele 
      * @return transverse allele
      */
-    public Allele getTransversion(Allele allele) {
-      switch (allele) {
+    public Allele getTransversion() {
+      switch (this) {
         case A:
           return G;
         case G:
@@ -167,16 +166,15 @@ public class DenovoUtil {
         case T:
           return C;
         default:
-          throw new IllegalArgumentException("Unknown haplotype " + allele);
+          throw new IllegalArgumentException("Unknown haplotype " + this);
       }
     }
 
     /**
-     * @param allele
      * @return transition allele
      */
-    public EnumSet<Allele> getTransition(Allele allele) {
-      switch (allele) {
+    public EnumSet<Allele> getTransition() {
+      switch (this) {
         case A:
           return EnumSet.of(C, T);
         case G:
@@ -186,7 +184,7 @@ public class DenovoUtil {
         case T:
           return EnumSet.of(A, G);
         default:
-          throw new IllegalArgumentException("Unknown haplotype " + allele);
+          throw new IllegalArgumentException("Unknown haplotype " + this);
       }
     }
   }
