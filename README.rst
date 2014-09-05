@@ -112,9 +112,9 @@ Building Documentation
 
 To build the documentation ::
     
+    cd denovo-variant-caller-java
     mvn latex:latex
-
-The built pdf is available at ``target/denovo.pdf``
+    cp target/denovo.pdf denovo.pdf
 
 The mailing list
 ----------------
