@@ -26,10 +26,16 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.Genotype.TT;
 import static org.junit.Assert.assertEquals;
 
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
+import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
+import com.google.cloud.genomics.denovo.DenovoUtil.LogLevel;
 
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.logging.Level;
 
 /**
  * Some tests for the DenovoUtil class
@@ -106,16 +112,68 @@ public class DenovoUtilTest extends DenovoTest {
   
   @Test
   public void testChromosome_1() {
-    assertEquals(Chromosome.CHR1, Chromosome.fromString("chr1"));
+    assertEquals(Chromosome.CHR1, Chromosome.fromString("1"));
   }
   
   @Test
   public void testChromosome_X() {
-    assertEquals(Chromosome.CHRX, Chromosome.fromString("chrX"));
+    assertEquals(Chromosome.CHRX, Chromosome.fromString("X"));
   }
 
   @Test
-  public void testChromosome_x() {
+  public void testChromosome_chrx() {
     assertEquals(Chromosome.CHRX, Chromosome.fromString("chrx"));
+  }
+  
+  // Caller tests
+  @Test
+  public void testLogLevel_values() {
+    assertEquals(Level.SEVERE, LogLevel.ERROR.getLevel());
+    assertEquals(Level.INFO, LogLevel.INFO.getLevel());
+    assertEquals(Level.FINE, LogLevel.DEBUG.getLevel());
+  }  
+  
+  @Test
+  public void testLogLevel_levelMap() {
+    assertEquals(LogLevel.ERROR, LogLevel.levelMap.get(Level.SEVERE));
+    assertEquals(LogLevel.INFO, LogLevel.levelMap.get(Level.INFO));
+    assertEquals(LogLevel.DEBUG, LogLevel.levelMap.get(Level.FINE));
+  }
+  
+  // Allele tests
+  @Test
+  public void testAllele_transition() {
+    assertEquals(EnumSet.of(Allele.C, Allele.T), Allele.A.getTransition());
+    assertEquals(EnumSet.of(Allele.C, Allele.T), Allele.G.getTransition());
+    assertEquals(EnumSet.of(Allele.A, Allele.G), Allele.C.getTransition());
+    assertEquals(EnumSet.of(Allele.A, Allele.G), Allele.T.getTransition());
+  }
+  
+  @Test
+  public void testAllele_transversion() {
+    assertEquals(Allele.G, Allele.A.getTransversion());
+    assertEquals(Allele.A, Allele.G.getTransversion());
+    assertEquals(Allele.T, Allele.C.getTransversion());
+    assertEquals(Allele.C, Allele.T.getTransversion());
+  }
+
+
+  @Test
+  public void testAllele_getMutants() {
+    assertEquals(EnumSet.of(Allele.C, Allele.T, Allele.G), Allele.A.getMutants());
+  }
+
+  
+  @Test
+  public void checkGetReversedMap() {
+    assertEquals(Collections.singletonMap("A", 1), 
+        DenovoUtil.getReversedMap(Collections.singletonMap(1, "A")));
+  }
+  
+  @Test
+  public void testGenotype_valueOfPairAlleles() {
+    assertEquals(Genotype.AA, Genotype.valueOfPairAlleles(Allele.A, Allele.A));
+    assertEquals(Genotype.CT, Genotype.valueOfPairAlleles(Allele.C, Allele.T));
+    assertEquals(Genotype.CT, Genotype.valueOfPairAlleles(Allele.T, Allele.C));
   }
 }

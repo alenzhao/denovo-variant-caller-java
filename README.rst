@@ -15,6 +15,12 @@ to judge the denovo calls.
 
 **NOTE** : Currently under development. Usage should be considered experimental.
 
+Documentation
+-------------
+Documentation for the project can be found at `github page`_.
+
+.. _github page: https://raw.githubusercontent.com/googlegenomics/denovo-variant-caller-java/master/denovo.pdf
+
 Getting started
 ---------------
 
@@ -23,7 +29,7 @@ variant calling.
 
 * To use, first build the client using `Apache Maven`_::
 
-    cd denovo-variant-caller
+    cd denovo-variant-caller-java
     mvn package
 
 * Then, follow the `sign up instructions`_ to generate a valid
@@ -106,9 +112,9 @@ Building Documentation
 
 To build the documentation ::
     
+    cd denovo-variant-caller-java
     mvn latex:latex
-
-The built pdf is available at ``target/denovo.pdf``
+    cp target/denovo.pdf denovo.pdf
 
 The mailing list
 ----------------
