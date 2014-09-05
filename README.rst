@@ -116,6 +116,21 @@ To build the documentation ::
     mvn latex:latex
     cp target/denovo.pdf denovo.pdf
 
+Todos / Next Steps
+------------------
+* The caller currently calls SNPs and ignores indels. This feature can be added by carefully 
+  treating structural variations.
+* Parameters in the bayes net are fixed and not learned. Baseline mutation rates
+  could be learned for the trio under study.
+* Additional supervised classifiers could be added to the set of callers. It 
+  should be sufficient to derive from ``DenovoCaller`` class and initialized by
+  ``DenovoCallers`` static factory.
+* To get a correct estimate of the precision/recall values of the caller a gold
+  standard dataset with de novo mutations is needed. Unfortunately, none such 
+  exists. It can be closely approximated with blood derived DNA samples from 
+  multiple trios of siblings.
+
+    
 The mailing list
 ----------------
 
