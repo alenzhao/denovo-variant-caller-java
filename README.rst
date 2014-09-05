@@ -29,7 +29,7 @@ variant calling.
 
 * To use, first build the client using `Apache Maven`_::
 
-    cd denovo-variant-caller
+    cd denovo-variant-caller-java
     mvn package
 
 * Then, follow the `sign up instructions`_ to generate a valid
