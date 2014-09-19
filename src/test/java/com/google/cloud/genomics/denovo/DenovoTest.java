@@ -15,15 +15,9 @@ limitations under the License.
 */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
-import static org.junit.Assert.assertEquals;
-
 import com.google.api.services.genomics.Genomics;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
-
 import org.junit.After;
 import org.junit.Before;
 import org.mockito.Mock;
@@ -35,6 +29,9 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
+import static org.junit.Assert.assertEquals;
 
 public abstract class DenovoTest {
   @Mock Genomics genomics;
@@ -50,7 +47,6 @@ public abstract class DenovoTest {
   @Mock Genomics.Readsets.Search readsetSearch;
 
   @Mock Genomics.Variants variants;
-  @Mock Genomics.Variants.GetSummary variantSummary;
   @Mock Genomics.Variants.Search variantSearch;
 
   @Mock DenovoShared shared;

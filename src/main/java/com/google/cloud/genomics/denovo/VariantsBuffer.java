@@ -13,10 +13,6 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
-
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
@@ -27,7 +23,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Range;
-
 import org.javatuples.Pair;
 
 import java.util.Arrays;
@@ -35,6 +30,8 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
 
 /** Provide Buffering for fetching variants
  */
@@ -55,7 +52,7 @@ class VariantsBuffer {
    */
   void push(TrioMember person, Pair<Variant,Call> pair) {
     getQueue(person).addLast(pair);
-    mostRecentStartPosition.put(person, pair.getValue0().getPosition());
+    mostRecentStartPosition.put(person, pair.getValue0().getStart());
   }
 
   /** Pop first element from queue
@@ -90,7 +87,7 @@ class VariantsBuffer {
    * @return 0 if the buffer is empty for that person otherwise coord position
    */
   Long getStartPosition(TrioMember person) {
-    return isEmpty(person) ? 0 : getQueue(person).getFirst().getValue0().getPosition();
+    return isEmpty(person) ? 0 : getQueue(person).getFirst().getValue0().getStart();
   }
 
   /** end position of last element in queue
@@ -111,7 +108,7 @@ class VariantsBuffer {
     final Function<Pair<Variant,Call>, String> getStartAndEnd = new Function<Pair<Variant,Call>, String>() {
       @Override
       public String apply(Pair<Variant,Call> pair) {
-        return pair.getValue0().getPosition().toString() + "-" 
+        return pair.getValue0().getStart().toString() + "-"
             + pair.getValue0().getEnd().toString();
       }
     };
@@ -197,7 +194,7 @@ class VariantsBuffer {
     evictParents();
 
     Pair<Variant, Call> childSNP = getNextSNP(CHILD);
-    Long snpPosition = childSNP.getValue0().getPosition();
+    Long snpPosition = childSNP.getValue0().getStart();
     String referenceBase = childSNP.getValue0().getReferenceBases();
     Map<TrioMember, Genotype> genotypeMap = new TreeMap<>();
 
@@ -264,7 +261,7 @@ class VariantsBuffer {
   private boolean isSnp(Pair<Variant, Call> pair) {
     Variant variant = pair.getValue0();
     Call call = pair.getValue1();
-    if (variant.getEnd() != variant.getPosition() + Long.valueOf(1L)) {
+    if (variant.getEnd() != variant.getStart() + Long.valueOf(1L)) {
       return false;
     }
 
@@ -315,7 +312,7 @@ class VariantsBuffer {
     for (Pair<Variant, Call> pair : getQueue(person)) {
       Variant variant = pair.getValue0();
 
-      if (Range.closedOpen(variant.getPosition(), variant.getEnd()).contains(snpPosition)) {
+      if (Range.closedOpen(variant.getStart(), variant.getEnd()).contains(snpPosition)) {
         return pair;
       }
     }

@@ -13,22 +13,21 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
-import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.api.services.genomics.model.Call;
 import com.google.api.services.genomics.model.Variant;
-
+import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
+import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import org.javatuples.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test Cases for Variants Buffer
@@ -47,7 +46,7 @@ public class VariantsBufferTest extends DenovoTest {
 
   @Test
   public void testPush() {
-    Variant v = new Variant().setPosition(1L).setEnd(100001L);
+    Variant v = new Variant().setStart(1L).setEnd(100001L);
     Pair<Variant, Call> pair = Pair.with(v,dummyCall);
 
     vbuf.push(DAD, pair);
@@ -58,7 +57,7 @@ public class VariantsBufferTest extends DenovoTest {
 
   @Test
   public void testPop() {
-    Variant v = new Variant().setPosition(1L).setEnd(100001L);
+    Variant v = new Variant().setStart(1L).setEnd(100001L);
     Pair<Variant, Call> pair = Pair.with(v,dummyCall);
     vbuf.push(DAD, pair);
     Pair<Variant,Call> popv = vbuf.pop(DAD);
@@ -69,8 +68,8 @@ public class VariantsBufferTest extends DenovoTest {
 
   @Test
   public void testGetStartPosition() {
-    vbuf.push(DAD, Pair.with(new Variant().setPosition(1L).setEnd(10001L), dummyCall));
-    vbuf.push(DAD, Pair.with(new Variant().setPosition(10002L).setEnd(10003L), dummyCall));
+    vbuf.push(DAD, Pair.with(new Variant().setStart(1L).setEnd(10001L), dummyCall));
+    vbuf.push(DAD, Pair.with(new Variant().setStart(10002L).setEnd(10003L), dummyCall));
 
     assertEquals(Long.valueOf(0L), vbuf.getStartPosition(MOM));
     assertEquals(Long.valueOf(1L), vbuf.getStartPosition(DAD));
@@ -78,8 +77,8 @@ public class VariantsBufferTest extends DenovoTest {
 
   @Test
   public void testGetEndPosition() {
-    vbuf.push(DAD, Pair.with(new Variant().setPosition(1L).setEnd(10001L), dummyCall));
-    vbuf.push(DAD, Pair.with(new Variant().setPosition(10002L).setEnd(10003L), dummyCall));
+    vbuf.push(DAD, Pair.with(new Variant().setStart(1L).setEnd(10001L), dummyCall));
+    vbuf.push(DAD, Pair.with(new Variant().setStart(10002L).setEnd(10003L), dummyCall));
 
     assertEquals(Long.valueOf(0L), vbuf.getEndPosition(MOM));
     assertEquals(Long.valueOf(10003L), vbuf.getEndPosition(DAD));
@@ -87,17 +86,17 @@ public class VariantsBufferTest extends DenovoTest {
 
   @Test
   public void testToString() {
-    Variant v = new Variant().setPosition(1L).setEnd(1000L);
+    Variant v = new Variant().setStart(1L).setEnd(1000L);
     Pair<Variant, Call> pair = Pair.with(v, dummyCall);
     vbuf.push(DAD, pair);
     vbuf.push(DAD, pair);
     vbuf.push(DAD, pair);
     vbuf.push(MOM, pair);
-    vbuf.push(MOM, Pair.with(new Variant().setPosition(3L).setEnd(5000L), dummyCall));
+    vbuf.push(MOM, Pair.with(new Variant().setStart(3L).setEnd(5000L), dummyCall));
     assertEquals("CHILD:[], MOM:[1-1000,3-5000], DAD:[1-1000,1-1000,1-1000]", vbuf.toString());
   }
   
-  // Poosition Call tests
+  // Position Call tests
   @Test
   public void testPositionCall_1() {
     Map<TrioMember, Genotype> map = new HashMap<>();

@@ -13,17 +13,10 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.FULL;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
-import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
-
 import com.google.api.services.genomics.Genomics;
-import com.google.api.services.genomics.model.Callset;
+import com.google.api.services.genomics.model.CallSet;
 import com.google.api.services.genomics.model.Readset;
-import com.google.api.services.genomics.model.SearchCallsetsRequest;
+import com.google.api.services.genomics.model.SearchCallSetsRequest;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
@@ -47,6 +40,9 @@ import java.util.logging.Formatter;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.*;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
 
 /**
  * Wrappper for caller objects
@@ -187,18 +183,18 @@ public class DenovoRunner {
   }
 
   /**
-   * Get all the callsets in dataset
+   * Get all the call sets in dataset
    * 
    * @param datasetId dataset under consideration
    * @param genomics genomics querying object 
-   * @return list of all callsets
+   * @return list of all call sets
    * @throws IOException
    */
-  List<Callset> getCallsets(String datasetId, Genomics genomics) throws IOException {
-    List<Callset> callsets = genomics.callsets()
-        .search(new SearchCallsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
+  List<CallSet> getCallsets(String datasetId, Genomics genomics) throws IOException {
+    List<CallSet> callsets = genomics.callsets()
+        .search(new SearchCallSetsRequest().setVariantSetIds(Collections.singletonList(datasetId)))
         .execute()
-        .getCallsets(); 
+        .getCallSets();
     return Collections.unmodifiableList(callsets);
   }
 
@@ -209,12 +205,12 @@ public class DenovoRunner {
    * @param personToCallsetNameMap a mapping from a tripo member to a callset name
    * @return a mapping from callset trio members to callset ids
    */
-  Map<TrioMember, String> createCallsetIdMap(List<Callset> callsets, 
+  Map<TrioMember, String> createCallsetIdMap(List<CallSet> callsets,
       Map<TrioMember, String> personToCallsetNameMap) {
 
     Map<TrioMember, String> callsetIdMap = new HashMap<>();
     // Create a family person type to callset id map
-    for (Callset callset : callsets) {
+    for (CallSet callset : callsets) {
       String callsetName = callset.getName();
       for (TrioMember person : TrioMember.values()) {
         if (callsetName.equals(personToCallsetNameMap.get(person))) {

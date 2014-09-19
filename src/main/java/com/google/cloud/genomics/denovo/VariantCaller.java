@@ -13,10 +13,8 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
-
 import com.google.api.services.genomics.model.Call;
-import com.google.api.services.genomics.model.ContigBound;
+import com.google.api.services.genomics.model.ReferenceBound;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.VariantsBuffer.PositionCall;
@@ -24,7 +22,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
-
 import org.javatuples.Pair;
 
 import java.io.File;
@@ -34,6 +31,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
 
 /**
  * Makes Denovo calls by examining variants at candidate position and checking mendelian 
@@ -61,42 +60,42 @@ public class VariantCaller extends DenovoCaller {
     final File outputFile = DenovoUtil.getNormalizedFile(shared.getOutputFileName());
     shared.getLogger().fine(String.format("Output File : %s", outputFile.getAbsolutePath()));
     
-    List<ContigBound> allContigBounds = shared.getGenomics().variants().getSummary()
-    .setDatasetId(shared.getDatasetId())
-    .setDisableGZipContent(true)
-    .execute()
-    .getContigBounds();
+    List<ReferenceBound> allContigBounds = shared.getGenomics().variantsets()
+        .get(shared.getDatasetId())
+        .setDisableGZipContent(true)
+        .execute()
+        .getReferenceBounds();
 
     
     // Open File Outout handles
     try (PrintWriter callWriter = new PrintWriter(outputFile);) {
 
       /* Get a list of all the contigs */
-      List<ContigBound> contigBounds = FluentIterable
+      List<ReferenceBound> contigBounds = FluentIterable
           .from(allContigBounds)
-          .filter(new Predicate<ContigBound>() {
+          .filter(new Predicate<ReferenceBound>() {
 
             @Override
-            public boolean apply(ContigBound cb) {
+            public boolean apply(ReferenceBound cb) {
               return shared.getChromosomes().contains(
-                  Chromosome.valueOf(cb.getContig().toUpperCase()));
+                  Chromosome.valueOf(cb.getReferenceName().toUpperCase()));
             }
           }).toList();
 
       ExecutorService executor = Executors.newFixedThreadPool(shared.getNumThreads());
       /* Iterate through each contig and do variant filtering for each contig */
-      for (ContigBound contigBound : contigBounds) {
+      for (ReferenceBound contigBound : contigBounds) {
         Long startContigPos = shared.getStartPosition() == null ? 1L : shared.getStartPosition();
         Long endContigPos = shared.getEndPosition() == null 
             ? contigBound.getUpperBound() : shared.getEndPosition();
         Long strideLength = (endContigPos - startContigPos) / shared.getNumThreads();
         
-        shared.getLogger().info("Processing Chromosome : " + contigBound.getContig());
+        shared.getLogger().info("Processing Chromosome : " + contigBound.getReferenceName());
         
         for (int threadIdx = 0 ; threadIdx < shared.getNumThreads() ; threadIdx++) {
           long start = startContigPos + threadIdx * strideLength;
           long end = threadIdx == shared.getNumThreads() - 1 ? endContigPos : start + strideLength - 1;
-          Runnable worker = new SimpleDenovoRunnable(callWriter, contigBound.getContig(),
+          Runnable worker = new SimpleDenovoRunnable(callWriter, contigBound.getReferenceName(),
               start, end);
           executor.execute(worker);
         }
@@ -167,7 +166,7 @@ public class VariantCaller extends DenovoCaller {
         
         // Push into queue
         for (Call call : variant.getCalls()) {
-          vbuffer.checkAndAdd(shared.getCallsetIdToPersonMap().get(call.getCallsetId()), 
+          vbuffer.checkAndAdd(shared.getCallsetIdToPersonMap().get(call.getCallSetId()),
               Pair.with(variant, call));
         }
         // Try to process buffer elements eagerly

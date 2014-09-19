@@ -18,7 +18,6 @@ import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -40,12 +39,11 @@ public class VariantContigStream {
   public VariantContigStream(String contig, long startPosition, long endPosition,
       List<String> callsetIds, DenovoShared shared) {
     this.request = new SearchVariantsRequest()
-        .setContig(contig)
-        .setCallsetIds(callsetIds)
-        .setStartPosition(startPosition)
-        .setEndPosition(endPosition)
-        .setDatasetId(shared.getDatasetId())
-        .setMaxResults(BigInteger.valueOf(shared.getMaxVariantResults()));
+        .setReferenceName(contig)
+        .setCallSetIds(callsetIds)
+        .setStart(startPosition)
+        .setEnd(endPosition)
+        .setPageSize((int) shared.getMaxVariantResults());
     this.shared = shared;
   }
 
