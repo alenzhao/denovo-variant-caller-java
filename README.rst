@@ -17,9 +17,9 @@ to judge the denovo calls.
 
 Documentation
 -------------
-Documentation for the project can be found at `github page`_.
+Documentation for the project can be found in `denovo.pdf`_.
 
-.. _github page: https://raw.githubusercontent.com/googlegenomics/denovo-variant-caller-java/master/denovo.pdf
+.. _denovo.pdf: https://raw.githubusercontent.com/googlegenomics/denovo-variant-caller-java/master/denovo.pdf
 
 Getting started
 ---------------
@@ -110,7 +110,14 @@ See below for all options ::
 Building Documentation
 ----------------------
 
-To build the documentation ::
+The documentation in this repository relies on the 
+`LaTeX maven plugin <http://mojo.codehaus.org/latex-maven-plugin>`_
+
+To build the documentation you need to first have ``pdflatex`` available on your system. 
+Try `MacTeX <http://www.tug.org/mactex/>`_ for Macs or
+`TeX Live <http://mirror.utexas.edu/ctan/systems/texlive/Images/>`_ for Windows.
+
+::
     
     cd denovo-variant-caller-java
     mvn latex:latex
