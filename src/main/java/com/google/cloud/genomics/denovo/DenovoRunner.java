@@ -17,10 +17,12 @@ import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.CallSet;
 import com.google.api.services.genomics.model.Readset;
 import com.google.api.services.genomics.model.SearchCallSetsRequest;
+import com.google.api.services.genomics.model.SearchCallSetsResponse;
 import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.cloud.genomics.utils.GenomicsFactory;
+import com.google.cloud.genomics.utils.RetryPolicy;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 
@@ -53,6 +55,9 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
  * </ul>
  */
 public class DenovoRunner {
+
+  public static final RetryPolicy<Genomics.Callsets.Search, SearchCallSetsResponse> RETRY_POLICY
+      = RetryPolicy.nAttempts(10);
 
   private final DenovoShared shared;
   private CommandLine cmdLine;
@@ -191,10 +196,9 @@ public class DenovoRunner {
    * @throws IOException
    */
   List<CallSet> getCallsets(String datasetId, Genomics genomics) throws IOException {
-    List<CallSet> callsets = genomics.callsets()
-        .search(new SearchCallSetsRequest().setVariantSetIds(Collections.singletonList(datasetId)))
-        .execute()
-        .getCallSets();
+    SearchCallSetsResponse response = RETRY_POLICY.execute(genomics.callsets().search(
+        new SearchCallSetsRequest().setVariantSetIds(Collections.singletonList(datasetId))));
+    List<CallSet> callsets = response.getCallSets();
     return Collections.unmodifiableList(callsets);
   }
 
