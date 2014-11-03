@@ -80,7 +80,7 @@ public class VariantCaller extends DenovoCaller {
               return shared.getChromosomes().contains(
                   Chromosome.valueOf(cb.getReferenceName().toUpperCase()));
             }
-          }).toList();
+          }).toImmutableList();
 
       ExecutorService executor = Executors.newFixedThreadPool(shared.getNumThreads());
       /* Iterate through each contig and do variant filtering for each contig */

@@ -15,10 +15,11 @@ package com.google.cloud.genomics.denovo;
 
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.CallSet;
-import com.google.api.services.genomics.model.Readset;
+import com.google.api.services.genomics.model.ReadGroupSet;
 import com.google.api.services.genomics.model.SearchCallSetsRequest;
 import com.google.api.services.genomics.model.SearchCallSetsResponse;
-import com.google.api.services.genomics.model.SearchReadsetsRequest;
+import com.google.api.services.genomics.model.SearchReadGroupSetsRequest;
+import com.google.api.services.genomics.model.SearchReadGroupSetsResponse;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.cloud.genomics.utils.GenomicsFactory;
@@ -92,7 +93,7 @@ public class DenovoRunner {
                 public Chromosome apply(String input) {
                   return Chromosome.fromString(input);
                 }
-            }).toList());
+            }).toImmutableSet());
 
     // Initialize the shared object
     shared = new DenovoShared.Builder()
@@ -102,7 +103,7 @@ public class DenovoRunner {
       .lrtThreshold(cmdLine.lrtThreshold)
       .genomics(genomics)
       .personToCallsetNameMap(personToCallsetNameMap)
-      .personToReadsetIdMap(createReadsetIdMap(cmdLine.datasetId, personToCallsetNameMap, genomics))
+      .personToReadGroupSetIdMap(createReadGroupSetIdMap(cmdLine.datasetId, personToCallsetNameMap, genomics))
       .personToCallsetIdMap(personToCallsetIdMap)
       .callsetIdToPersonMap(DenovoUtil.getReversedMap(personToCallsetIdMap))
       .startPosition(cmdLine.startPosition)
@@ -227,39 +228,41 @@ public class DenovoRunner {
   }
 
   /**
-   * Create a mapping from trio members to readset ids
+   * Create a mapping from trio members to read group set ids
    * 
    * @param datasetId The dataset under consideration
    * @param callsetNameMap A mapping from trio members to callset names
    * @param genomics The genomics querying object
-   * @return A mapping from trio members to readset ids
+   * @return A mapping from trio members to read group set ids
    * @throws IOException
    */
-  Map<TrioMember, String> createReadsetIdMap(String datasetId,
+  Map<TrioMember, String> createReadGroupSetIdMap(String datasetId,
       Map<TrioMember, String> callsetNameMap, Genomics genomics) throws IOException {
-    Map<TrioMember, String> readsetIdMap = new HashMap<>();
+    Map<TrioMember, String> readGroupSetIdMap = new HashMap<>();
 
-    List<Readset> readsets = genomics.readsets()
-        .search(
-            new SearchReadsetsRequest().setDatasetIds(Collections.singletonList(datasetId)))
-        .execute()
-        .getReadsets();
+    Genomics.Readgroupsets.Search search = genomics.readgroupsets()
+        .search(new SearchReadGroupSetsRequest()
+            .setDatasetIds(Collections.singletonList(datasetId)));
+
+    List<ReadGroupSet> readGroupSets =
+        RetryPolicy.<Genomics.Readgroupsets.Search, SearchReadGroupSetsResponse>nAttempts(10)
+            .execute(search).getReadGroupSets();
 
     for (TrioMember person : TrioMember.values()) {
-      for (Readset readset : readsets) {
-        String sampleName = readset.getName();
-        String readsetId = readset.getId();
+      for (ReadGroupSet readGroupSet : readGroupSets) {
+        String sampleName = readGroupSet.getName();
+        String id = readGroupSet.getId();
 
         if (sampleName.equals(callsetNameMap.get(person))) {
-          readsetIdMap.put(person, readsetId);
+          readGroupSetIdMap.put(person, id);
         }
       }
     }
-    // Check that the readsetIdMap is sane
-    if (readsetIdMap.size() != 3) {
-      throw new IllegalStateException("Borked readsetIdMap" + readsetIdMap);
+    // Check that the readGroupSetIdMap is sane
+    if (readGroupSetIdMap.size() != 3) {
+      throw new IllegalStateException("Borked readGroupSetIdMap" + readGroupSetIdMap);
     }
-    return Collections.unmodifiableMap(readsetIdMap);
+    return Collections.unmodifiableMap(readGroupSetIdMap);
   }
 
   /**

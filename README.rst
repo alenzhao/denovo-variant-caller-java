@@ -35,8 +35,7 @@ variant calling.
 * Then, follow the `sign up instructions`_ to generate a valid
   ``client_secrets.json`` file.
 
-* Move the ``client_secrets.json`` file into the client-java directory.
-  (Authentication will take place the first time you make an API call.)
+* Move the ``client_secrets.json`` file into the denovo-variant-caller-java directory.
 
 There are three modes for Denovo calling
 
@@ -47,7 +46,7 @@ There are three modes for Denovo calling
 * **Full** - A utility mode that runs both the variant and the reads mode for you such that output of variants mode is piped to reads mode ::
 
     java -jar target/denovo-variant-caller-0.1.jar --caller full \
-    --client_secrets_filename ${HOME}/Downloads/client_secrets.json \
+    --client_secrets_filename client_secrets.json \
     --dataset_id 3049512673186936334 \
     --dad_callset_name NA12891 \
     --mom_callset_name NA12892 \

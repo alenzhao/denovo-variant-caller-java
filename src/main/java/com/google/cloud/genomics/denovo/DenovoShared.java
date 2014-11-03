@@ -31,7 +31,7 @@ public class DenovoShared {
   private final Genomics genomics;
   private final int numThreads;
   private final Map<TrioMember, String> personToCallsetIdMap;
-  private final Map<TrioMember, String> personToReadsetIdMap;
+  private final Map<TrioMember, String> personToReadGroupSetIdMap;
   private final Map<TrioMember, String> personToCallsetNameMap;
   private final Map<String, TrioMember> callsetIdToPersonMap;
   private final Set<Chromosome> chromosomes;
@@ -53,7 +53,7 @@ public class DenovoShared {
     genomics = builder.genomics;
     numThreads = builder.numThreads;
     personToCallsetIdMap = builder.personToCallsetIdMap;
-    personToReadsetIdMap = builder.personToReadsetIdMap;
+    personToReadGroupSetIdMap = builder.personToReadGroupSetIdMap;
     personToCallsetNameMap = builder.personToCallsetNameMap;
     callsetIdToPersonMap = builder.callsetIdToPersonMap;
     chromosomes = builder.chromosomes;
@@ -87,10 +87,10 @@ public class DenovoShared {
   }
 
   /**
-   * @return the personToReadsetIdMap
+   * @return the personToReadGroupSetIdMap
    */
-  public Map<TrioMember, String> getPersonToReadsetIdMap() {
-    return personToReadsetIdMap;
+  public Map<TrioMember, String> getPersonToReadGroupSetIdMap() {
+    return personToReadGroupSetIdMap;
   }
 
   /**
@@ -220,7 +220,7 @@ public class DenovoShared {
     private Genomics genomics;
     private int numThreads = 1;
     private Map<TrioMember, String> personToCallsetIdMap;
-    private Map<TrioMember, String> personToReadsetIdMap;
+    private Map<TrioMember, String> personToReadGroupSetIdMap;
     private Map<TrioMember, String> personToCallsetNameMap;
     private Map<String, TrioMember> callsetIdToPersonMap;
     private Set<Chromosome> chromosomes;
@@ -299,8 +299,8 @@ public class DenovoShared {
       return this;
     }
 
-    public Builder personToReadsetIdMap(Map<TrioMember, String> personToReadsetIdMap) {
-      this.personToReadsetIdMap = personToReadsetIdMap;
+    public Builder personToReadGroupSetIdMap(Map<TrioMember, String> personToReadGroupSetIdMap) {
+      this.personToReadGroupSetIdMap = personToReadGroupSetIdMap;
       return this;
     }
 

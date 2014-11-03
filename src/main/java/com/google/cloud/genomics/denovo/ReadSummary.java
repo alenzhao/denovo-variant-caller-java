@@ -44,8 +44,8 @@ public class ReadSummary {
    */
   public ReadSummary(List<Read> reads, Long candidatePosition) {
     for (Read read : reads) {
-      String alignedBases = read.getAlignedBases();
-      Integer offset = (int) (candidatePosition - read.getPosition());
+      String alignedBases = read.getAlignedSequence();
+      Integer offset = (int) (candidatePosition - read.getAlignment().getPosition().getPosition());
       String baseAtPos = alignedBases.substring(offset, offset + 1);
       
       if (baseAtPos.equals("-")) {

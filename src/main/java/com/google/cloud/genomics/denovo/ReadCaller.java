@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -158,8 +157,8 @@ public class ReadCaller extends DenovoCaller {
     /* Get reads for the current position */
     Map<TrioMember, List<Read>> readMap = new HashMap<>();
     for (TrioMember person : TrioMember.values()) {
-      List<Read> reads = getReads(shared.getPersonToReadsetIdMap().get(person), chromosome,
-          candidatePosition, candidatePosition, shared.getGenomics());
+      List<Read> reads = getReads(shared.getPersonToReadGroupSetIdMap().get(person), chromosome,
+          candidatePosition, candidatePosition + 1, shared.getGenomics());
       readMap.put(person, reads);
     }
     return readMap;
@@ -167,7 +166,7 @@ public class ReadCaller extends DenovoCaller {
 
   
   /** Make read search request
-   * @param readsetId
+   * @param readGroupSetId
    * @param chromosomeName
    * @param startPos
    * @param endPos
@@ -175,15 +174,15 @@ public class ReadCaller extends DenovoCaller {
    * @return list of reads at candidate position
    * @throws IOException
    */
-  List<Read> getReads(String readsetId, String chromosomeName, long startPos,
+  List<Read> getReads(String readGroupSetId, String chromosomeName, long startPos,
       long endPos, Genomics genomics) throws IOException {
     SearchReadsRequest request = new SearchReadsRequest()
-        .setReadsetIds(Collections.singletonList(readsetId))
-        .setSequenceName(chromosomeName)
-        .setSequenceStart(BigInteger.valueOf(startPos))
-        .setSequenceEnd(BigInteger.valueOf(endPos));
+        .setReadGroupSetIds(Collections.singletonList(readGroupSetId))
+        .setReferenceName(chromosomeName)
+        .setStart(startPos)
+        .setEnd(endPos);
 
-    return genomics.reads().search(request).execute().getReads();
+    return genomics.reads().search(request).execute().getAlignments();
   }
 
   /**

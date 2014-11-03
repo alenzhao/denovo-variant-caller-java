@@ -43,8 +43,8 @@ public abstract class DenovoTest {
   @Mock Genomics.Reads reads;
   @Mock Genomics.Reads.Search readSearch;
 
-  @Mock Genomics.Readsets readsets;
-  @Mock Genomics.Readsets.Search readsetSearch;
+  @Mock Genomics.Readgroupsets readgroupsets;
+  @Mock Genomics.Readgroupsets.Search readgroupsetSearch;
 
   @Mock Genomics.Variants variants;
   @Mock Genomics.Variants.Search variantSearch;
@@ -59,10 +59,10 @@ public abstract class DenovoTest {
 
     Mockito.when(genomics.callsets()).thenReturn(callsets);
     Mockito.when(genomics.reads()).thenReturn(reads);
-    Mockito.when(genomics.readsets()).thenReturn(readsets);
+    Mockito.when(genomics.readgroupsets()).thenReturn(readgroupsets);
     Mockito.when(genomics.variants()).thenReturn(variants);
 
-    Mockito.when(readsetSearch.setFields(Mockito.anyString())).thenReturn(readsetSearch);
+    Mockito.when(readgroupsetSearch.setFields(Mockito.anyString())).thenReturn(readgroupsetSearch);
 
     Mockito.when(shared.getSequenceErrorRate()).thenReturn(1e-2);
     Mockito.when(shared.getDenovoMutationRate()).thenReturn(1e-8);

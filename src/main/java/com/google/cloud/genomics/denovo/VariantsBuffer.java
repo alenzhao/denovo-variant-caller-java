@@ -22,7 +22,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Range;
+import com.google.common.collect.Ranges;
 import org.javatuples.Pair;
 
 import java.util.Arrays;
@@ -312,7 +312,7 @@ class VariantsBuffer {
     for (Pair<Variant, Call> pair : getQueue(person)) {
       Variant variant = pair.getValue0();
 
-      if (Range.closedOpen(variant.getStart(), variant.getEnd()).contains(snpPosition)) {
+      if (Ranges.closedOpen(variant.getStart(), variant.getEnd()).contains(snpPosition)) {
         return pair;
       }
     }
