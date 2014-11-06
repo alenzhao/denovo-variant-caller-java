@@ -189,20 +189,13 @@ public class ReadCaller extends DenovoCaller {
    * Wraps BayesDenovo Call so as to allow retries on IOException
    */
   private class RunBayesDenovoWithRetries {
-    private int numTries = 0;
 
     public void run(CallHolder callHolder, PrintWriter writer) {
       try {
-        numTries++;
         runBayesDenovoInference(callHolder, writer);
       } catch (IOException e) {
         e.printStackTrace();
-        if (numTries < shared.getMaxApiRetries()) {
-          System.err.printf("Attempt #%d : call %s%n", numTries + 1, callHolder);
-          run(callHolder, writer);
-        } else {
-          System.err.printf("Failed to run call : %s%n", callHolder);
-        }
+        System.err.printf("Failed to run call : %s%n", callHolder);
       }
     }
   }

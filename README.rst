@@ -89,7 +89,6 @@ See below for all options ::
      --lrt_threshold <sig_level>            : likelihood ratio test significance
                                               level (default 1. ;higher the
                                               stricter)
-     --max_api_retries <num>                : max api retry count (default 5)
      --max_variant_results <num>            : max variants returned per request
                                               (default 10000)
      --mom_callset_name <name>              : Mom's callset name e.g. NA12878

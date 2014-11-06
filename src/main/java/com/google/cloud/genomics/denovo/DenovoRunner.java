@@ -19,11 +19,9 @@ import com.google.api.services.genomics.model.ReadGroupSet;
 import com.google.api.services.genomics.model.SearchCallSetsRequest;
 import com.google.api.services.genomics.model.SearchCallSetsResponse;
 import com.google.api.services.genomics.model.SearchReadGroupSetsRequest;
-import com.google.api.services.genomics.model.SearchReadGroupSetsResponse;
 import com.google.cloud.genomics.denovo.DenovoUtil.Chromosome;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
 import com.google.cloud.genomics.utils.GenomicsFactory;
-import com.google.cloud.genomics.utils.RetryPolicy;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 
@@ -56,9 +54,6 @@ import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
  * </ul>
  */
 public class DenovoRunner {
-
-  public static final RetryPolicy<Genomics.Callsets.Search, SearchCallSetsResponse> RETRY_POLICY
-      = RetryPolicy.nAttempts(10);
 
   private final DenovoShared shared;
   private CommandLine cmdLine;
@@ -113,7 +108,6 @@ public class DenovoRunner {
       .caller(cmdLine.caller)
       .inputFileName(cmdLine.inputFileName)
       .outputFileName(cmdLine.outputFileName)
-      .max_api_retries(cmdLine.maxApiRetries)
       .max_variant_results(cmdLine.maxVariantResults)
       .denovoMutationRate(cmdLine.denovoMutationRate)
       .sequenceErrorRate(cmdLine.sequenceErrorRate)
@@ -130,7 +124,7 @@ public class DenovoRunner {
     if (LogManager.getLogManager().getLogger(DenovoRunner.class.getName()) != null) {
       return LogManager.getLogManager().getLogger(DenovoRunner.class.getName());
     }
-    
+
     Logger logger = Logger.getLogger(DenovoRunner.class.getName());
     ConsoleHandler consoleHandler = new ConsoleHandler();
     logger.setLevel(cmdLine.logLevel.getLevel());
@@ -197,8 +191,8 @@ public class DenovoRunner {
    * @throws IOException
    */
   List<CallSet> getCallsets(String datasetId, Genomics genomics) throws IOException {
-    SearchCallSetsResponse response = RETRY_POLICY.execute(genomics.callsets().search(
-        new SearchCallSetsRequest().setVariantSetIds(Collections.singletonList(datasetId))));
+    SearchCallSetsResponse response = genomics.callsets().search(new SearchCallSetsRequest()
+        .setVariantSetIds(Collections.singletonList(datasetId))).execute();
     List<CallSet> callsets = response.getCallSets();
     return Collections.unmodifiableList(callsets);
   }
@@ -244,9 +238,7 @@ public class DenovoRunner {
         .search(new SearchReadGroupSetsRequest()
             .setDatasetIds(Collections.singletonList(datasetId)));
 
-    List<ReadGroupSet> readGroupSets =
-        RetryPolicy.<Genomics.Readgroupsets.Search, SearchReadGroupSetsResponse>nAttempts(10)
-            .execute(search).getReadGroupSets();
+    List<ReadGroupSet> readGroupSets = search.execute().getReadGroupSets();
 
     for (TrioMember person : TrioMember.values()) {
       for (ReadGroupSet readGroupSet : readGroupSets) {

@@ -108,12 +108,6 @@ class CommandLine {
       usage = "max variants returned per request (default 1000)")
   public long maxVariantResults = 1000L;
   
-
-  @Option(name = "--max_api_retries", metaVar = "<num>",
-      usage = "max api retry count (default 5)")
-  public int maxApiRetries = 5;
-
-  
   public CommandLine() {
     parser = new CmdLineParser(this);
   }

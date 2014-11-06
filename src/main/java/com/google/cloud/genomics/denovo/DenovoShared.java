@@ -43,7 +43,6 @@ public class DenovoShared {
   private final Caller caller;
   private final String outputFileName;
   private final String inputFileName;
-  private final int maxApiRetries;
   private final long maxVariantResults;
   private final double sequenceErrorRate;
   private final double denovoMutationRate;
@@ -64,7 +63,6 @@ public class DenovoShared {
     logger = builder.logger;
     lrtThreshold = builder.lrtThreshold;
     outputFileName = builder.outputFileName;
-    maxApiRetries = builder.maxApiRetries;
     maxVariantResults = builder.maxVariantResults;
     inputFileName = builder.inputFileName;
     sequenceErrorRate = builder.sequenceErrorRate;
@@ -178,13 +176,6 @@ public class DenovoShared {
   }
 
   /**
-   * @return the max_api_retries
-   */
-  public int getMaxApiRetries() {
-    return maxApiRetries;
-  }
-
-  /**
    * @return the max_variant_results
    */
   public long getMaxVariantResults() {
@@ -231,7 +222,6 @@ public class DenovoShared {
     private double lrtThreshold;
     private Caller caller;
     private String outputFileName;
-    private int maxApiRetries;
     private long maxVariantResults;
     private String inputFileName;
     private double sequenceErrorRate;
@@ -251,11 +241,6 @@ public class DenovoShared {
     
     public Builder max_variant_results(long max_variant_results) {
       this.maxVariantResults = max_variant_results;
-      return this;
-    }
-    
-    public Builder max_api_retries(int max_api_retries) {
-      this.maxApiRetries = max_api_retries;
       return this;
     }
 

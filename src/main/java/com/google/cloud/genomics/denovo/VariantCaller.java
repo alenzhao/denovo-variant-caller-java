@@ -217,7 +217,6 @@ public class VariantCaller extends DenovoCaller {
     private final String contig;
     private final Long startPos;
     private final Long endPos;
-    private int numTries = 0;
 
     public SimpleDenovoRunnable(PrintWriter writer, String contig, 
         Long startPosition, Long endPosition) {
@@ -230,16 +229,10 @@ public class VariantCaller extends DenovoCaller {
     @Override
     public void run() {
       try {
-        numTries++;
         callSimpleDenovo(writer, contig, startPos, endPos);
       } catch (IOException e) {
         e.printStackTrace();
-        if (numTries < shared.getMaxApiRetries()) {
-          System.err.printf("Attempt #%d : contig %s%n", numTries + 1, contig);
-          run();
-        } else {
-          System.err.printf("Failed to run contig : %s%n", contig);
-        }
+        System.err.printf("Failed to run contig : %s%n", contig);
       }
     }
   }

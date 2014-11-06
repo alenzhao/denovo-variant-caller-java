@@ -13,11 +13,9 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
-import com.google.cloud.genomics.utils.RetryPolicy;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,9 +24,6 @@ import java.util.List;
  * Creates a Stream of variants for a particular contig
  */
 public class VariantContigStream {
-  public static final RetryPolicy<Genomics.Variants.Search, SearchVariantsResponse> RETRY_POLICY
-      = RetryPolicy.nAttempts(10);
-
   private int requestCount = 0;
   private String nextPageToken;
   SearchVariantsRequest request;
@@ -71,8 +66,7 @@ public class VariantContigStream {
     shared.getLogger().finer(
       String.format("Executing Search Variants Request : " + String.valueOf(requestCount)));
 
-    SearchVariantsResponse response = RETRY_POLICY.execute(
-        shared.getGenomics().variants().search(request));
+    SearchVariantsResponse response = shared.getGenomics().variants().search(request).execute();
 
     nextPageToken = response.getNextPageToken();
     return response.getVariants();
