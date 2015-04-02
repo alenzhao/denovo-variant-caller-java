@@ -100,9 +100,9 @@ See below for all options ::
                                               (default 1e-2)
      --start_position <position>            : start position ( usually 1 )
 	
-.. _Google Genomics API: https://developers.google.com/genomics
+.. _Google Genomics API: https://cloud.google.com/genomics
 .. _Apache Maven: http://maven.apache.org/download.cgi
-.. _sign up instructions: https://developers.google.com/genomics
+.. _sign up instructions: https://cloud.google.com/genomics/install-genomics-tools#authenticate
 
 
 Building Documentation
