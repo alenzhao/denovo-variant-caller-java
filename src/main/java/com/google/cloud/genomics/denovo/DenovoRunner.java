@@ -32,7 +32,6 @@ import com.google.cloud.genomics.utils.GenomicsFactory;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
@@ -77,7 +76,7 @@ public class DenovoRunner {
   private DenovoRunner(CommandLine cmdLine) throws IOException, GeneralSecurityException {
 
     Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
-        .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
+        .fromApplicationDefaultCredential();
 
     Map<TrioMember, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
     Map<TrioMember, String> personToCallsetIdMap = createCallsetIdMap(
