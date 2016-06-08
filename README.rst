@@ -29,8 +29,8 @@ variant calling.
 
 * git clone this repository.
 
-* If you have not already done so, follow the Google Genomics `getting started instructions <https://cloud.google.com/genomics/install-genomics-tools> to set up your environment
-  including [installing gcloud](https://cloud.google.com/sdk/) and running `gcloud init`.
+* If you have not already done so, follow the Google Genomics `getting started instructions <https://cloud.google.com/genomics/install-genomics-tools>`_ to set up your environment
+  including `installing gcloud <https://cloud.google.com/sdk/>`_ and running ``gcloud init``.
 
 * Build the client using `Apache Maven`_::
 
