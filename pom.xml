@@ -73,12 +73,12 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-genomics</artifactId>
-      <version>v1beta2-rev3-1.19.0</version>
+      <version>v1-rev81-1.22.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.genomics</groupId>
       <artifactId>google-genomics-utils</artifactId>
-      <version>v1beta2-0.8</version>
+      <version>v1-0.2</version>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
@@ -88,7 +88,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>17.0</version>
+      <version>19.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

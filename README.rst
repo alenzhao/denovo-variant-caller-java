@@ -11,9 +11,9 @@ denovo-variant-caller-java |Build Status|_ |Build Coverage|_
 Calls de novo variants using information from a mother, father and child trio.
 
 Uses a bayes net encoded with the inheritence relationship in the trio in order
-to judge the denovo calls. 
+to judge the denovo calls.
 
-**NOTE** : Currently under development. Usage should be considered experimental.
+**NOTE** : Currently under development. Usage should be considered experimental.  It will also run much faster when https://github.com/googlegenomics/denovo-variant-caller-java/issues/23 is completed.
 
 Documentation
 -------------
@@ -27,15 +27,15 @@ Getting started
 This Java program allows you to discover denovo variants using Bayesian de novo
 variant calling.
 
-* To use, first build the client using `Apache Maven`_::
+* git clone this repository.
+
+* If you have not already done so, follow the Google Genomics `getting started instructions <https://cloud.google.com/genomics/install-genomics-tools>`_ to set up your environment
+  including `installing gcloud <https://cloud.google.com/sdk/>`_ and running ``gcloud init``.
+
+* Build the client using `Apache Maven`_::
 
     cd denovo-variant-caller-java
     mvn package
-
-* Then, follow the `sign up instructions`_ to generate a valid
-  ``client_secrets.json`` file.
-
-* Move the ``client_secrets.json`` file into the denovo-variant-caller-java directory.
 
 There are three modes for Denovo calling
 
@@ -46,24 +46,23 @@ There are three modes for Denovo calling
 * **Full** - A utility mode that runs both the variant and the reads mode for you such that output of variants mode is piped to reads mode ::
 
     java -jar target/denovo-variant-caller-0.1.jar --caller full \
-    --client_secrets_filename client_secrets.json \
     --dataset_id 3049512673186936334 \
     --dad_callset_name NA12891 \
     --mom_callset_name NA12892 \
     --child_callset_name NA12878 \
     --chromosome chr1 \
-    --start_position 1 \
-    --end_position 14000000 \
+    --start_position 75884300 \
+    --end_position 75884400 \
     --log_level debug \
-    --num_threads 25 \
+    --num_threads 2 \
     --output_file NA12878_full.calls
 
 
 Additional Options
 ------------------
 
-To speed up execution increase the number of threads with the ``--num_threads`` 
-option. 
+To speed up execution increase the number of threads with the ``--num_threads``
+option.
 
 To restrict to one or more chromosomes use the ``--chromosome`` flag.
 
@@ -75,7 +74,6 @@ See below for all options ::
      --chromosome <name>                    : specify the chromosomes to search
                                               (specify multiple times for multiple
                                               chromsomes)
-     --client_secrets_filename <file>       : Path to client_secrets.json
      --dad_callset_name <name>              : Dad's callset name e.g. NA12877
      --dataset_id <id>                      : Dataset id
      --denovo_mut_rate <rate>               : Specify the denovo mutation rate
@@ -99,7 +97,7 @@ See below for all options ::
      --seq_err_rate <rate>                  : Specify the sequence error rate
                                               (default 1e-2)
      --start_position <position>            : start position ( usually 1 )
-	
+
 .. _Google Genomics API: https://cloud.google.com/genomics
 .. _Apache Maven: http://maven.apache.org/download.cgi
 .. _sign up instructions: https://cloud.google.com/genomics/install-genomics-tools#authenticate
@@ -108,34 +106,34 @@ See below for all options ::
 Building Documentation
 ----------------------
 
-The documentation in this repository relies on the 
+The documentation in this repository relies on the
 `LaTeX maven plugin <http://mojo.codehaus.org/latex-maven-plugin>`_
 
-To build the documentation you need to first have ``pdflatex`` available on your system. 
+To build the documentation you need to first have ``pdflatex`` available on your system.
 Try `MacTeX <http://www.tug.org/mactex/>`_ for Macs or
 `TeX Live <http://mirror.utexas.edu/ctan/systems/texlive/Images/>`_ for Windows.
 
 ::
-    
+
     cd denovo-variant-caller-java
     mvn latex:latex
     cp target/denovo.pdf denovo.pdf
 
 Todos / Next Steps
 ------------------
-* The caller currently calls SNPs and ignores indels. This feature can be added by carefully 
+* The caller currently calls SNPs and ignores indels. This feature can be added by carefully
   treating structural variations.
 * Parameters in the bayes net are fixed and not learned. Baseline mutation rates
   could be learned for the trio under study.
-* Additional supervised classifiers could be added to the set of callers. It 
+* Additional supervised classifiers could be added to the set of callers. It
   should be sufficient to derive from ``DenovoCaller`` class and initialized by
   ``DenovoCallers`` static factory.
 * To get a correct estimate of the precision/recall values of the caller a gold
-  standard dataset with de novo mutations is needed. Unfortunately, none such 
-  exists. It can be closely approximated with blood derived DNA samples from 
+  standard dataset with de novo mutations is needed. Unfortunately, none such
+  exists. It can be closely approximated with blood derived DNA samples from
   multiple trios of siblings.
 
-    
+
 The mailing list
 ----------------
 

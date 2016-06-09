@@ -16,6 +16,7 @@ package com.google.cloud.genomics.denovo;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.SearchVariantsResponse;
 import com.google.api.services.genomics.model.Variant;
+import com.google.common.base.Strings;
 
 import java.io.IOException;
 import java.util.List;
@@ -51,7 +52,7 @@ public class VariantContigStream {
    * @return if Stream has more objects
    */
   public boolean hasMore() {
-    return requestCount == 0 || nextPageToken != null;
+    return requestCount == 0 || !Strings.isNullOrEmpty(nextPageToken);
   }
 
   /**

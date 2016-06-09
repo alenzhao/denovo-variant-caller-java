@@ -13,6 +13,13 @@
  */
 package com.google.cloud.genomics.denovo;
 
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.FULL;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.READ;
+import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.VARIANT;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
+
 import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.model.CallSet;
 import com.google.api.services.genomics.model.ReadGroupSet;
@@ -25,7 +32,6 @@ import com.google.cloud.genomics.utils.GenomicsFactory;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
@@ -42,12 +48,9 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.Caller.*;
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
-
 /**
  * Wrappper for caller objects
- * 
+ *
  * <ul>
  * <li>Initializes Shared state object from commandline options</li>
  * <li>Sets up calling pipeline and the caller objects</li>
@@ -57,30 +60,30 @@ public class DenovoRunner {
 
   private final DenovoShared shared;
   private CommandLine cmdLine;
-  
-  public static DenovoRunner initFromCommandLine(CommandLine cmdLine) 
+
+  public static DenovoRunner initFromCommandLine(CommandLine cmdLine)
       throws IOException, GeneralSecurityException {
     return new DenovoRunner(cmdLine);
   }
-  
+
   /**
    * Initializes Engine params from command line args
-   * 
+   *
    * @param cmdLine Commandline arguments
-   * @throws IOException thrown when Maps cannot be created upon failure on querying APIs  
+   * @throws IOException thrown when Maps cannot be created upon failure on querying APIs
    * @throws GeneralSecurityException API security authorization failure
    */
   private DenovoRunner(CommandLine cmdLine) throws IOException, GeneralSecurityException {
 
     Genomics genomics = GenomicsFactory.builder("genomics_denovo_caller").build()
-        .fromClientSecretsFile(new File(cmdLine.clientSecretsFilename));
+        .fromApplicationDefaultCredential();
 
     Map<TrioMember, String> personToCallsetNameMap = createCallsetNameMap(cmdLine);
     Map<TrioMember, String> personToCallsetIdMap = createCallsetIdMap(
         getCallsets(cmdLine.datasetId, genomics), personToCallsetNameMap);
     this.cmdLine = cmdLine;
-    Set<Chromosome> chromosomes = cmdLine.chromosomes == null 
-        ? Chromosome.ALL 
+    Set<Chromosome> chromosomes = cmdLine.chromosomes == null
+        ? Chromosome.ALL
         : EnumSet.copyOf(FluentIterable
             .from(cmdLine.chromosomes)
             .transform(new Function<String, Chromosome>() {
@@ -114,7 +117,7 @@ public class DenovoRunner {
       .build();
   }
 
-  /** Set up the logge. Creates a new one each time.
+  /** Set up the logger. Creates a new one each time.
    * @param cmdLine
    * @return the logger
    * @throws IOException
@@ -143,7 +146,7 @@ public class DenovoRunner {
     consoleHandler.setFormatter(conciseFormat);
     consoleHandler.setLevel(cmdLine.logLevel.getLevel());
     logger.addHandler(consoleHandler);
-    
+
     if (cmdLine.logFile != null) {
       FileHandler fileHandler = new FileHandler(
           DenovoUtil.getNormalizedFile(cmdLine.logFile).getAbsolutePath(), false);
@@ -160,7 +163,7 @@ public class DenovoRunner {
    * @throws GeneralSecurityException API security authorization failure
    */
   public void execute() throws IOException, ParseException, GeneralSecurityException {
-    
+
     if (shared.getCaller() == VARIANT) {
       DenovoCallers.getVariantCaller(shared).execute();
     } else if (shared.getCaller() == READ && shared.getInputFileName() != null) {
@@ -184,9 +187,9 @@ public class DenovoRunner {
 
   /**
    * Get all the call sets in dataset
-   * 
+   *
    * @param datasetId dataset under consideration
-   * @param genomics genomics querying object 
+   * @param genomics genomics querying object
    * @return list of all call sets
    * @throws IOException
    */
@@ -199,7 +202,7 @@ public class DenovoRunner {
 
   /**
    * Map callset trio members to callset ids
-   * 
+   *
    * @param callsets a list of all the callsets
    * @param personToCallsetNameMap a mapping from a tripo member to a callset name
    * @return a mapping from callset trio members to callset ids
@@ -223,7 +226,7 @@ public class DenovoRunner {
 
   /**
    * Create a mapping from trio members to read group set ids
-   * 
+   *
    * @param datasetId The dataset under consideration
    * @param callsetNameMap A mapping from trio members to callset names
    * @param genomics The genomics querying object
@@ -259,7 +262,7 @@ public class DenovoRunner {
 
   /**
    * Extract callset names from cmdline and associate with trio members
-   * 
+   *
    * @param cmdLine
    * @return a mapping from trio members to callset names
    */

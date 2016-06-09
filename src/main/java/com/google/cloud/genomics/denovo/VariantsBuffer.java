@@ -13,8 +13,12 @@
  */
 package com.google.cloud.genomics.denovo;
 
-import com.google.api.services.genomics.model.Call;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.CHILD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.DAD;
+import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.MOM;
+
 import com.google.api.services.genomics.model.Variant;
+import com.google.api.services.genomics.model.VariantCall;
 import com.google.cloud.genomics.denovo.DenovoUtil.Allele;
 import com.google.cloud.genomics.denovo.DenovoUtil.Genotype;
 import com.google.cloud.genomics.denovo.DenovoUtil.TrioMember;
@@ -23,6 +27,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Ranges;
+
 import org.javatuples.Pair;
 
 import java.util.Arrays;
@@ -31,17 +36,15 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.google.cloud.genomics.denovo.DenovoUtil.TrioMember.*;
-
 /** Provide Buffering for fetching variants
  */
 class VariantsBuffer {
-  private Map<TrioMember, Deque<Pair<Variant,Call>>> bufferMap = new TreeMap<>();
+  private Map<TrioMember, Deque<Pair<Variant,VariantCall>>> bufferMap = new TreeMap<>();
   private Map<TrioMember, Long> mostRecentStartPosition = new TreeMap<>();
 
   VariantsBuffer() {
     for (TrioMember person : TrioMember.values()) {
-      bufferMap.put(person, new LinkedList<Pair<Variant,Call>>());
+      bufferMap.put(person, new LinkedList<Pair<Variant,VariantCall>>());
       mostRecentStartPosition.put(person, 0L);
     }
   }
@@ -50,7 +53,7 @@ class VariantsBuffer {
    * @param person trio member
    * @param pair pair of variant and call
    */
-  void push(TrioMember person, Pair<Variant,Call> pair) {
+  void push(TrioMember person, Pair<Variant,VariantCall> pair) {
     getQueue(person).addLast(pair);
     mostRecentStartPosition.put(person, pair.getValue0().getStart());
   }
@@ -59,7 +62,7 @@ class VariantsBuffer {
    * @param person
    * @return first element in queue
    */
-  Pair<Variant,Call> pop(TrioMember person) {
+  Pair<Variant,VariantCall> pop(TrioMember person) {
     if (isEmpty(person)) {
       throw new IllegalStateException("Trying to pop from empty queue");
     }
@@ -69,7 +72,7 @@ class VariantsBuffer {
   /** Checks if first variant in CHILD buffer can be processed
    */
   boolean canProcess() {
-    return (!isEmpty(CHILD) 
+    return (!isEmpty(CHILD)
         && getMostRecentStartPosition(MOM) >= getStartPosition(CHILD)
         && getMostRecentStartPosition(DAD) >= getStartPosition(CHILD));
   }
@@ -105,9 +108,9 @@ class VariantsBuffer {
 
   @Override
   public String toString() {
-    final Function<Pair<Variant,Call>, String> getStartAndEnd = new Function<Pair<Variant,Call>, String>() {
+    final Function<Pair<Variant,VariantCall>, String> getStartAndEnd = new Function<Pair<Variant,VariantCall>, String>() {
       @Override
-      public String apply(Pair<Variant,Call> pair) {
+      public String apply(Pair<Variant,VariantCall> pair) {
         return pair.getValue0().getStart().toString() + "-"
             + pair.getValue0().getEnd().toString();
       }
@@ -123,11 +126,11 @@ class VariantsBuffer {
         }));
   }
 
-  Map<TrioMember, Deque<Pair<Variant,Call>>> getBufferMap() {
+  Map<TrioMember, Deque<Pair<Variant,VariantCall>>> getBufferMap() {
     return bufferMap;
   }
 
-  Deque<Pair<Variant,Call>> getQueue(TrioMember person) {
+  Deque<Pair<Variant,VariantCall>> getQueue(TrioMember person) {
     return bufferMap.get(person);
   }
 
@@ -157,7 +160,7 @@ class VariantsBuffer {
    * @param person
    * @return first element in queue without removing
    */
-  Pair<Variant,Call> getFirst(TrioMember person) {
+  Pair<Variant,VariantCall> getFirst(TrioMember person) {
     return getQueue(person).getFirst();
   }
 
@@ -166,14 +169,14 @@ class VariantsBuffer {
    * @param pair
    * @return success
    */
-  boolean checkAndAdd(TrioMember person, Pair<Variant, Call> pair) {
-    
-    Call variant = pair.getValue1();
-    if (person == CHILD && !isSnp(pair) 
-        ||callContainsDot(variant) 
-        || !callIsBiAllelic(variant) 
-        || !passesFilter(variant) 
-        || isInsertion(pair) 
+  boolean checkAndAdd(TrioMember person, Pair<Variant, VariantCall> pair) {
+
+    VariantCall variant = pair.getValue1();
+    if (person == CHILD && !isSnp(pair)
+        ||callContainsDot(variant)
+        || !callIsBiAllelic(variant)
+        || !passesFilter(variant)
+        || isInsertion(pair)
         || isDeletion(pair)) {
       return false;
     }
@@ -183,7 +186,7 @@ class VariantsBuffer {
 
   /** Does the call contain two alleles
    */
-  private boolean callIsBiAllelic(Call call) {
+  private boolean callIsBiAllelic(VariantCall call) {
     return call.getGenotype().size() == 2;
   }
 
@@ -193,7 +196,7 @@ class VariantsBuffer {
   PositionCall retrieveNextCall() {
     evictParents();
 
-    Pair<Variant, Call> childSNP = getNextSNP(CHILD);
+    Pair<Variant, VariantCall> childSNP = getNextSNP(CHILD);
     Long snpPosition = childSNP.getValue0().getStart();
     String referenceBase = childSNP.getValue0().getReferenceBases();
     Map<TrioMember, Genotype> genotypeMap = new TreeMap<>();
@@ -204,15 +207,15 @@ class VariantsBuffer {
         genotypeMap.put(CHILD, getGenotypeFromSNP(childSNP));
         continue;
       }
-      
-      Optional<Pair<Variant, Call>> parentVariant = 
+
+      Optional<Pair<Variant, VariantCall>> parentVariant =
           Optional.fromNullable(getMatchingPair(person, snpPosition));
       if (!parentVariant.isPresent()) {
         return null;
       }
-      
-      genotypeMap.put(person, isSnp(parentVariant.get()) 
-          ? getGenotypeFromSNP(parentVariant.get()) 
+
+      genotypeMap.put(person, isSnp(parentVariant.get())
+          ? getGenotypeFromSNP(parentVariant.get())
           : Genotype.valueOf(referenceBase + referenceBase));
     }
     return new PositionCall(snpPosition, genotypeMap);
@@ -222,9 +225,9 @@ class VariantsBuffer {
    * @param pair of variant,call corresponding to snp
    * @return genotype corresponding to the SNP
    */
-  private Genotype getGenotypeFromSNP(Pair<Variant, Call> pair) {
+  private Genotype getGenotypeFromSNP(Pair<Variant, VariantCall> pair) {
     Variant variant = pair.getValue0();
-    Call call = pair.getValue1();
+    VariantCall call = pair.getValue1();
     Allele[] allelePair = new Allele[2];
 
     for (int idx = 0; idx < 2; idx++) {
@@ -239,28 +242,28 @@ class VariantsBuffer {
    * @param call
    * @return success
    */
-  private boolean passesFilter(Call call) {
-    return call.getInfo().containsKey("FILTER") && 
+  private boolean passesFilter(VariantCall call) {
+    return call.getInfo().containsKey("FILTER") &&
         call.getInfo().get("FILTER").size() == 1 &&
         call.getInfo().get("FILTER").get(0).equals("PASS");
   }
 
-  /** Call contains '.' character 
+  /** Call contains '.' character
    * @param call
    * @return succcess
    */
-  private boolean callContainsDot(Call call) {
+  private boolean callContainsDot(VariantCall call) {
     // Check if call is unknown
     return call.getGenotype().contains(-1);
   }
-  
+
   /** Is variant, call pair a snp
    * @param pair
    * @return success
    */
-  private boolean isSnp(Pair<Variant, Call> pair) {
+  private boolean isSnp(Pair<Variant, VariantCall> pair) {
     Variant variant = pair.getValue0();
-    Call call = pair.getValue1();
+    VariantCall call = pair.getValue1();
     if (variant.getEnd() != variant.getStart() + Long.valueOf(1L)) {
       return false;
     }
@@ -277,12 +280,12 @@ class VariantsBuffer {
     }
     return true;
   }
-  
+
   /** Is variant, call a deletion
    * @param pair
    * @return match
    */
-  private boolean isDeletion(Pair<Variant, Call> pair) {
+  private boolean isDeletion(Pair<Variant, VariantCall> pair) {
     Variant variant = pair.getValue0();
     return variant.getReferenceBases().length() != 1 ;
   }
@@ -291,9 +294,9 @@ class VariantsBuffer {
    * @param pair
    * @return match
    */
-  private boolean isInsertion(Pair<Variant, Call> pair) {
+  private boolean isInsertion(Pair<Variant, VariantCall> pair) {
     Variant variant = pair.getValue0();
-    Call call = pair.getValue1();
+    VariantCall call = pair.getValue1();
     for (int gtIdx : call.getGenotype()) {
       if (gtIdx > 0 && variant.getAlternateBases().get(gtIdx - 1).length() != 1) {
         return true;
@@ -308,8 +311,8 @@ class VariantsBuffer {
    * @param snpPosition
    * @return Get matching variant call pairs at matching position
    */
-  private Pair<Variant, Call> getMatchingPair(TrioMember person, Long snpPosition) {
-    for (Pair<Variant, Call> pair : getQueue(person)) {
+  private Pair<Variant, VariantCall> getMatchingPair(TrioMember person, Long snpPosition) {
+    for (Pair<Variant, VariantCall> pair : getQueue(person)) {
       Variant variant = pair.getValue0();
 
       if (Ranges.closedOpen(variant.getStart(), variant.getEnd()).contains(snpPosition)) {
@@ -323,10 +326,10 @@ class VariantsBuffer {
    * @param person trio member
    * @return next pair of variant, call corresponding to snp for person
    */
-  private Pair<Variant, Call> getNextSNP(TrioMember person) {
-    Pair<Variant, Call> pair = getFirst(person);
+  private Pair<Variant, VariantCall> getNextSNP(TrioMember person) {
+    Pair<Variant, VariantCall> pair = getFirst(person);
 
-    if (!isSnp(pair)) { 
+    if (!isSnp(pair)) {
       throw new IllegalStateException("Expected SNP : got " + pair);
     }
     return pair;
@@ -350,7 +353,7 @@ class VariantsBuffer {
       return DenovoUtil.checkTrioGenoTypeIsDenovo(getGenotypeMap().get(DAD),
             getGenotypeMap().get(MOM),getGenotypeMap().get(CHILD));
     }
-    
+
     @Override
     public String toString() {
       return "[" + getPosition().toString() + "," + getGenotypeMap().toString() + "]";
